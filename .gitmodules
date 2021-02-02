@@ -1,0 +1,3 @@
+[submodule "polkadapt"]
+	path = polkadapt
+	url = https://github.com/polkascan/polkadapt
