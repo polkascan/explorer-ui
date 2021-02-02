@@ -1,0 +1,71 @@
+<div class="last-block" *ngIf="latestBlockNumber > 0">{{latestBlockNumber}}</div>
+<div class="blocks" [@blocksAnimation]="latestBlockNumber">
+  <div class="block-outer" *ngFor="let block$ of blocks">
+    <ng-container *ngIf="block$|async as block">
+      <a class="block-inner" [routerLink]="'block/' + block.number">
+        <span class="number">{{block.number}}</span>
+        <span class="transaction" *ngFor="let i of block.extrinsics"></span>
+        <span class="event" *ngFor="let i of block.events"></span>
+      </a>
+    </ng-container>
+  </div>
+</div>
+<div><a routerLink="block">View block history</a></div>
+<style type="text/css">
+  .last-block {
+    font-size: 5em;
+  }
+
+  .blocks {
+    display: flex;
+    height: 100px;
+  }
+
+  .block-outer {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    width: 120px;
+  }
+
+  .block-inner {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    align-content: flex-start;
+    flex-flow: row wrap;
+    width: 100px;
+    min-height: 100px;
+    max-height: 100px;
+    overflow: hidden;
+    padding: 10px;
+    background: rgb(2,0,36);
+    background-origin: padding-box;
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: max-height 400ms;
+  }
+  .block-inner:hover {
+    max-height: 1000px;
+    overflow: visible;
+  }
+
+  .block-inner .number {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    color: #222;
+  }
+  .block-inner .transaction,
+  .block-inner .event {
+    margin: 0 4px 4px 0;
+    flex: 0 0 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .block-inner .transaction {
+    background: #ff1493;
+  }
+  .block-inner .event {
+    background: lightgreen;
+  }
+</style>

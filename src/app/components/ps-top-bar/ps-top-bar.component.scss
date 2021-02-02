@@ -1,0 +1,30 @@
+ps-top-bar {
+  display: flex;
+  height: 2.75rem;
+  padding: 0 2rem;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--ps-top-bar-bg-color);
+}
+
+.ps-top-bar-brand {
+  height: 60%;
+  order: 0;
+}
+
+.ps-top-bar-brand-img {
+  height: 100%;
+  object-fit: contain;
+}
+
+.ps-top-bar-selectors {
+  order: 1;
+
+  display: flex;
+}
+
+.ps-top-bar-network-selector {
+}
+
+.ps-top-bar-language-selector {
+}

@@ -1,0 +1,46 @@
+<a routerLink="..">Back to dashboard</a>
+<h1>Blocks</h1>
+<div class="ps-grid ps-block-grid">
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-header-column">Number</div>
+  <div class="ps-grid-header-column">Age</div>
+  <div class="ps-grid-header-column">Block Hash</div>
+  <div class="ps-grid-header-column">Signed Extrinsics</div>
+  <div class="ps-grid-header-column">Module Events</div>
+</div>
+
+<h2>Live from chain</h2>
+
+<div #blockContainer [@rowsAnimationByCounter]="latestBlockNumber">
+  <div class="ps-grid ps-block-grid" *ngFor="let block$ of blocks">
+    <ng-container *ngIf="block$|async as block">
+      <div class="ps-grid-column">
+        <i class="fas fa-box"></i>
+      </div>
+      <div class="ps-grid-column">
+        <a [routerLink]="block.number.toString()">{{block.number}}</a>
+      </div>
+      <div class="ps-grid-column">
+      </div>
+      <div class="ps-grid-column">
+        {{block.hash}}
+      </div>
+      <div class="ps-grid-column">
+        {{block.extrinsics.length}}
+      </div>
+      <div class="ps-grid-column">
+        {{block.events.length}}
+      </div>
+    </ng-container>
+  </div>
+</div>
+
+
+<h2>Fetched block hashes from Polkascan</h2>
+
+<ng-container *ngIf="allBlocks">
+  <div *ngFor="let block of blocks">
+      {{block.hash}}
+  </div>
+</ng-container>
+

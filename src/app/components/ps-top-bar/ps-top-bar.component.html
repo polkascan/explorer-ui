@@ -1,0 +1,17 @@
+<a class="ps-top-bar-brand" [routerLink]="'/'" tabindex="0">
+  <img class="ps-top-bar-brand-img" src="/assets/logo.png">
+</a>
+<div class="ps-top-bar-selectors">
+  <div class="ps-top-bar-network-selector">
+    <select [formControl]="networkControl">
+      <option disabled="true" value="">Select a network</option>
+      <option [ngValue]="'polkadot'">Polkadot</option>
+      <option [ngValue]="'kusama'">Kusama</option>
+    </select>
+  </div>
+  <div class="ps-top-bar-language-selector">
+    <select [formControl]="languageControl">
+      <option disabled="true" value="">English</option>
+    </select>
+  </div>
+</div>
