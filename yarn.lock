@@ -1168,17 +1168,17 @@
     puka "^1.0.1"
     read-package-json-fast "^1.1.3"
 
-"@polkadapt/core@file:../polkadapt/dist/core":
+"@polkadapt/core@file:polkadapt/dist/core":
   version "0.0.1"
   dependencies:
     tslib "^2.0.0"
 
-"@polkadapt/polkascan@file:../polkadapt/dist/polkascan":
+"@polkadapt/polkascan@file:polkadapt/dist/polkascan":
   version "0.0.1"
   dependencies:
     tslib "^2.0.0"
 
-"@polkadapt/substrate-rpc@file:../polkadapt/dist/substrate-rpc":
+"@polkadapt/substrate-rpc@file:polkadapt/dist/substrate-rpc":
   version "0.0.1"
   dependencies:
     tslib "^2.0.0"

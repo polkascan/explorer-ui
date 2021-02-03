@@ -1,5 +1,5 @@
 import {
-  AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild
+  ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild
 } from '@angular/core';
 import { rowsAnimationByCounter } from '../../../../../animations';
 import { BehaviorSubject, Subject } from 'rxjs';
@@ -20,7 +20,6 @@ export class BlockListComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
   latestBlockNumber = 0;
   blocks: BehaviorSubject<Block>[] = [];
-  allBlocks: BehaviorSubject<any>[] = [];
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -41,10 +40,6 @@ export class BlockListComponent implements OnInit, OnDestroy {
       }
       this.cd.markForCheck();
     });
-
-    setTimeout(async () => {
-      this.allBlocks = await this.pa.run().query.block.all();
-    }, 2000);
   }
 
   ngOnDestroy(): void {

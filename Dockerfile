@@ -1,66 +1,79 @@
-### STAGE 1: Build ###
-# We label our stage as ‘builder’
+# STAGE 1: layered build of PolkADAPT submodule and Polkascan application.
+
 FROM node:10-alpine as builder
+RUN npm update -g yarn
 
-COPY package.json ./
+# The application depends on PolkADAPT, so we have to install and build PolkADAPT first.
 
-## Storing node modules on a separate layer will prevent unnecessary npm installs at each build
+WORKDIR /app/polkadapt
 
-RUN npm update -g yarn && yarn && mkdir /ng-app && mv ./node_modules ./ng-app
+# Copy all PolkADAPT package.json files and install packages.
 
-WORKDIR /ng-app
+COPY polkadapt/package.json .
+RUN yarn
 
-COPY . /ng-app/
+COPY polkadapt/projects/core/package.json projects/core/package.json
+RUN cd projects/core && yarn
 
-## Build the angular app in production mode and store the artifacts in dist folder
+# We build the core libary now, because PolkADAPT adapters depend on it.
+
+COPY polkadapt/angular.json polkadapt/tsconfig.json polkadapt/tslint.json ./
+COPY polkadapt/projects/core projects/core
+RUN yarn exec ng build core --prod
+
+COPY polkadapt/projects/substrate-rpc/package.json projects/substrate-rpc/package.json
+RUN cd projects/substrate-rpc && yarn
+
+COPY polkadapt/projects/polkascan/package.json projects/polkascan/package.json
+RUN cd projects/polkascan && yarn
+
+# Copy the rest of the files and build all PolkADAPT libraries.
+
+COPY polkadapt .
+RUN yarn exec ng build substrate-rpc --prod
+RUN yarn exec ng build polkascan --prod
+
+# Install the application dependencies.
+
+WORKDIR /app
+
+COPY package.json .
+RUN yarn
+
+# Copy the rest of the files and build the application.
+
+COPY . .
+
 ARG ENV_CONFIG=production
 ENV ENV_CONFIG=$ENV_CONFIG
-#
-#ARG DISCOVERY_API_URL=https://discovery-31.polkascan.io
-#ENV DISCOVERY_API_URL=$DISCOVERY_API_URL
-#
-#ARG API_URL=https://host-01.polkascan.io/kusama/api/v1
-#ENV API_URL=$API_URL
-#
-#ARG NETWORK_NAME=Kusama
-#ENV NETWORK_NAME=$NETWORK_NAME
-#
-#ARG NETWORK_ID=kusama
-#ENV NETWORK_ID=$NETWORK_ID
-#
-#ARG NETWORK_TYPE=pre
-#ENV NETWORK_TYPE=$NETWORK_TYPE
-#
-#ARG CHAIN_TYPE=relay
-#ENV CHAIN_TYPE=$CHAIN_TYPE
-#
-#ARG NETWORK_TOKEN_SYMBOL=KSM
-#ENV NETWORK_TOKEN_SYMBOL=$NETWORK_TOKEN_SYMBOL
-#
-#ARG NETWORK_TOKEN_DECIMALS=12
-#ENV NETWORK_TOKEN_DECIMALS=$NETWORK_TOKEN_DECIMALS
 
-RUN yarn build --configuration=${ENV_CONFIG} --output-path=dist
+#ARG POLKADOT_URL=https://host-01.polkascan.io/polkadot/api/v1
+#ENV POLKADOT_URL=$POLKADOT_URL
+#ARG KUSAMA_URL=https://host-01.polkascan.io/kusama/api/v1
+#ENV KUSAMA_URL=$KUSAMA_UR
+
+#TODO RUN yarn build --configuration=${ENV_CONFIG} raises an exception, maybe caused by experimental Webpack 5 support in Angular 11? For now we build without the environment option.
+RUN yarn build
 
 
-### STAGE 2: Setup ###
+# STAGE 2: Nginx setup to serve the application.
+
 FROM nginx:1.14.1-alpine
 
-## Allow for various nginx proxy configuration
-ARG NGINX_CONF=nginx/polkascan-beta-gui.conf
+# Allow for various nginx proxy configuration.
+ARG NGINX_CONF=nginx/polkascan-ui.conf
 ENV NGINX_CONF=$NGINX_CONF
 
-## Remove default nginx configs
+# Remove default nginx configs.
 RUN rm -rf /etc/nginx/conf.d/*
 
-## Copy our default nginx config
-#COPY nginx/polkascan.conf /etc/nginx/conf.d/
+# Copy our default nginx config.
 COPY ${NGINX_CONF} /etc/nginx/conf.d/
 
-## Remove default nginx website
+# Remove default nginx website.
 RUN rm -rf /usr/share/nginx/html/*
 
-## From ‘builder’ stage copy over the artifacts in dist folder to default nginx public folder
-COPY --from=builder /ng-app/dist /usr/share/nginx/html
+# Copy build artifacts from ‘builder’ stage to default nginx public folder.
+COPY --from=builder /app/dist/polkascan-ui /usr/share/nginx/html
 
 CMD ["nginx", "-g", "daemon off;"]
