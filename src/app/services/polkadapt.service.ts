@@ -4,7 +4,7 @@ import * as substrate from '@polkadapt/substrate-rpc';
 import * as polkascan from '@polkadapt/polkascan';
 import { Network } from './network.service';
 
-type AugmentedApi = substrate.Api;// & polkascan.Api;
+type AugmentedApi = substrate.Api & polkascan.Api;
 
 @Injectable({providedIn: 'root'})
 export class PolkadaptService {
@@ -25,11 +25,11 @@ export class PolkadaptService {
         chain: 'polkadot',
         providerURL: 'wss://rpc.polkadot.io'
       }),
-      // polkascanAPI: new polkascan.Adapter({
-      //   chain: 'polkadot',
-      //   apiEndpoint: 'https://explorer-31.polkascan.io/polkadot/api/v1/',
-      //   wsEndpoint: 'wss://explorer-31.polkascan.io/polkadot/api/v1/'
-      // })
+      polkascanAPI: new polkascan.Adapter({
+        chain: 'polkadot',
+        apiEndpoint: 'https://explorer-31.polkascan.io/polkadot/api/v1/',
+        wsEndpoint: 'ws://host-01.polkascan.io:8009/graphql-ws'
+      })
     };
 
     this.availableAdapters.kusama = {
