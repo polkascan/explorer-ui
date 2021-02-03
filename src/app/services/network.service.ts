@@ -104,7 +104,11 @@ export class NetworkService {
 
   destroy(): void {
     if (this.unsubscribeNewHeads !== null) {
-      this.unsubscribeNewHeads();
+      try {
+        this.unsubscribeNewHeads();
+      } catch (e) {
+        // ignore errors for now until polkadapt catches the not connected errors.
+      }
       this.unsubscribeNewHeads = null;
     }
     console.log('unregister polkadapt');

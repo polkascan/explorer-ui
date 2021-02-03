@@ -20,7 +20,7 @@
       <div class="ps-grid-column">
       </div>
       <div class="ps-grid-column">
-
+        {{block.hash}}
       </div>
       <div class="ps-grid-column">
         {{block.extrinsics.length}}
@@ -31,3 +31,8 @@
     </ng-container>
   </div>
 </div>
+
+<div *ngFor="let block of finalizedBlocks">
+    id: {{block.id}} hash: {{block.hash}}
+</div>
+
