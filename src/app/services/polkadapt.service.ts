@@ -3,6 +3,7 @@ import { AdapterBase, Polkadapt } from '@polkadapt/core';
 import * as substrate from '@polkadapt/substrate-rpc';
 import * as polkascan from '@polkadapt/polkascan';
 import { Network } from './network.service';
+import { AppConfig } from '../app-config';
 
 type AugmentedApi = substrate.Api & polkascan.Api;
 
@@ -12,7 +13,7 @@ export class PolkadaptService {
   run: (chain?: string, converter?: (results: any) => any) => AugmentedApi;
   availableAdapters: { [network: string]: { [source: string]: AdapterBase } } = {};
 
-  constructor() {
+  constructor(private config: AppConfig) {
     this.setAvailableAdapters();
     this.polkadapt = new Polkadapt();
     this.run = this.polkadapt.run.bind(this.polkadapt);
@@ -23,19 +24,19 @@ export class PolkadaptService {
     this.availableAdapters.polkadot = {
       substrateRPC: new substrate.Adapter({
         chain: 'polkadot',
-        providerURL: 'wss://rpc.polkadot.io'
+        providerURL: this.config.networks.polkadot.substrateRpcUrl
       }),
       polkascanAPI: new polkascan.Adapter({
         chain: 'polkadot',
-        apiEndpoint: 'https://explorer-31.polkascan.io/polkadot/api/v1/',
-        wsEndpoint: 'ws://host-01.polkascan.io:8009/graphql-ws'
+        apiEndpoint: this.config.networks.polkadot.polkascanApiUrl,
+        wsEndpoint: this.config.networks.polkadot.polkascanWsUrl
       })
     };
 
     this.availableAdapters.kusama = {
       substrateRPC: new substrate.Adapter({
         chain: 'kusama',
-        providerURL: 'wss://kusama-rpc.polkadot.io'
+        providerURL: this.config.networks.kusama.substrateRpcUrl
       }),
       // polkascanAPI: new polkascan.Adapter({
       //   chain: 'kusama',

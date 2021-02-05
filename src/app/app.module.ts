@@ -1,5 +1,5 @@
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -9,6 +9,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { PsTopBarComponent } from './components/ps-top-bar/ps-top-bar.component';
 import { TempHomeComponent } from './components/temp-home/temp-home.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { AppConfig, initConfig } from './app-config';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -22,9 +24,18 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
+    HttpClientModule,
     ReactiveFormsModule
   ],
-  providers: [],
+  providers: [
+    AppConfig,
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initConfig,
+      deps: [AppConfig],
+      multi: true
+    },
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

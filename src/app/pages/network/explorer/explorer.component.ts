@@ -47,7 +47,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.ns.headNumber.pipe(takeUntil(this.destroyer)).subscribe((nr) => {
+    this.ns.headNumber.pipe(takeUntil(this.destroyer)).subscribe(nr => {
       if (nr === 0) {
         return;
       }
@@ -58,6 +58,14 @@ export class ExplorerComponent implements OnInit, OnDestroy {
         this.spliceBlocks(nr, 1);
       }
       this.cd.markForCheck();
+    });
+    let currentNetwork = this.ns.currentNetwork.value;
+    this.ns.currentNetwork.pipe(takeUntil(this.destroyer)).subscribe((network) => {
+      if (network !== currentNetwork) {
+        currentNetwork = network;
+        this.blocks = [];
+        this.cd.markForCheck();
+      }
     });
   }
 

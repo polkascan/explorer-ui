@@ -62,7 +62,6 @@ export class NetworkService {
         get: (cache, nr: number) => {
           let cached = cache[nr];
           if (!cached) {
-            console.log('block', nr, 'not in cache, load it');
             cached = cache[nr] = new BehaviorSubject<Block>({number: nr, extrinsics: [], events: []});
             const noAwait = this.loadBlock(cached);
           }
@@ -97,9 +96,8 @@ export class NetworkService {
     const allEvents = await this.pa.run().query.system.events.at(block.hash);
     block.extrinsics = signedBlock.block.extrinsics.map((_, i) => i);
     block.events = allEvents.map((_, i) => i);
-    console.log('loaded block data', block);
     blockSubject.next(block);
-    blockSubject.complete();
+    // TODO We probably want to end the Subject at some point: blockSubject.complete();
   }
 
   destroy(): void {

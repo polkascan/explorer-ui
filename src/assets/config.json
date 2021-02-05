@@ -1,0 +1,10 @@
+{
+  "polkadot": {
+    "substrateRpcUrl": "wss://rpc.polkadot.io",
+    "polkascanApiUrl": "https://explorer-31.polkascan.io/polkadot/api/v1/",
+    "polkascanWsUrl": "ws://host-01.polkascan.io:8009/graphql-ws"
+  },
+  "kusama": {
+    "substrateRpcUrl": "wss://kusama-rpc.polkadot.io"
+  }
+}

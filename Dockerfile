@@ -41,16 +41,10 @@ COPY package.json .
 RUN yarn
 
 # Copy the rest of the files and build the application.
-
 COPY . .
 
 ARG ENV_CONFIG=production
 ENV ENV_CONFIG=$ENV_CONFIG
-
-#ARG POLKADOT_URL=https://host-01.polkascan.io/polkadot/api/v1
-#ENV POLKADOT_URL=$POLKADOT_URL
-#ARG KUSAMA_URL=https://host-01.polkascan.io/kusama/api/v1
-#ENV KUSAMA_URL=$KUSAMA_UR
 
 #TODO RUN yarn build --configuration=${ENV_CONFIG} raises an exception, maybe caused by experimental Webpack 5 support in Angular 11? For now we build without the environment option.
 RUN yarn build
@@ -61,8 +55,23 @@ RUN yarn build
 FROM nginx:1.14.1-alpine
 
 # Allow for various nginx proxy configuration.
+
 ARG NGINX_CONF=nginx/polkascan-ui.conf
 ENV NGINX_CONF=$NGINX_CONF
+
+# Runtime environment variables.
+
+ARG POLKADOT_SUBSTRATE_RPC_URL=wss://rpc.polkadot.io
+ENV POLKADOT_SUBSTRATE_RPC_URL=$POLKADOT_SUBSTRATE_RPC_URL
+
+ARG POLKADOT_POLKASCAN_API_URL=https://explorer-31.polkascan.io/polkadot/api/v1/
+ENV POLKADOT_POLKASCAN_API_URL=$POLKADOT_POLKASCAN_API_URL
+
+ARG POLKADOT_POLKASCAN_WS_URL=ws://host-01.polkascan.io:8009/graphql-ws
+ENV POLKADOT_POLKASCAN_WS_URL=$POLKADOT_POLKASCAN_WS_URL
+
+ARG KUSAMA_SUBSTRATE_RPC_URL=wss://kusama-rpc.polkadot.io
+ENV KUSAMA_SUBSTRATE_RPC_URL=$KUSAMA_SUBSTRATE_RPC_URL
 
 # Remove default nginx configs.
 RUN rm -rf /etc/nginx/conf.d/*
@@ -76,4 +85,8 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copy build artifacts from ‘builder’ stage to default nginx public folder.
 COPY --from=builder /app/dist/polkascan-ui /usr/share/nginx/html
 
-CMD ["nginx", "-g", "daemon off;"]
+COPY docker-run.sh .
+
+EXPOSE 80
+
+CMD ["/bin/sh",  "-c",  "envsubst < /usr/share/nginx/html/assets/config.template.json > /usr/share/nginx/html/assets/config.json && exec nginx -g 'daemon off;'"]

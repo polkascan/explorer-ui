@@ -56,6 +56,7 @@ export class BlockListComponent implements OnInit, OnDestroy {
         this.finalizedBlocks.push(block);
       }
       this.finalizedBlocks.sort((a, b) => a.id - b.id);
+      console.log('FINALIZEDBLOCKS', this.finalizedBlocks);
       this.cd.markForCheck();
     });
   }
