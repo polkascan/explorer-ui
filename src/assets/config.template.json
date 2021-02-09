@@ -1,6 +1,6 @@
 {
   "polkadot": {
-    "substrateRpcUrl": "${POLKADOT_SUBSTRATE_RPC_URL}",
+    "substrateRpcUrl": "${POLKADOT_SUBSTRATE_RPC_URL}"
   },
   "kusama": {
     "substrateRpcUrl": "${KUSAMA_SUBSTRATE_RPC_URL}"
