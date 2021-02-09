@@ -21,28 +21,40 @@ export class PolkadaptService {
 
 
   setAvailableAdapters(): void {
-    this.availableAdapters.polkadot = {
+    // this.availableAdapters.polkadot = {
+    //   substrateRPC: new substrate.Adapter({
+    //     chain: 'polkadot',
+    //     providerURL: this.config.networks.polkadot.substrateRpcUrl
+    //   }),
+    //   polkascanAPI: new polkascan.Adapter({
+    //     chain: 'polkadot',
+    //     apiEndpoint: this.config.networks.polkadot.polkascanApiUrl,
+    //     wsEndpoint: this.config.networks.polkadot.polkascanWsUrl
+    //   })
+    // };
+
+    // this.availableAdapters.kusama = {
+    //   substrateRPC: new substrate.Adapter({
+    //     chain: 'kusama',
+    //     providerURL: this.config.networks.kusama.substrateRpcUrl
+    //   }),
+    //   polkascanAPI: new polkascan.Adapter({
+    //     chain: 'kusama',
+    //     apiEndpoint: this.config.networks.kusama.polkascanApiUrl,
+    //     wsEndpoint: this.config.networks.kusama.polkascanWsUrl
+    //   })
+    // };
+
+    this.availableAdapters.rococo = {
       substrateRPC: new substrate.Adapter({
-        chain: 'polkadot',
-        providerURL: this.config.networks.polkadot.substrateRpcUrl
+        chain: 'rococo',
+        providerURL: this.config.networks.rococo.substrateRpcUrl
       }),
       polkascanAPI: new polkascan.Adapter({
-        chain: 'polkadot',
-        apiEndpoint: this.config.networks.polkadot.polkascanApiUrl,
-        wsEndpoint: this.config.networks.polkadot.polkascanWsUrl
+        chain: 'rococo',
+        apiEndpoint: this.config.networks.rococo.polkascanApiUrl,
+        wsEndpoint: this.config.networks.rococo.polkascanWsUrl
       })
-    };
-
-    this.availableAdapters.kusama = {
-      substrateRPC: new substrate.Adapter({
-        chain: 'kusama',
-        providerURL: this.config.networks.kusama.substrateRpcUrl
-      }),
-      // polkascanAPI: new polkascan.Adapter({
-      //   chain: 'kusama',
-      //   apiEndpoint: 'https://explorer-31.polkascan.io/kusama/api/v1/',
-      //   wsEndpoint: 'wss://explorer-31.polkascan.io/kusama/api/v1/'
-      // })
     };
   }
 

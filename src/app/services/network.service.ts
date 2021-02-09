@@ -12,8 +12,7 @@ export type Block = {
 type BlockCache = {[nr: string]: BehaviorSubject<Block>};
 
 export const networks = {
-  kusama: 'kusama',
-  polkadot: 'polkadot',
+  rococo: 'rococo'
 };
 
 export type Network = typeof networks[keyof typeof networks];

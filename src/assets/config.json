@@ -1,10 +1,13 @@
 {
   "polkadot": {
-    "substrateRpcUrl": "wss://rpc.polkadot.io",
-    "polkascanApiUrl": "https://explorer-31.polkascan.io/polkadot/api/v1/",
-    "polkascanWsUrl": "ws://host-01.polkascan.io:8009/graphql-ws"
+    "substrateRpcUrl": "wss://rpc.polkadot.io"
   },
   "kusama": {
     "substrateRpcUrl": "wss://kusama-rpc.polkadot.io"
+  },
+  "rococo": {
+    "substrateRpcUrl": "wss://rococo-rpc.polkadot.io",
+    "polkascanApiUrl": "https://host-01.polkascan.io:8009/graphql",
+    "polkascanWsUrl": "ws://host-01.polkascan.io:8009/graphql-ws"
   }
 }

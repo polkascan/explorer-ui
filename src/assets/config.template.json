@@ -1,10 +1,13 @@
 {
   "polkadot": {
     "substrateRpcUrl": "${POLKADOT_SUBSTRATE_RPC_URL}",
-    "polkascanApiUrl": "${POLKADOT_POLKASCAN_API_URL}",
-    "polkascanWsUrl": "${POLKADOT_POLKASCAN_WS_URL}"
   },
   "kusama": {
     "substrateRpcUrl": "${KUSAMA_SUBSTRATE_RPC_URL}"
+  },
+  "rococo": {
+    "substrateRpcUrl": "${ROCOCO_SUBSTRATE_RPC_URL}",
+    "polkascanApiUrl": "${ROCOCO_POLKASCAN_API_URL}",
+    "polkascanWsUrl": "${ROCOCO_POLKASCAN_WS_URL}"
   }
 }
