@@ -32,7 +32,6 @@ export class NetworkService {
     if (network === this.currentNetwork.value) {
       return;
     }
-    console.log('[NetworkService] set network from', this.currentNetwork.value, 'to', network);
     this.currentNetwork.next(network);
     try {
       if (this.unsubscribeNewHeads !== null) {
@@ -40,7 +39,6 @@ export class NetworkService {
         this.unsubscribeNewHeads = null;
       }
       await this.pa.setNetwork(network);
-      console.log('network set to', network, ', subscribe new heads');
       this.setCacheToNetwork(network);
       const noAwait = this.subscribeNewBlocks();
     } catch {
@@ -101,14 +99,10 @@ export class NetworkService {
 
   destroy(): void {
     if (this.unsubscribeNewHeads !== null) {
-      try {
-        this.unsubscribeNewHeads();
-      } catch (e) {
-        // ignore errors for now until polkadapt catches the not connected errors.
-      }
+      this.unsubscribeNewHeads();
       this.unsubscribeNewHeads = null;
     }
-    console.log('unregister polkadapt');
+    this.currentNetwork.next('');
     this.pa.polkadapt.unregister();
   }
 }

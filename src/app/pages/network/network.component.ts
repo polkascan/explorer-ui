@@ -18,11 +18,9 @@ export class NetworkComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    console.log('init network comp');
     const networkParam = this.route.snapshot.params.network;
     if (this.networkService.currentNetwork.value !== networkParam) {
       if (networkParam) {
-        console.log('set network on init');
         const noAwait = this.networkService.setNetwork(networkParam);
       }
     }
@@ -34,13 +32,11 @@ export class NetworkComponent implements OnInit, OnDestroy {
         distinctUntilChanged()
       )
       .subscribe((network: string) => {
-        console.log('set network on route change');
         const noAwait = this.networkService.setNetwork(network);
       });
   }
 
   ngOnDestroy(): void {
-    console.log('destroy network comp');
     this.destroyer.next();
     this.destroyer.complete();
     this.networkService.destroy();

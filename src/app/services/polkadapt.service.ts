@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { AdapterBase, Polkadapt } from '@polkadapt/core';
+import { AdapterBase, Polkadapt, PolkadaptRunConfig } from '@polkadapt/core';
 import * as substrate from '@polkadapt/substrate-rpc';
 import * as polkascan from '@polkadapt/polkascan';
 import { Network } from './network.service';
@@ -10,7 +10,7 @@ type AugmentedApi = substrate.Api & polkascan.Api;
 @Injectable({providedIn: 'root'})
 export class PolkadaptService {
   polkadapt: Polkadapt<AugmentedApi>;
-  run: (chain?: string, converter?: (results: any) => any) => AugmentedApi;
+  run: (config?: PolkadaptRunConfig) => AugmentedApi;
   availableAdapters: { [network: string]: { [source: string]: AdapterBase } } = {};
 
   constructor(private config: AppConfig) {
