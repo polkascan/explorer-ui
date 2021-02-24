@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { AppConfig } from '../../app-config';
 
 
 @Component({
@@ -7,8 +8,13 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation } from '@angular/
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None
 })
-export class TempHomeComponent {
+export class TempHomeComponent implements OnInit {
+  networks: string[];
 
-  constructor() {
+  constructor(private config: AppConfig) {
+  }
+
+  ngOnInit(): void {
+    this.networks = Object.keys(this.config.networks);
   }
 }

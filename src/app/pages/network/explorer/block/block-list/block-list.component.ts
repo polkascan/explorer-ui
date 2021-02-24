@@ -2,10 +2,11 @@ import {
   ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild
 } from '@angular/core';
 import { rowsAnimationByCounter } from '../../../../../animations';
-import { BehaviorSubject, Subject } from 'rxjs';
-import { Block, NetworkService } from '../../../../../services/network.service';
+import { BehaviorSubject, of, Subject } from 'rxjs';
+import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { takeUntil } from 'rxjs/operators';
+import { distinctUntilChanged, filter, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { Block } from '../../../../../services/block/block.harvester';
 
 @Component({
   selector: 'app-block-list',
@@ -31,44 +32,32 @@ export class BlockListComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.ns.headNumber.pipe(takeUntil(this.destroyer)).subscribe((nr) => {
+    this.ns.currentNetwork.pipe(
+      takeUntil(this.destroyer),
+      filter(network => !!network),
+      distinctUntilChanged(),
+      tap((network) => {
+        // Reset blocks Array when currentNetwork changes.
+        this.blocks = [];
+      }),
+      switchMap(() => !!this.ns.blockHarvester ? this.ns.blockHarvester.headNumber : of(0))
+    ).subscribe(nr => {
+      // Latest head subscription is resubscribed when currentNetwork changes.
       if (nr === 0) {
         return;
       }
       this.latestBlockNumber = nr;
       if (this.blocks.length === 0) {
-        this.spliceBlocks(nr, 10);
+        // TODO await this.ns.blockHarvester.loadLatestFinalizedBlocks();
+        this.spliceBlocks(nr, 100);
       } else {
         this.spliceBlocks(nr, 1);
       }
       this.cd.markForCheck();
     });
-
-    this.finalizedHeadsUnsubscribeFn = await this.pa.run().rpc.chain.subscribeFinalizedHeads((blocks: any[]) => {
-      // For now we do not get a single block but a list of blocks,
-      // also we need to import the Block type from polkascan adapter.
-
-      // Finalized blocks have no forks, so id is unique.
-
-      // Add block to the blocks array and sort it.
-      const currentblockIds = this.finalizedBlocks.map((b) => b.id);
-      for (const block of blocks.filter((b) => currentblockIds.indexOf(b.id) === -1)) {
-        this.finalizedBlocks.push(block);
-      }
-      this.finalizedBlocks.sort((a, b) => a.id - b.id);
-      this.cd.markForCheck();
-    });
   }
 
   ngOnDestroy(): void {
-    try {
-      if (this.finalizedHeadsUnsubscribeFn) {
-        this.finalizedHeadsUnsubscribeFn();
-      }
-    } catch (e) {
-      // ignore errors for now until polkadapt catches the not connected errors.
-    }
-
     this.destroyer.next();
     this.destroyer.complete();
   }
@@ -77,7 +66,7 @@ export class BlockListComponent implements OnInit, OnDestroy {
     const firstNumber = latestNumber - count + 1;
     this.blocks.splice(-1, count);
     for (let nr = firstNumber; nr <= latestNumber; nr++) {
-      const block: BehaviorSubject<Block> = this.ns.blocks[nr];
+      const block: BehaviorSubject<Block> = this.ns.blockHarvester.blocks[nr];
       this.blocks.splice(0, 0, block);
     }
   }

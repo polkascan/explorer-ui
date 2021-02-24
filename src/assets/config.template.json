@@ -1,9 +1,13 @@
 {
   "polkadot": {
-    "substrateRpcUrl": "${POLKADOT_SUBSTRATE_RPC_URL}"
+    "substrateRpcUrl": "${POLKADOT_SUBSTRATE_RPC_URL}",
+    "polkascanApiUrl": "${POLKADOT_POLKASCAN_API_URL}",
+    "polkascanWsUrl": "${POLKADOT_POLKASCAN_WS_URL}"
   },
   "kusama": {
-    "substrateRpcUrl": "${KUSAMA_SUBSTRATE_RPC_URL}"
+    "substrateRpcUrl": "${KUSAMA_SUBSTRATE_RPC_URL}",
+    "polkascanApiUrl": "${KUSAMA_POLKASCAN_API_URL}",
+    "polkascanWsUrl": "${KUSAMA_POLKASCAN_WS_URL}"
   },
   "rococo": {
     "substrateRpcUrl": "${ROCOCO_SUBSTRATE_RPC_URL}",

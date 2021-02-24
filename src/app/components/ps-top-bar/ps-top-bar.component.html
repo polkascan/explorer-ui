@@ -5,7 +5,7 @@
   <div class="ps-top-bar-network-selector">
     <select [formControl]="networkControl">
       <option disabled="true" value="">Select a network</option>
-      <option [ngValue]="'rococo'">Rococo</option>
+      <option *ngFor="let network of networks" [ngValue]="network">{{network}}</option>
     </select>
   </div>
   <div class="ps-top-bar-language-selector">

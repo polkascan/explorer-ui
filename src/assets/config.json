@@ -1,13 +1,17 @@
 {
   "polkadot": {
-    "substrateRpcUrl": "wss://rpc.polkadot.io"
+    "substrateRpcUrl": "wss://rpc.polkadot.io",
+    "polkascanApiUrl": "https://explorer-01.polkascan.io/api/v2/polkadot/",
+    "polkascanWsUrl": "wss://explorer-01.polkascan.io/api/v2/polkadot/graphql-ws"
   },
   "kusama": {
-    "substrateRpcUrl": "wss://kusama-rpc.polkadot.io"
+    "substrateRpcUrl": "wss://kusama-rpc.polkadot.io",
+    "polkascanApiUrl": "https://explorer-01.polkascan.io/api/v2/kusama/",
+    "polkascanWsUrl": "wss://explorer-01.polkascan.io/api/v2/kusama/graphql-ws "
   },
   "rococo": {
     "substrateRpcUrl": "wss://rococo-rpc.polkadot.io",
-    "polkascanApiUrl": "https://host-01.polkascan.io:8009/graphql",
-    "polkascanWsUrl": "ws://host-01.polkascan.io:8009/graphql-ws"
+    "polkascanApiUrl": "https://explorer-01.polkascan.io/api/v2/rococo/",
+    "polkascanWsUrl": "wss://explorer-01.polkascan.io/api/v2/rococo/graphql-ws"
   }
 }

@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { networks } from './services/network.service';
 
-type Config = {
-  [network in keyof typeof networks]: {
+type NetworkConfig = {
+  [network: string]: {
     substrateRpcUrl: string;
     polkascanApiUrl: string;
     polkascanWsUrl: string;
@@ -12,12 +11,12 @@ type Config = {
 
 @Injectable()
 export class AppConfig {
-  networks: Config;
+  networks: NetworkConfig;
 
   constructor(private readonly http: HttpClient) {}
   public load(): Promise<void> {
     return this.http
-      .get<Config>('assets/config.json')
+      .get<NetworkConfig>('assets/config.json')
       .toPromise()
       .then(config => {
         this.networks = config;

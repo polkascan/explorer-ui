@@ -1,5 +1,5 @@
 <h1>Temporary home component</h1>
 
-<div>
-  <a [routerLink]="'/n/rococo'">Rococo</a>
+<div *ngFor="let network of networks">
+  <a [routerLink]="'/n/' + network">{{network}}</a>
 </div>

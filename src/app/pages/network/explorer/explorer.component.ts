@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { animate, group, query, stagger, style, transition, trigger } from '@angular/animations';
 import { PolkadaptService } from '../../../services/polkadapt.service';
-import { Block, NetworkService } from '../../../services/network.service';
-import { BehaviorSubject, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { NetworkService } from '../../../services/network.service';
+import { BehaviorSubject, Subject, of } from 'rxjs';
+import { distinctUntilChanged, filter, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { Block } from '../../../services/block/block.harvester';
 
 
 const blocksAnimation = trigger('blocksAnimation', [
@@ -43,11 +44,21 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   constructor(
     private cd: ChangeDetectorRef,
     private pa: PolkadaptService,
-    private ns: NetworkService
+    private ns: NetworkService,
   ) {}
 
   async ngOnInit(): Promise<void> {
-    this.ns.headNumber.pipe(takeUntil(this.destroyer)).subscribe(nr => {
+    this.ns.currentNetwork.pipe(
+      takeUntil(this.destroyer),
+      filter(network => !!network),
+      distinctUntilChanged(),
+      tap((network) => {
+        // Reset blocks Array when currentNetwork changes.
+        this.blocks = [];
+      }),
+      switchMap(() => !!this.ns.blockHarvester ? this.ns.blockHarvester.headNumber : of(0))
+    ).subscribe(nr => {
+      // Latest head subscription is resubscribed when currentNetwork changes.
       if (nr === 0) {
         return;
       }
@@ -58,14 +69,6 @@ export class ExplorerComponent implements OnInit, OnDestroy {
         this.spliceBlocks(nr, 1);
       }
       this.cd.markForCheck();
-    });
-    let currentNetwork = this.ns.currentNetwork.value;
-    this.ns.currentNetwork.pipe(takeUntil(this.destroyer)).subscribe((network) => {
-      if (network !== currentNetwork) {
-        currentNetwork = network;
-        this.blocks = [];
-        this.cd.markForCheck();
-      }
     });
   }
 
@@ -78,7 +81,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     const firstNumber = latestNumber - count + 1;
     this.blocks.splice(-1, count);
     for (let nr = firstNumber; nr <= latestNumber; nr++) {
-      const block: BehaviorSubject<Block> = this.ns.blocks[nr];
+      const block: BehaviorSubject<Block> = this.ns.blockHarvester.blocks[nr];
       this.blocks.splice(0, 0, block);
     }
   }

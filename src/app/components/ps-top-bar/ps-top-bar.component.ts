@@ -13,6 +13,7 @@ import { Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import { NetworkService } from '../../services/network.service';
 import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { AppConfig } from '../../app-config';
 
 @Component({
   templateUrl: 'ps-top-bar.component.html',
@@ -22,6 +23,7 @@ import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
   encapsulation: ViewEncapsulation.None
 })
 export class PsTopBarComponent implements OnInit, OnDestroy {
+  networks: string[];
   networkControl: FormControl = new FormControl('');
   languageControl: FormControl = new FormControl('');
 
@@ -31,10 +33,13 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
               private renderer: Renderer2,
               private cd: ChangeDetectorRef,
               private router: Router,
-              private networkService: NetworkService) {
+              private networkService: NetworkService,
+              private config: AppConfig) {
   }
 
   ngOnInit(): void {
+    this.networks = Object.keys(this.config.networks);
+
     this.networkControl.valueChanges
       .pipe(
         distinctUntilChanged(),
