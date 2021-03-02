@@ -64,7 +64,7 @@ export class BlockHarvester {
     if (!this.unsubscribeFinalizedBlocks) {
       // Subscribe to new finalized blocks from Polkascan.
       this.polkadapt.run(this.network)
-        .polkascan.subscribeFinalizedBlocks(block => this.finalizedBlockHandler(block)).then(unsub => {
+        .polkascan.subscribeNewBlock(block => this.finalizedBlockHandler(block)).then(unsub => {
           this.unsubscribeFinalizedBlocks = unsub;
         });
     }
@@ -136,11 +136,11 @@ export class BlockHarvester {
     this.subscribeNewBlocks();
   }
 
-  public async loadLatestFinalizedBlocks(count = 100): Promise<void> {
+  public async loadLatestFinalizedBlocks(pageSize = 100): Promise<void> {
     // Helper function to efficiently load a list of latest finalized blocks.
     const data: polkascanTypes.Block[] = await this.polkadapt.run(this.network)
-      .polkascan.getBlocksUntil(this.finalizedNumber.value, count);
-    for (const item of data) {
+      .polkascan.getBlocksUntil(this.finalizedNumber.value, pageSize);
+    for (const item of data.blocks) {
       const blockData: Block = {
         finalized: true,
         number: item.number,
