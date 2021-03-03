@@ -3,7 +3,7 @@ import { animate, group, query, stagger, style, transition, trigger } from '@ang
 import { PolkadaptService } from '../../../services/polkadapt.service';
 import { NetworkService } from '../../../services/network.service';
 import { BehaviorSubject, Subject, of } from 'rxjs';
-import { distinctUntilChanged, filter, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { distinctUntilChanged, filter, first, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { Block } from '../../../services/block/block.harvester';
 
 
@@ -47,26 +47,43 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     private ns: NetworkService,
   ) {}
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
+    // Watch for changes to network, latest block number and last block data.
     this.ns.currentNetwork.pipe(
+      // Keep it running until this component is destroyed.
       takeUntil(this.destroyer),
+      // Only continue if a network is set.
       filter(network => !!network),
+      // Only continue if the network value has changed.
       distinctUntilChanged(),
-      tap((network) => {
-        // Reset blocks Array when currentNetwork changes.
+      // When network has changed, reset the block Array for this component.
+      tap(() => {
         this.blocks = [];
+        this.cd.markForCheck();
       }),
-      switchMap(() => !!this.ns.blockHarvester ? this.ns.blockHarvester.headNumber : of(0))
-    ).subscribe(nr => {
-      // Latest head subscription is resubscribed when currentNetwork changes.
-      if (nr === 0) {
-        return;
-      }
-      this.latestBlockNumber = nr;
+      // Wait for the first most recent finalized block to arrive from Polkascan.
+      switchMap(() => {
+        return this.ns.blockHarvester.finalizedNumber.pipe(
+          filter(nr => nr > 0),
+          first()
+        );
+      }),
+      // Watch for new block numbers from the Substrate node.
+      switchMap(() => this.ns.blockHarvester.headNumber),
+      // Only continue if new block number is larger than 0.
+      filter(nr => nr > 0),
+      // Watch for changes in new block data.
+      switchMap(nr => this.ns.blockHarvester.blocks[nr]),
+      // Only continue if the new block is fully loaded.
+      filter(block => block.status === 'loaded')
+    ).subscribe(block => {
+      this.latestBlockNumber = block.number;
       if (this.blocks.length === 0) {
-        this.spliceBlocks(nr, 10);
+        // Initial block list creation.
+        this.spliceBlocks(10);
       } else {
-        this.spliceBlocks(nr, 1);
+        // Add new block to the beginning while removing one at the end of the Array.
+        this.spliceBlocks(1);
       }
       this.cd.markForCheck();
     });
@@ -77,12 +94,13 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     this.destroyer.complete();
   }
 
-  spliceBlocks(latestNumber: number, count: number): void {
-    const firstNumber = latestNumber - count + 1;
-    this.blocks.splice(-1, count);
-    for (let nr = firstNumber; nr <= latestNumber; nr++) {
+  spliceBlocks(n: number): void {
+    // Remove the last n items.
+    this.blocks.splice(-n, n);
+    // Insert n blocks.
+    for (let nr = this.latestBlockNumber; nr > this.latestBlockNumber - n; nr--) {
       const block: BehaviorSubject<Block> = this.ns.blockHarvester.blocks[nr];
-      this.blocks.splice(0, 0, block);
+      this.blocks.splice(this.latestBlockNumber - nr, 0, block);
     }
   }
 }
