@@ -3,7 +3,6 @@ import { BehaviorSubject } from 'rxjs';
 import { PolkadaptService } from './polkadapt.service';
 import { BlockHarvester } from './block/block.harvester';
 import { BlockService } from './block/block.service';
-import set = Reflect.set;
 
 
 @Injectable({providedIn: 'root'})
@@ -55,5 +54,6 @@ export class NetworkService {
   destroy(): void {
     this.pa.clearNetwork();
     this.currentNetwork.next('');
+    this.settingNetwork = '';
   }
 }
