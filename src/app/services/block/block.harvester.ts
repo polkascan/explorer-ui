@@ -14,11 +14,11 @@ export type Block = {
 
 export type BlockSubject = BehaviorSubject<Block>;
 
-type BlockCache = {[nr: string]: BlockSubject};
+type BlockCache = { [nr: string]: BlockSubject };
 
 export class BlockHarvester {
   private unsubscribeNewHeads: (() => void) | null;
-  private unsubscribeFinalizedBlocks: (() => void) | null;
+  private unsubscribeNewBlocks: (() => void) | null;
   private cache: BlockCache = {};
   headNumber = new BehaviorSubject<number>(0);
   finalizedNumber = new BehaviorSubject<number>(0);
@@ -28,22 +28,22 @@ export class BlockHarvester {
   constructor(public polkadapt: Polkadapt<AugmentedApi>, public network: string) {
     // Create a block cache where data is lazy loaded when you get an item.
     this.blocks = new Proxy(this.cache, {
-        get: (cache, nr: string) => {
-          let cached = cache[nr];
-          if (!cached) {
-            cached = cache[nr] = new BehaviorSubject<Block>({
-              number: parseInt(nr, 10), finalized: false, extrinsics: [], events: []
-            });
-            this.loadBlock(cached).then(block => {
-              cached.next(block);
-            });
-          }
-          return cached;
+      get: (cache, nr: string) => {
+        let cached = cache[nr];
+        if (!cached) {
+          cached = cache[nr] = new BehaviorSubject<Block>({
+            number: parseInt(nr, 10), finalized: false, extrinsics: [], events: []
+          });
+          this.loadBlock(cached).then(block => {
+            cached.next(block);
+          });
         }
+        return cached;
+      }
     });
 
     // Get latest finalized block.
-    this.polkadapt.run(network).polkascan.getBlock().then(block => this.finalizedBlockHandler(block));
+    this.polkadapt.run(network).polkascan.getBlock().then((block: polkascanTypes.Block) => this.finalizedBlockHandler(block));
 
     this.subscribeNewBlocks();
   }
@@ -51,22 +51,22 @@ export class BlockHarvester {
   private subscribeNewBlocks(): void {
     if (!this.unsubscribeNewHeads) {
       // Subscribe to new blocks *without finality*.
-      this.polkadapt.run(this.network).rpc.chain.subscribeNewHeads(header => {
+      this.polkadapt.run(this.network).rpc.chain.subscribeNewHeads((header: Header) => {
         const newNumber = header.number.toNumber();
         if (newNumber > this.headNumber.value) {
           this.headNumber.next(newNumber);
         }
-      }).then(unsub => {
+      }).then((unsub: () => void) => {
         this.unsubscribeNewHeads = unsub;
       });
     }
 
-    if (!this.unsubscribeFinalizedBlocks) {
+    if (!this.unsubscribeNewBlocks) {
       // Subscribe to new finalized blocks from Polkascan.
       this.polkadapt.run(this.network)
-        .polkascan.subscribeNewBlock(block => this.finalizedBlockHandler(block)).then(unsub => {
-          this.unsubscribeFinalizedBlocks = unsub;
-        });
+        .polkascan.subscribeNewBlock((block: polkascanTypes.Block) => this.finalizedBlockHandler(block)).then((unsub: () => void) => {
+        this.unsubscribeNewBlocks = unsub;
+      });
     }
   }
 
@@ -120,9 +120,9 @@ export class BlockHarvester {
       this.unsubscribeNewHeads();
       this.unsubscribeNewHeads = null;
     }
-    if (this.unsubscribeFinalizedBlocks) {
-      this.unsubscribeFinalizedBlocks();
-      this.unsubscribeFinalizedBlocks = null;
+    if (this.unsubscribeNewBlocks) {
+      this.unsubscribeNewBlocks();
+      this.unsubscribeNewBlocks = null;
     }
   }
 
@@ -136,19 +136,21 @@ export class BlockHarvester {
     this.subscribeNewBlocks();
   }
 
-  public async loadLatestFinalizedBlocks(pageSize = 100): Promise<void> {
+  public async loadLatestNewBlocks(pageSize = 100): Promise<void> {
     // Helper function to efficiently load a list of latest finalized blocks.
-    const data: polkascanTypes.Block[] = await this.polkadapt.run(this.network)
-      .polkascan.getBlocksUntil(this.finalizedNumber.value, pageSize);
-    for (const item of data.blocks) {
-      const blockData: Block = {
-        finalized: true,
-        number: item.number,
-        hash: item.hash,
-        extrinsics: new Array(item.countExtrinsics),
-        events: new Array(item.countEvents)
-      };
-      this.blocks[item.number].next(blockData);
+    const data: {blocks: polkascanTypes.Block[], pageInfo: any} = await this.polkadapt.run(this.network)
+      .polkascan.getBlocksFrom(this.finalizedNumber.value, pageSize);
+    if (data.blocks) {
+      for (const item of data.blocks) {
+        const blockData: Block = {
+          finalized: true,
+          number: item.number,
+          hash: item.hash,
+          extrinsics: new Array(item.countExtrinsics),
+          events: new Array(item.countEvents)
+        };
+        this.blocks[item.number].next(blockData);
+      }
     }
   }
 
