@@ -8,7 +8,7 @@
   <div class="ps-grid-header-column">Signed Extrinsics</div>
   <div class="ps-grid-header-column">Module Events</div>
 </div>
-<div #blockContainer [@rowsAnimationByCounter]="latestBlockNumber">
+<div [@rowsAnimationByCounter]="latestBlockNumber">
   <div class="ps-grid ps-block-grid" *ngFor="let block$ of blocks">
     <ng-container *ngIf="block$|async as block">
       <div class="ps-grid-column">
@@ -30,28 +30,6 @@
       </div>
     </ng-container>
   </div>
-
-  <ng-container *ngFor="let block of finalizedBlocks">
-    <div class="ps-grid ps-block-grid">
-      <div class="ps-grid-column">
-        <i class="fas fa-box"></i> {{block.id}}
-      </div>
-      <div class="ps-grid-column">
-        <a [routerLink]="block.number">{{block.number}}</a>
-      </div>
-      <div class="ps-grid-column">
-      </div>
-      <div class="ps-grid-column">
-        {{block.hash}}
-      </div>
-      <div class="ps-grid-column">
-        {{block.countExtrinsics}}
-      </div>
-      <div class="ps-grid-column">
-        {{block.countEvents}}
-      </div>
-    </div>
-  </ng-container>
 </div>
 
 

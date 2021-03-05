@@ -1,11 +1,11 @@
 import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild
+  ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit
 } from '@angular/core';
 import { rowsAnimationByCounter } from '../../../../../animations';
 import { BehaviorSubject, of, Subject } from 'rxjs';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { distinctUntilChanged, filter, first, skipUntil, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { distinctUntilChanged, filter, first, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { Block } from '../../../../../services/block/block.harvester';
 
 @Component({
@@ -16,14 +16,10 @@ import { Block } from '../../../../../services/block/block.harvester';
   animations: [rowsAnimationByCounter]
 })
 export class BlockListComponent implements OnInit, OnDestroy {
-  @ViewChild('blockContainer') blockContainer: ElementRef;
-
   private destroyer: Subject<undefined> = new Subject();
+  listSize = 100;
   latestBlockNumber = 0;
   blocks: BehaviorSubject<Block>[] = [];
-  finalizedBlocks: any[] = [];
-
-  finalizedHeadsUnsubscribeFn: () => void;
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -42,6 +38,7 @@ export class BlockListComponent implements OnInit, OnDestroy {
       distinctUntilChanged(),
       // When network has changed, reset the block Array for this component.
       tap(() => {
+        this.latestBlockNumber = 0;
         this.blocks = [];
         this.cd.markForCheck();
       }),
@@ -67,15 +64,13 @@ export class BlockListComponent implements OnInit, OnDestroy {
       // Only continue if the new block is fully loaded.
       filter(block => block.status === 'loaded')
     ).subscribe(block => {
-      this.latestBlockNumber = block.number;
-      if (this.blocks.length === 0) {
-        // Initial block list creation.
-        this.spliceBlocks(100);
-      } else {
-        // Add new block to the beginning while removing one at the end of the Array.
-        this.spliceBlocks(1);
+      const newBlockCount: number = block.number - this.latestBlockNumber;
+      if (newBlockCount > 0) {
+        this.latestBlockNumber = block.number;
+        // Add new blocks to the beginning (while removing same amount at the end) of the Array.
+        this.spliceBlocks(Math.min(newBlockCount, this.listSize));
+        this.cd.markForCheck();
       }
-      this.cd.markForCheck();
     });
   }
 
