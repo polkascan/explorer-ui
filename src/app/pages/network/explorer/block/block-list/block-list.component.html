@@ -32,31 +32,4 @@
       </div>
     </ng-container>
   </div>
-
-  <div class="ps-grid-row" *ngFor="let block$ of blocks">
-    <ng-container *ngFor="let block of finalizedBlocks">
-      <div class="ps-grid ps-block-grid">
-        <div class="ps-grid-column">
-          <i class="fas fa-cube"></i> {{block.id}}
-        </div>
-        <div class="ps-grid-column">
-          <a [routerLink]="block.number">{{block.number}}</a>
-        </div>
-        <div class="ps-grid-column">
-        </div>
-        <div class="ps-grid-column">
-          {{block.hash}}
-        </div>
-        <div class="ps-grid-column">
-          {{block.countExtrinsics}}
-        </div>
-        <div class="ps-grid-column">
-          {{block.countEvents}}
-        </div>
-        <div class="ps-grid-column">
-          <button>Details</button>
-        </div>
-      </div>
-    </ng-container>
-  </div>
 </div>
