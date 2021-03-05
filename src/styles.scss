@@ -2,7 +2,7 @@
 
 :root {
   --ps-top-bar-bg-color: #000;
-  --ps-grid-gap-size: 10px;
+  --ps-grid-column-padding: 10px;
 }
 
 body, html {
@@ -15,15 +15,28 @@ body, html {
 
 .ps-grid {
   display: grid;
-  gap: var(--ps-grid-gap-size);
+  border: solid 1px rgba(0,0,0,0.1);
+  max-width: 1560px;
 }
 
 .ps-grid-header-column {
   font-weight: bold;
-  align-self: end;
+  padding: var(--ps-grid-column-padding);
+  border-bottom: solid 2px rgba(0,0,0,0.2);
 }
 
 .ps-grid-column {
   overflow: hidden;
-  align-self: end;
+  padding: var(--ps-grid-column-padding);
+  border-bottom: solid 1px rgba(0,0,0,0.1);
+}
+
+.ps-grid-row {
+  display: contents;
+
+  &:nth-child(2n-1) {
+    .ps-grid-column {
+      background: rgba(0,0,0,0.05);
+    }
+  }
 }

@@ -1,3 +1,3 @@
 .ps-block-grid {
-  grid-template-columns: [icon] 40px [number] 10% [date] 10% [hash] 10% [transactions] 10% [events] 10%;
+  grid-template-columns: [icon] 40px [number] 140px [date] minmax(140px, 180px) [hash] minmax(200px, auto) [transactions] minmax(90px, 180px) [events] minmax(90px, 180px) [details] 100px;
 }

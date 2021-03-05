@@ -7,12 +7,11 @@
   <div class="ps-grid-header-column">Block Hash</div>
   <div class="ps-grid-header-column">Signed Extrinsics</div>
   <div class="ps-grid-header-column">Module Events</div>
-</div>
-<div #blockContainer [@rowsAnimationByCounter]="latestBlockNumber">
-  <div class="ps-grid ps-block-grid" *ngFor="let block$ of blocks">
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-row" *ngFor="let block$ of blocks">
     <ng-container *ngIf="block$|async as block">
       <div class="ps-grid-column">
-        <i class="fas fa-box"></i>
+        <i class="fas fa-cube"></i>
       </div>
       <div class="ps-grid-column">
         <a [routerLink]="block.number.toString()">{{block.number}}</a>
@@ -28,31 +27,36 @@
       <div class="ps-grid-column">
         {{block.events.length}}
       </div>
+      <div class="ps-grid-column">
+          <button disabled="true">Details</button>
+      </div>
     </ng-container>
   </div>
 
-  <ng-container *ngFor="let block of finalizedBlocks">
-    <div class="ps-grid ps-block-grid">
-      <div class="ps-grid-column">
-        <i class="fas fa-box"></i> {{block.id}}
+  <div class="ps-grid-row" *ngFor="let block$ of blocks">
+    <ng-container *ngFor="let block of finalizedBlocks">
+      <div class="ps-grid ps-block-grid">
+        <div class="ps-grid-column">
+          <i class="fas fa-cube"></i> {{block.id}}
+        </div>
+        <div class="ps-grid-column">
+          <a [routerLink]="block.number">{{block.number}}</a>
+        </div>
+        <div class="ps-grid-column">
+        </div>
+        <div class="ps-grid-column">
+          {{block.hash}}
+        </div>
+        <div class="ps-grid-column">
+          {{block.countExtrinsics}}
+        </div>
+        <div class="ps-grid-column">
+          {{block.countEvents}}
+        </div>
+        <div class="ps-grid-column">
+          <button>Details</button>
+        </div>
       </div>
-      <div class="ps-grid-column">
-        <a [routerLink]="block.number">{{block.number}}</a>
-      </div>
-      <div class="ps-grid-column">
-      </div>
-      <div class="ps-grid-column">
-        {{block.hash}}
-      </div>
-      <div class="ps-grid-column">
-        {{block.countExtrinsics}}
-      </div>
-      <div class="ps-grid-column">
-        {{block.countEvents}}
-      </div>
-    </div>
-  </ng-container>
+    </ng-container>
+  </div>
 </div>
-
-
-

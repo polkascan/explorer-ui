@@ -16,8 +16,6 @@ import { Block } from '../../../../../services/block/block.harvester';
   animations: [rowsAnimationByCounter]
 })
 export class BlockListComponent implements OnInit, OnDestroy {
-  @ViewChild('blockContainer') blockContainer: ElementRef;
-
   private destroyer: Subject<undefined> = new Subject();
   latestBlockNumber = 0;
   blocks: BehaviorSubject<Block>[] = [];

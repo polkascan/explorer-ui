@@ -163,7 +163,7 @@ export class BlockHarvester {
     }
     // Then, await the result from Polkascan and update our cached block data.
     const data: {objects: polkascanTypes.Block[], pageInfo: any} = await this.polkadapt.run(this.network)
-      .polkascan.getBlocksFrom(this.finalizedNumber.value, pageSize);
+      .polkascan.getBlocksUntil(this.finalizedNumber.value, pageSize);
     const loaded: number[] = [];
     if (data.objects) {
       for (const obj of data.objects) {
