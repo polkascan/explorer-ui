@@ -1,0 +1,64 @@
+.last-block {
+  font-size: 5em;
+}
+
+.blocks {
+  display: flex;
+  height: 100px;
+}
+
+.block-outer {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: 120px;
+}
+
+.block-inner {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-content: flex-start;
+  flex-flow: row wrap;
+  width: 100px;
+  min-height: 100px;
+  max-height: 100px;
+  overflow: hidden;
+  padding: 10px;
+  background: #020024;
+  background-origin: padding-box;
+  text-decoration: none;
+  font-size: 0.8rem;
+  transition: max-height 400ms, background-color 400ms;
+
+  &.finalized {
+    background: #556b2f;
+  }
+
+  &:hover {
+    max-height: 1000px;
+    overflow: visible;
+  }
+
+  .number {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    color: #222;
+  }
+
+  .transaction,
+  .event {
+    margin: 0 4px 4px 0;
+    flex: 0 0 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .transaction {
+    background: #ff1493;
+  }
+
+  .event {
+    background: lightgreen;
+  }
+}

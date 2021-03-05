@@ -8,9 +8,9 @@
   <div class="ps-grid-header-column">Signed Extrinsics</div>
   <div class="ps-grid-header-column">Module Events</div>
   <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let block$ of blocks">
+  <div class="ps-grid-row" *ngFor="let block$ of blocks$|async">
     <ng-container *ngIf="block$|async as block">
-      <div class="ps-grid-column">
+      <div class="ps-grid-column" [class.finalized]="block.finalized">
         <i class="fas fa-cube"></i>
       </div>
       <div class="ps-grid-column">
@@ -28,7 +28,7 @@
         {{block.events.length}}
       </div>
       <div class="ps-grid-column">
-          <button disabled="true">Details</button>
+          <button disabled>Details</button>
       </div>
     </ng-container>
   </div>

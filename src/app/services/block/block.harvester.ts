@@ -23,6 +23,7 @@ export class BlockHarvester {
   private readonly cache: BlockCache = {};
   headNumber = new BehaviorSubject<number>(0);
   finalizedNumber = new BehaviorSubject<number>(0);
+  loadedNumber = new BehaviorSubject<number>(0);
   blocks: BlockCache;
   paused = false;
 
@@ -105,7 +106,7 @@ export class BlockHarvester {
 
   private async loadBlock(nr: number): Promise<void> {
     const block = Object.assign({}, this.cache[nr].value);
-    if (block.status === 'loading') {
+    if (block.status !== 'new') {
       return;
     }
     block.status = 'loading';
@@ -117,6 +118,8 @@ export class BlockHarvester {
       block.hash = data.hash;
       block.extrinsics = new Array(data.countExtrinsics);
       block.events = new Array(data.countEvents);
+      block.status = 'loaded';
+      this.cache[nr].next(block);
     } else {
       // Load data from rpc node.
       if (!block.hash) {
@@ -126,11 +129,18 @@ export class BlockHarvester {
         this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.getBlock(block.hash),
         this.polkadapt.run(this.network).query.system.events.at(block.hash)
       ]);
-      block.extrinsics = new Array(signedBlock.block.extrinsics.length);
-      block.events = new Array(allEvents.length);
+      // If finalized data is already loaded into this block, ignore data from rpc node.
+      if (this.cache[nr].value.status !== 'loaded') {
+        block.extrinsics = new Array(signedBlock.block.extrinsics.length);
+        block.events = new Array(allEvents.length);
+        block.status = 'loaded';
+        this.cache[nr].next(block);
+      }
     }
-    block.status = 'loaded';
-    this.cache[nr].next(block);
+
+    if (nr > this.loadedNumber.value) {
+      this.loadedNumber.next(nr);
+    }
   }
 
   private unsubscribeHeads(): void {
@@ -154,11 +164,11 @@ export class BlockHarvester {
     this.subscribeNewBlocks().then();
   }
 
-  async loadLatestBlocks(pageSize = 100): Promise<void> {
+  async loadBlocksUntil(untilNumber: number | null, pageSize: number): Promise<void> {
     // Helper function to efficiently load a list of latest finalized blocks.
     // First mark these cached blocks for load, so other block loading mechanisms don't kick in.
-    const lastNr: number = this.finalizedNumber.value;
-    for (let nr = lastNr; nr > lastNr - pageSize; nr--) {
+    untilNumber = untilNumber || this.finalizedNumber.value;
+    for (let nr = untilNumber; nr > untilNumber - pageSize; nr--) {
       this.cache[nr].next(Object.assign(this.cache[nr].value, {status: 'loading'}));
     }
     // Then, await the result from Polkascan and update our cached block data.
@@ -167,22 +177,20 @@ export class BlockHarvester {
     const loaded: number[] = [];
     if (data.objects) {
       for (const obj of data.objects) {
-        const blockData: Block = {
-          status: 'loaded',
-          finalized: true,
-          number: obj.number,
-          hash: obj.hash,
-          extrinsics: new Array(obj.countExtrinsics),
-          events: new Array(obj.countEvents)
-        };
-        loaded.push(obj.number);
-        this.cache[obj.number].next(blockData);
-      }
-    }
-    // Any blocks that weren't loaded need to be set to 'new' again.
-    for (let nr = lastNr; nr > lastNr - pageSize; nr--) {
-      if (!loaded.includes(nr)) {
-        this.cache[nr].next(Object.assign(this.cache[nr].value, {status: 'new'}));
+        const cached: BehaviorSubject<Block> = this.cache[obj.number];
+        if (!cached.value.finalized || cached.value.status !== 'loaded') {
+          cached.next({
+            status: 'loaded',
+            finalized: true,
+            number: obj.number,
+            hash: obj.hash,
+            extrinsics: new Array(obj.countExtrinsics),
+            events: new Array(obj.countEvents)
+          });
+        }
+        if (obj.number > this.loadedNumber.value) {
+          this.loadedNumber.next(obj.number);
+        }
       }
     }
   }
