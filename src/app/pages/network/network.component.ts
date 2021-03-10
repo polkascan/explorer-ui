@@ -18,13 +18,6 @@ export class NetworkComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const networkParam = this.route.snapshot.params.network;
-    if (this.networkService.currentNetwork.value !== networkParam) {
-      if (networkParam) {
-        const noAwait = this.networkService.setNetwork(networkParam);
-      }
-    }
-
     this.route.params
       .pipe(
         takeUntil(this.destroyer),

@@ -39,8 +39,8 @@ const blocksAnimation = trigger('blocksAnimation', [
 export class ExplorerComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
   blockListSize = 10;
-  latestBlockNumber$ = new BehaviorSubject<number>(0);
-  blocks$ = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
+  latestBlockNumber = new BehaviorSubject<number>(0);
+  blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
 
   constructor(
     private cd: ChangeDetectorRef,
@@ -59,8 +59,8 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       distinctUntilChanged(),
       // When network has changed, reset the block Array for this component.
       tap(() => {
-        this.latestBlockNumber$.next(0);
-        this.blocks$.next([]);
+        this.latestBlockNumber.next(0);
+        this.blocks.next([]);
         this.cd.markForCheck();
       }),
       // Wait for the first most recent finalized block to arrive from Polkascan.
@@ -83,9 +83,9 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       // Watch for changes in new block data.
       switchMap(nr => this.ns.blockHarvester.blocks[nr]),
     ).subscribe(block => {
-      const newBlockCount: number = block.number - this.latestBlockNumber$.value;
+      const newBlockCount: number = block.number - this.latestBlockNumber.value;
       if (newBlockCount > 0) {
-        this.latestBlockNumber$.next(block.number);
+        this.latestBlockNumber.next(block.number);
         // Add new blocks to the beginning (while removing same amount at the end) of the Array.
         this.spliceBlocks(Math.min(newBlockCount, this.blockListSize));
       }
@@ -99,14 +99,14 @@ export class ExplorerComponent implements OnInit, OnDestroy {
 
   spliceBlocks(n: number): void {
     // Remove the last n items.
-    const blocks: BehaviorSubject<Block>[] = this.blocks$.value.slice();
-    const latest: number = this.latestBlockNumber$.value;
+    const blocks: BehaviorSubject<Block>[] = this.blocks.value.slice();
+    const latest: number = this.latestBlockNumber.value;
     blocks.splice(-n, n);
     // Insert n blocks.
     for (let nr = latest; nr > latest - n; nr--) {
       const block: BehaviorSubject<Block> = this.ns.blockHarvester.blocks[nr];
       blocks.splice(latest - nr, 0, block);
     }
-    this.blocks$.next(blocks);
+    this.blocks.next(blocks);
   }
 }

@@ -1,8 +1,9 @@
-<div class="last-block" *ngIf="((latestBlockNumber$|async) || 0) > 0">{{latestBlockNumber$|async}}</div>
-<div class="blocks" [@blocksAnimation]="latestBlockNumber$|async">
-  <div class="block-outer" *ngFor="let block$ of blocks$|async">
+<div class="last-block" *ngIf="((latestBlockNumber|async) || 0) > 0">{{latestBlockNumber|async}}</div>
+<div class="blocks" [@blocksAnimation]="latestBlockNumber|async">
+  <div class="block-outer" *ngFor="let block$ of blocks|async">
     <ng-container *ngIf="block$|async as block">
       <a class="block-inner" [class.finalized]="block.finalized" [routerLink]="'block/' + block.number">
+        <!-- TODO fees and weight visualization -->
         <span class="number">{{block.number}}</span>
         <span class="transaction" *ngFor="let i of block.extrinsics"></span>
         <span class="event" *ngFor="let i of block.events"></span>

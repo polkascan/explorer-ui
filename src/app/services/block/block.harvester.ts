@@ -1,8 +1,9 @@
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, combineLatest } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt } from '@polkadapt/core';
 import { Header } from '@polkadot/types/interfaces';
 import * as polkascanTypes from '@polkadapt/polkascan/lib/polkascan.types';
+import { filter, first, switchMap } from 'rxjs/operators';
 
 export type Block = {
   status: 'new' | 'loading' | 'loaded',
@@ -105,42 +106,51 @@ export class BlockHarvester {
   }
 
   private async loadBlock(nr: number): Promise<void> {
-    const block = Object.assign({}, this.cache[nr].value);
-    if (block.status !== 'new') {
-      return;
-    }
-    block.status = 'loading';
-    this.cache[nr].next(block);
-    if (block.number <= this.finalizedNumber.value) {
-      // Load finalized data from Polkascan.
-      const data = await this.polkadapt.run(this.network).polkascan.getBlock(block.number);
-      block.finalized = true;
-      block.hash = data.hash;
-      block.extrinsics = new Array(data.countExtrinsics);
-      block.events = new Array(data.countEvents);
-      block.status = 'loaded';
-      this.cache[nr].next(block);
-    } else {
-      // Load data from rpc node.
-      if (!block.hash) {
-        block.hash = (await this.polkadapt.run(this.network).rpc.chain.getBlockHash(block.number)).toHex();
+    const cached = this.cache[nr];
+    // We need to know what the latest numbers are.
+    combineLatest(
+      this.headNumber.pipe(filter(headNumber => headNumber > 0)),
+      this.finalizedNumber.pipe(filter(finalizedNumber => finalizedNumber > 0)),
+    ).pipe(first()).subscribe(async combined => {
+      const [headNumber, finalizedNumber] = combined;
+      const block = Object.assign({}, cached.value);
+      if (block.number > headNumber || block.status !== 'new') {
+        return;
       }
-      const [signedBlock, allEvents] = await Promise.all([
-        this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.getBlock(block.hash),
-        this.polkadapt.run(this.network).query.system.events.at(block.hash)
-      ]);
-      // If finalized data is already loaded into this block, ignore data from rpc node.
-      if (this.cache[nr].value.status !== 'loaded') {
-        block.extrinsics = new Array(signedBlock.block.extrinsics.length);
-        block.events = new Array(allEvents.length);
-        block.status = 'loaded';
-        this.cache[nr].next(block);
-      }
-    }
+      block.status = 'loading';
+      cached.next(block);
 
-    if (nr > this.loadedNumber.value) {
-      this.loadedNumber.next(nr);
-    }
+      if (block.number <= finalizedNumber) {
+        // Load finalized data from Polkascan.
+        const data = await this.polkadapt.run(this.network).polkascan.getBlock(block.number);
+        block.finalized = true;
+        block.hash = data.hash;
+        block.extrinsics = new Array(data.countExtrinsics);
+        block.events = new Array(data.countEvents);
+        block.status = 'loaded';
+        cached.next(block);
+      } else {
+        // Load data from substrate rpc.
+        if (!block.hash) {
+          block.hash = (await this.polkadapt.run(this.network).rpc.chain.getBlockHash(block.number)).toHex();
+        }
+        const [signedBlock, allEvents] = await Promise.all([
+          this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.getBlock(block.hash),
+          this.polkadapt.run(this.network).query.system.events.at(block.hash)
+        ]);
+        // If finalized data is already loaded into this block, ignore data from rpc node.
+        if (cached.value.status !== 'loaded') {
+          block.extrinsics = new Array(signedBlock.block.extrinsics.length);
+          block.events = new Array(allEvents.length);
+          block.status = 'loaded';
+          cached.next(block);
+        }
+      }
+
+      if (nr > this.loadedNumber.value) {
+        this.loadedNumber.next(nr);
+      }
+    });
   }
 
   private unsubscribeHeads(): void {
@@ -157,6 +167,8 @@ export class BlockHarvester {
   pause(): void {
     this.paused = true;
     this.unsubscribeHeads();
+    this.headNumber.next(0);
+    this.finalizedNumber.next(0);
   }
 
   resume(): void {
@@ -196,6 +208,6 @@ export class BlockHarvester {
   }
 
   destroy(): void {
-    this.unsubscribeHeads();
+    this.pause();
   }
 }

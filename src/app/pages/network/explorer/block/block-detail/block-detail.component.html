@@ -1,1 +1,19 @@
-<p>block-detail works!</p>
+<ng-container *ngIf="block|async as block">
+  <ng-container *ngIf="headNumber|async as headNumber">
+
+    <ng-container *ngIf="block.number <= headNumber; else futureBlock">
+      <ng-container *ngIf="block.status === 'loaded'">
+        <div>Block #{{block.number}}</div>
+        <div>Finalized: {{block.finalized}}</div>
+        <div>Hash: {{block.hash}}</div>
+        <div>Transactions: {{block.extrinsics.length}}</div>
+        <div>Events: {{block.events.length}}</div>
+      </ng-container>
+    </ng-container>
+
+    <ng-template #futureBlock>
+      Block #{{block.number}} doesn't exist, yet. You can leave this page open and it will appear as soon as it's created.
+    </ng-template>
+
+  </ng-container>
+</ng-container>
