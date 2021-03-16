@@ -1,0 +1,3 @@
+.ps-event-grid {
+  grid-template-columns: [icon] 40px [eventId] 140px [block] minmax(140px, 180px) [refTrans] minmax(200px, auto) [module] minmax(90px, 180px) [event] minmax(90px, 180px) [details] 100px;
+}

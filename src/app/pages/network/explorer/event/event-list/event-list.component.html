@@ -1,1 +1,40 @@
-<p>event-list works!</p>
+<a routerLink="..">Back to dashboard</a>
+<h1>Event</h1>
+
+<div class="ps-grid-filters">
+  <select [formControl]="eventModuleControl"></select>
+  <select [formControl]="eventNameControl"></select>
+</div>
+
+<div class="ps-grid ps-event-grid">
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-header-column">Event ID</div>
+  <div class="ps-grid-header-column">Block</div>
+  <div class="ps-grid-header-column">Referenced Transaction</div>
+  <div class="ps-grid-header-column">Module</div>
+  <div class="ps-grid-header-column">Events</div>
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-row" *ngFor="let event of events">
+    <div class="ps-grid-column">
+      <i class="fas fa-calendar-check"></i>
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="'../block/' + event.blockNumber">{{event.blockNumber}}-{{event.eventIdx}}</a>
+    </div>
+    <div class="ps-grid-column">
+      {{event.blockNumber}}
+    </div>
+    <div class="ps-grid-column">
+      {{event.blockNumber}}-{{event.extrinsicIdx}}
+    </div>
+    <div class="ps-grid-column">
+      {{event.eventModule}}
+    </div>
+    <div class="ps-grid-column">
+      {{event.eventName}}
+    </div>
+    <div class="ps-grid-column">
+        <button disabled>Details</button>
+    </div>
+  </div>
+</div>

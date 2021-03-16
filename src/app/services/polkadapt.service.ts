@@ -9,7 +9,7 @@ export type AugmentedApi = substrate.Api & polkascan.Api;
 @Injectable({providedIn: 'root'})
 export class PolkadaptService {
   polkadapt: Polkadapt<AugmentedApi>;
-  run: (config?: PolkadaptRunConfig) => AugmentedApi;
+  run: (config?: PolkadaptRunConfig | string) => AugmentedApi;
   availableAdapters: { [network: string]: { [source: string]: AdapterBase } } = {};
 
   constructor(private config: AppConfig) {
