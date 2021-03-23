@@ -2,8 +2,18 @@
 <h1>Event</h1>
 
 <div class="ps-grid-filters">
-  <select [formControl]="eventModuleControl"></select>
-  <select [formControl]="eventNameControl"></select>
+  <select [formControl]="eventModuleControl">
+    <option [ngValue]="null">All modules</option>
+    <option *ngFor="let item of filters | keyvalue" [ngValue]="item.key">{{item.key}}</option>
+  </select>
+  <select [formControl]="eventNameControl">
+    <option [ngValue]="null">All event</option>
+    <ng-container *ngFor="let item of filters | keyvalue">
+      <ng-container *ngIf="item.key === eventModuleControl.value">
+        <option *ngFor="let eventName of item.value" [ngValue]="eventName">{{eventName}}</option>
+      </ng-container>
+    </ng-container>
+  </select>
 </div>
 
 <div class="ps-grid ps-event-grid">
@@ -14,18 +24,18 @@
   <div class="ps-grid-header-column">Module</div>
   <div class="ps-grid-header-column">Events</div>
   <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let event of events">
+  <div class="ps-grid-row" *ngFor="let event of events; trackBy: trackByIdFn">
     <div class="ps-grid-column">
       <i class="fas fa-calendar-check"></i>
     </div>
     <div class="ps-grid-column">
-      <a [routerLink]="'../block/' + event.blockNumber">{{event.blockNumber}}-{{event.eventIdx}}</a>
+      <a [routerLink]="event.blockNumber + '-' + event.eventIdx">{{event.blockNumber}}-{{event.eventIdx}}</a>
     </div>
     <div class="ps-grid-column">
-      {{event.blockNumber}}
+      <a [routerLink]="'../block/' + event.blockNumber">{{event.blockNumber}}</a>
     </div>
     <div class="ps-grid-column">
-      {{event.blockNumber}}-{{event.extrinsicIdx}}
+      <a [routerLink]="'../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a>
     </div>
     <div class="ps-grid-column">
       {{event.eventModule}}
@@ -34,7 +44,7 @@
       {{event.eventName}}
     </div>
     <div class="ps-grid-column">
-        <button disabled>Details</button>
+      <a [routerLink]="event.blockNumber + '-' + event.eventIdx">Details</a>
     </div>
   </div>
 </div>

@@ -28,7 +28,7 @@
         {{block.events.length}}
       </div>
       <div class="ps-grid-column">
-          <button disabled>Details</button>
+          <a [routerLink]="block.number.toString()">Details</a>
       </div>
     </ng-container>
   </div>

@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { Subject } from 'rxjs';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { takeUntil } from 'rxjs/operators';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import { debounceTime, takeUntil } from 'rxjs/operators';
+import { FormControl, FormGroup } from '@angular/forms';
+import { ListResponse } from '../../../../../../../polkadapt/projects/polkascan/src/lib/polkascan.types';
 
 
 type psEvent = {
@@ -15,6 +16,8 @@ type psEvent = {
   eventName: string | null;
 };
 
+const temporaryListSize = 100;
+
 
 @Component({
   selector: 'app-event-list',
@@ -24,6 +27,7 @@ type psEvent = {
 })
 export class EventListComponent implements OnInit, OnDestroy {
   events: psEvent[] = [];
+  filters = new Map();  // TODO get filters through a query.
 
   eventModuleControl: FormControl = new FormControl('');
   eventNameControl: FormControl = new FormControl('');
@@ -35,21 +39,33 @@ export class EventListComponent implements OnInit, OnDestroy {
   private network: string;
   private unsubscribeNewEventFn: null | (() => void);
   private destroyer: Subject<undefined> = new Subject();
-  private destroyed = false;
+  private onDestroyCalled = false;
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
               private cd: ChangeDetectorRef) {
+    // TODO remove these temporary filters when a query is available.
+    this.filters.set('AuthorityDiscovery', []);
+    this.filters.set('Authorship', []);
+    this.filters.set('Babe', []);
+    this.filters.set('Balances', ['BalanceSet', 'Deposit', 'DustLow', 'Endowed', 'Reserved']);
+    this.filters.set('Bounties', ['BountyAwarded', 'BountyBecameActive', 'BountyCanceled', 'BountyClaimed', 'BountyExtended']);
+    this.filters.set('Council', ['Approved', 'Closed', 'Disapproved', 'Executed', 'MemberExecuted', 'Proposed', 'Voted']);
   }
 
   ngOnInit(): void {
     this.filtersFormGroup.valueChanges
       .pipe(
+        debounceTime(1), // To make sure eventNameControl reset has taken place
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
         this.unsubscribeNewEvent();
+        this.events = [];
+        this.cd.markForCheck();
+
         this.subscribeNewEvent();
+        this.getLastEvents();
       });
 
     this.eventModuleControl.valueChanges
@@ -57,7 +73,7 @@ export class EventListComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer)
       )
       .subscribe(() => {
-        this.eventNameControl.reset('', {emitEvent: false});
+        this.eventNameControl.reset(null, {emitEvent: false});
       });
 
     this.ns.currentNetwork
@@ -71,25 +87,31 @@ export class EventListComponent implements OnInit, OnDestroy {
 
         if (network) {
           this.subscribeNewEvent();
+          this.getLastEvents();
         }
       });
   }
 
+
   ngOnDestroy(): void {
-    this.unsubscribeNewEvent();
-    this.destroyed = true;
+    this.onDestroyCalled = true;
     this.destroyer.next();
     this.destroyer.complete();
+    this.unsubscribeNewEvent();
   }
 
 
   async subscribeNewEvent(): Promise<void> {
-    const filters: any = {};
+    if (this.onDestroyCalled) {
+      // Component is already in process of destruction or destroyed.
+      this.unsubscribeNewEvent();
+      return;
+    }
 
+    const filters: any = {};
     if (this.eventModuleControl.value) {
       filters.eventModule = this.eventModuleControl.value;
     }
-
     if (this.eventNameControl.value) {
       filters.eventName = this.eventNameControl.value;
     }
@@ -98,17 +120,18 @@ export class EventListComponent implements OnInit, OnDestroy {
       this.unsubscribeNewEventFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.subscribeNewEvent(
         filters,
         (event: psEvent) => {
-          if (!this.destroyed) {
+          if (!this.onDestroyCalled) {
             if (!this.events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx)) {
-              this.events.push(event);
-              this.events.sort((a, b) => a.blockNumber - b.blockNumber || a.eventIdx - b.eventIdx);
+              this.events.splice(0, 0, event);
+              this.events.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
+              this.events.length = Math.min(this.events.length, temporaryListSize);
               this.cd.markForCheck();
             }
+          } else {
+            // If still listening but component is already destroyed.
+            this.unsubscribeNewEvent();
           }
         });
-      if (this.destroyed) {
-        this.unsubscribeNewEvent();
-      }
     } catch (e) {
       console.error(e);
       // Ignore for now...
@@ -121,5 +144,46 @@ export class EventListComponent implements OnInit, OnDestroy {
       this.unsubscribeNewEventFn();
       this.unsubscribeNewEventFn = null;
     }
+  }
+
+
+  async getLastEvents(): Promise<void> {
+    if (this.onDestroyCalled) {
+      // Component is already in process of destruction or destroyed.
+      return;
+    }
+
+    const filters: any = {};
+    if (this.eventModuleControl.value) {
+      filters.eventModule = this.eventModuleControl.value;
+    }
+    if (this.eventNameControl.value) {
+      filters.eventName = this.eventNameControl.value;
+    }
+
+    try {
+      const response: ListResponse<psEvent> = await this.pa.run(this.ns.currentNetwork.value).polkascan.getEvents(filters, 100);
+      if (!this.onDestroyCalled) {
+        response.objects
+          .filter((event) => {
+            return !this.events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx);
+          })
+          .forEach((event) => {
+            this.events.push(event);
+          });
+
+        this.events.length = Math.min(this.events.length, temporaryListSize);
+        this.events.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
+        this.cd.markForCheck();
+      }
+    } catch (e) {
+      console.error(e);
+      // Ignore for now...
+    }
+  }
+
+
+  trackByIdFn(event: psEvent): string {
+    return `${event.blockNumber}-${event.eventIdx}`;
   }
 }
