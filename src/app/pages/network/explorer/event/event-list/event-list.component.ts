@@ -183,7 +183,7 @@ export class EventListComponent implements OnInit, OnDestroy {
   }
 
 
-  trackByIdFn(event: psEvent): string {
+  trackByIdFn(i: any, event: psEvent): string {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 }

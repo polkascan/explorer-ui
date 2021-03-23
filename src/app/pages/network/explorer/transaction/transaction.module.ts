@@ -4,18 +4,18 @@ import { CommonModule } from '@angular/common';
 import { TransactionRoutingModule } from './transaction-routing.module';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
-import { IdenticonComponent } from '../../../../../substrate-components-lib/components/identicon/identicon.component';
+import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
 
 
 @NgModule({
   declarations: [
     TransactionListComponent,
-    TransactionDetailComponent,
-    IdenticonComponent
+    TransactionDetailComponent
   ],
   imports: [
     CommonModule,
-    TransactionRoutingModule
+    TransactionRoutingModule,
+    PolkadotAngularLibModule
   ]
 })
 export class TransactionModule {

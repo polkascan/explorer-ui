@@ -1,1 +1,12 @@
-<p>event-detail works!</p>
+<ng-container *ngIf="event">
+  <div>Block #{{event.blockNumber}}</div>
+  <div>Referenced Transaction: {{event.blockNumber}}-{{event.extrinsicIdx}}</div>
+  <div>Event Index: {{event.eventIdx}}</div>
+  <div>Module: {{event.eventModule}}</div>
+  <div>Event name: {{event.eventName}}</div>
+
+  <div><b>Attributes</b></div>
+  <div *ngIf="event.attributes">
+    {{event.attributes}}
+  </div>
+</ng-container>
