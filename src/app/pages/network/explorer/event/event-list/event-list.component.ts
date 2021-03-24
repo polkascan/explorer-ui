@@ -56,7 +56,7 @@ export class EventListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.filtersFormGroup.valueChanges
       .pipe(
-        debounceTime(1), // To make sure eventNameControl reset has taken place
+        debounceTime(100),  // Also to make sure eventNameControl reset has taken place
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
@@ -65,7 +65,7 @@ export class EventListComponent implements OnInit, OnDestroy {
         this.cd.markForCheck();
 
         this.subscribeNewEvent();
-        this.getLastEvents();
+        this.getEvents();
       });
 
     this.eventModuleControl.valueChanges
@@ -87,7 +87,7 @@ export class EventListComponent implements OnInit, OnDestroy {
 
         if (network) {
           this.subscribeNewEvent();
-          this.getLastEvents();
+          this.getEvents();
         }
       });
   }
@@ -147,7 +147,7 @@ export class EventListComponent implements OnInit, OnDestroy {
   }
 
 
-  async getLastEvents(): Promise<void> {
+  async getEvents(): Promise<void> {
     if (this.onDestroyCalled) {
       // Component is already in process of destruction or destroyed.
       return;

@@ -1,1 +1,42 @@
-<p>extrinsic-list works!</p>
+<a routerLink="..">Back to dashboard</a>
+<h1>extrinsic</h1>
+
+<div class="ps-grid-filters">
+  <label>
+    <input type="checkbox" [formControl]="signedControl">
+    Signed only
+  </label>
+</div>
+
+<div class="ps-grid ps-extrinsic-grid">
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-header-column">Extrinsic ID</div>
+  <div class="ps-grid-header-column">Block</div>
+  <div class="ps-grid-header-column">Module</div>
+  <div class="ps-grid-header-column">Call</div>
+  <div class="ps-grid-header-column">Signed</div>
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-row" *ngFor="let extrinsic of extrinsics; trackBy: trackByIdFn">
+    <div class="ps-grid-column">
+      <i class="fas fa-file-signature"></i>
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber}}-{{extrinsic.extrinsicIdx}}</a>
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="'../block/' + extrinsic.blockNumber">{{extrinsic.blockNumber}}</a>
+    </div>
+    <div class="ps-grid-column">
+      {{extrinsic.callModule}}
+    </div>
+    <div class="ps-grid-column">
+      {{extrinsic.callName}}
+    </div>
+    <div class="ps-grid-column">
+      {{extrinsic.signed}}
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">Details</a>
+    </div>
+  </div>
+</div>

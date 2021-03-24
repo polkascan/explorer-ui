@@ -1,0 +1,3 @@
+.ps-extrinsic-grid {
+  grid-template-columns: [icon] 40px [extrinsicIdx] 140px [block] minmax(120px, 180px) [module] minmax(140px, 180px) [call] minmax(140px, 180px) [signed] 100px [details] 100px;
+}

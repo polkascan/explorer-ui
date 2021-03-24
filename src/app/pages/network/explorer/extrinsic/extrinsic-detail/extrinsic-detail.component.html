@@ -1,1 +1,11 @@
-<p>extrinsic-detail works!</p>
+<ng-container *ngIf="extrinsic">
+  <div>Block #{{extrinsic.blockNumber}}</div>
+  <div>Timestamp: !!todo</div>
+  <div>Extrinsic Index: {{extrinsic.extrinsicIdx}}</div>
+  <div>Extrinsic hash: {{extrinsic.hash}}</div>
+  <div>Module: {{extrinsic.callModule}}</div>
+  <div>Call: {{extrinsic.callName}}</div>
+  <div>Address: {{extrinsic.blockHash}}</div>
+  <div>Nonce: {{extrinsic.nonce}}</div>
+  <div>Signature: {{extrinsic.signature}}</div>
+</ng-container>
