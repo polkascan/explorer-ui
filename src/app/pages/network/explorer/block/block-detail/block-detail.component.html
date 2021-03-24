@@ -1,19 +1,89 @@
-<ng-container *ngIf="block|async as block">
-  <ng-container *ngIf="headNumber|async as headNumber">
+<a routerLink="..">Back to list</a>
+<ng-container *ngIf="block|async as block; else initializing">
+  <h1>Block {{block.number}}</h1>
+
+  <ng-container *ngIf="headNumber|async as headNumber; else initializing">
 
     <ng-container *ngIf="block.number <= headNumber; else futureBlock">
-      <ng-container *ngIf="block.status === 'loaded'">
-        <div>Block #{{block.number}}</div>
+
+      <ng-container *ngIf="block.status === 'loaded'; else loadingBlock">
+        <div>Timestamp: {{block.datetime}}</div>
         <div>Finalized: {{block.finalized}}</div>
         <div>Hash: {{block.hash}}</div>
-        <div>Transactions: {{block.extrinsics.length}}</div>
+        <div>Parent hash: {{block.parentHash}}</div>
+        <div>State root: {{block.stateRoot}}</div>
+        <div>Extrinsics root: {{block.extrinsicsRoot}}</div>
+        <div>Extrinsics: {{block.extrinsics.length}}</div>
         <div>Events: {{block.events.length}}</div>
+        <div>Runtime version: {{block.specVersion}}</div>
+        <div>Complete: {{block.complete}}</div>
+
+        <h2>Extrinsics</h2>
+        <table *ngIf="extrinsics|async as extrinsics">
+          <thead>
+            <tr>
+              <th>Extrinsic ID</th>
+              <th>Transaction Hash</th>
+              <th>Transaction From</th>
+              <th>Module</th>
+              <th>Call</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let ext of extrinsics">
+              <tr>
+                <td>{{ext.extrinsicIdx}}</td>
+                <td>{{ext.hash}}</td>
+                <td>{{ext.hash}}</td>
+                <td>{{ext.callModule}}</td>
+                <td>{{ext.callName}}</td>
+                <td>Details</td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+
+        <h2>Events</h2>
+        <table *ngIf="events|async as events">
+          <thead>
+            <tr>
+              <th>Event ID</th>
+              <th>Extrinsic ID</th>
+              <th>Module</th>
+              <th>Event</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let event of events">
+              <tr>
+                <td>{{event.eventIdx}}</td>
+                <td>{{event.extrinsicIdx}}</td>
+                <td>{{event.eventModule}}</td>
+                <td>{{event.eventName}}</td>
+                <td>Details</td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+
       </ng-container>
+
+      <ng-template #loadingBlock>
+        <p>Loading block...</p>
+      </ng-template>
+
     </ng-container>
 
     <ng-template #futureBlock>
-      Block #{{block.number}} doesn't exist, yet. You can leave this page open and it will appear as soon as it's created.
+      <p>Block doesn't exist, yet. You can leave this page open and it will appear as soon as it's created.</p>
     </ng-template>
 
   </ng-container>
+
 </ng-container>
+
+<ng-template #initializing>
+  <p>Initializing...</p>
+</ng-template>

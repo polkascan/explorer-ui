@@ -1,6 +1,6 @@
 <div class="last-block" *ngIf="((latestBlockNumber|async) || 0) > 0">{{latestBlockNumber|async}}</div>
 <div class="blocks" [@blocksAnimation]="latestBlockNumber|async">
-  <div class="block-outer" *ngFor="let block$ of blocks|async">
+  <div class="block-outer" *ngFor="let block$ of blocks|async; trackBy: trackByNumber">
     <ng-container *ngIf="block$|async as block">
       <a class="block-inner" [class.finalized]="block.finalized" [routerLink]="'block/' + block.number">
         <!-- TODO fees and weight visualization -->

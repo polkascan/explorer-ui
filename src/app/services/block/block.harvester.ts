@@ -2,16 +2,15 @@ import { BehaviorSubject, combineLatest } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt } from '@polkadapt/core';
 import { Header } from '@polkadot/types/interfaces';
-import * as polkascanTypes from '@polkadapt/polkascan/lib/polkascan.types';
+import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { filter, first, switchMap } from 'rxjs/operators';
 
-export type Block = {
+export type Block = Partial<pst.Block> & {
   status: 'new' | 'loading' | 'loaded',
   number: number,
   finalized: boolean,
-  extrinsics: number[],
-  events: number[]
-  hash?: string,
+  extrinsics: (pst.Extrinsic | undefined)[],
+  events: (pst.Event | undefined)[]
 };
 
 export type BlockSubject = BehaviorSubject<Block>;
@@ -67,7 +66,7 @@ export class BlockHarvester {
     if (!this.unsubscribeNewBlocks) {
       // Subscribe to new finalized blocks from Polkascan.
       this.unsubscribeNewBlocks = await this.polkadapt.run(this.network)
-        .polkascan.subscribeNewBlock((block: polkascanTypes.Block) => this.finalizedBlockHandler(block));
+        .polkascan.subscribeNewBlock((block: pst.Block) => this.finalizedBlockHandler(block));
     }
   }
 
@@ -78,12 +77,15 @@ export class BlockHarvester {
       // Preload block data.
       const block: Block = Object.assign({}, this.cache[newNumber].value);
       block.hash = header.hash.toString();
+      block.parentHash = header.parentHash.toString();
+      block.extrinsicsRoot = header.extrinsicsRoot.toString();
+      block.stateRoot = header.stateRoot.toString();
       this.cache[newNumber].next(block);
       this.loadBlock(newNumber).then();
     }
   }
 
-  private finalizedBlockHandler(block: polkascanTypes.Block): void {
+  private finalizedBlockHandler(block: pst.Block): void {
     if (!block || !block.number) {
       return;
     }
@@ -92,14 +94,12 @@ export class BlockHarvester {
       // If a non-finalized cache entry exists for this number, update it.
       const cached = this.cache[newNumber];
       if (!cached.value.finalized) {
-        cached.next({
+        cached.next(Object.assign({}, cached.value, block, {
           status: 'loaded',
           finalized: true,
-          number: newNumber,
-          hash: block.hash,
           extrinsics: new Array(block.countExtrinsics),
           events: new Array(block.countEvents),
-        });
+        }));
       }
       this.finalizedNumber.next(newNumber);
     }
@@ -113,7 +113,7 @@ export class BlockHarvester {
       this.finalizedNumber.pipe(filter(finalizedNumber => finalizedNumber > 0)),
     ).pipe(first()).subscribe(async combined => {
       const [headNumber, finalizedNumber] = combined;
-      const block = Object.assign({}, cached.value);
+      let block = Object.assign({}, cached.value);
       if (block.number > headNumber || block.status !== 'new') {
         return;
       }
@@ -122,17 +122,16 @@ export class BlockHarvester {
 
       if (block.number <= finalizedNumber) {
         // Load finalized data from Polkascan.
-        const data = await this.polkadapt.run(this.network).polkascan.getBlock(block.number);
+        block = Object.assign(block, await this.polkadapt.run(this.network).polkascan.getBlock(block.number));
         block.finalized = true;
-        block.hash = data.hash;
-        block.extrinsics = new Array(data.countExtrinsics);
-        block.events = new Array(data.countEvents);
+        block.extrinsics = new Array(block.countExtrinsics);
+        block.events = new Array(block.countEvents);
         block.status = 'loaded';
         cached.next(block);
       } else {
         // Load data from substrate rpc.
         if (!block.hash) {
-          block.hash = (await this.polkadapt.run(this.network).rpc.chain.getBlockHash(block.number)).toHex();
+          block.hash = (await this.polkadapt.run(this.network).rpc.chain.getBlockHash(block.number)).toString();
         }
         const [signedBlock, allEvents] = await Promise.all([
           this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.getBlock(block.hash),
@@ -140,6 +139,9 @@ export class BlockHarvester {
         ]);
         // If finalized data is already loaded into this block, ignore data from rpc node.
         if (cached.value.status !== 'loaded') {
+          block.parentHash = signedBlock.block.header.parentHash.toString();
+          block.extrinsicsRoot = signedBlock.block.header.extrinsicsRoot.toString();
+          block.stateRoot = signedBlock.block.header.stateRoot.toString();
           block.extrinsics = new Array(signedBlock.block.extrinsics.length);
           block.events = new Array(allEvents.length);
           block.status = 'loaded';
@@ -184,24 +186,25 @@ export class BlockHarvester {
       this.cache[nr].next(Object.assign(this.cache[nr].value, {status: 'loading'}));
     }
     // Then, await the result from Polkascan and update our cached block data.
-    const data: {objects: polkascanTypes.Block[], pageInfo: any} = await this.polkadapt.run(this.network)
+    const data: {objects: pst.Block[], pageInfo: any} = await this.polkadapt.run(this.network)
       .polkascan.getBlocksUntil(this.finalizedNumber.value, pageSize);
     const loaded: number[] = [];
     if (data.objects) {
       for (const obj of data.objects) {
-        const cached: BehaviorSubject<Block> = this.cache[obj.number];
+        const blockNr: number = obj.number;
+        const cached: BehaviorSubject<Block> = this.cache[blockNr];
         if (!cached.value.finalized || cached.value.status !== 'loaded') {
           cached.next({
             status: 'loaded',
             finalized: true,
-            number: obj.number,
+            number: blockNr,
             hash: obj.hash,
             extrinsics: new Array(obj.countExtrinsics),
             events: new Array(obj.countEvents)
           });
         }
-        if (obj.number > this.loadedNumber.value) {
-          this.loadedNumber.next(obj.number);
+        if (blockNr > this.loadedNumber.value) {
+          this.loadedNumber.next(blockNr);
         }
       }
     }

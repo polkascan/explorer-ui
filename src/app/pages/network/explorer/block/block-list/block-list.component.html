@@ -8,7 +8,7 @@
   <div class="ps-grid-header-column">Signed Extrinsics</div>
   <div class="ps-grid-header-column">Module Events</div>
   <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let block of blocks|async">
+  <div class="ps-grid-row" *ngFor="let block of blocks|async; trackBy: trackByNumber">
     <ng-container *ngIf="block|async as block">
       <div class="ps-grid-column" [class.finalized]="block.finalized">
         <i class="fas fa-cube"></i>

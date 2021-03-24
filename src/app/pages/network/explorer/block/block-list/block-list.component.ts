@@ -43,6 +43,7 @@ export class BlockListComponent implements OnInit, OnDestroy {
       // Wait for the first most recent finalized block to arrive from Polkascan.
       switchMap(() => {
         return this.ns.blockHarvester.finalizedNumber.pipe(
+          takeUntil(this.destroyer),
           filter(nr => nr > 0),
           first(),
           // Start pre-loading the latest 100 blocks.
@@ -54,11 +55,15 @@ export class BlockListComponent implements OnInit, OnDestroy {
         );
       }),
       // Watch for new loaded block numbers from the Substrate node.
-      switchMap(() => this.ns.blockHarvester.loadedNumber),
-      // Only continue if new block number is larger than 0.
-      filter(nr => nr > 0),
+      switchMap(() => this.ns.blockHarvester.loadedNumber.pipe(
+        takeUntil(this.destroyer),
+        // Only continue if new block number is larger than 0.
+        filter(nr => nr > 0)
+      )),
       // Watch for changes in new block data.
-      switchMap(nr => this.ns.blockHarvester.blocks[nr]),
+      switchMap(nr => this.ns.blockHarvester.blocks[nr].pipe(
+        takeUntil(this.destroyer)
+      ))
     ).subscribe(block => {
       const newBlockCount: number = block.number - this.latestBlockNumber.value;
       if (newBlockCount > 0) {
@@ -85,5 +90,9 @@ export class BlockListComponent implements OnInit, OnDestroy {
       blocks.splice(latest - nr, 0, block);
     }
     this.blocks.next(blocks);
+  }
+
+  trackByNumber(index: number, item: BehaviorSubject<Block>): number {
+    return item.value.number;
   }
 }

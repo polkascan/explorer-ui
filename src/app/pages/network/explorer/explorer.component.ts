@@ -64,24 +64,27 @@ export class ExplorerComponent implements OnInit, OnDestroy {
         this.cd.markForCheck();
       }),
       // Wait for the first most recent finalized block to arrive from Polkascan.
-      switchMap(() => {
-        return this.ns.blockHarvester.finalizedNumber.pipe(
-          filter(nr => nr > 0),
-          first(),
-          // Start pre-loading the latest blocks.
-          tap(() => {
-            // We won't wait for the result, but the function will mark the blocks to load,
-            // so other (lazy) block loading mechanics won't kick in.
-            this.ns.blockHarvester.loadBlocksUntil(null, this.blockListSize).then();
-          })
-        );
-      }),
+      switchMap(() => this.ns.blockHarvester.finalizedNumber.pipe(
+        takeUntil(this.destroyer),
+        filter(nr => nr > 0),
+        first(),
+        // Start pre-loading the latest blocks.
+        tap(() => {
+          // We won't wait for the result, but the function will mark the blocks to load,
+          // so other (lazy) block loading mechanics won't kick in.
+          this.ns.blockHarvester.loadBlocksUntil(null, this.blockListSize).then();
+        })
+      )),
       // Watch for new loaded block numbers from the Substrate node.
-      switchMap(() => this.ns.blockHarvester.loadedNumber),
-      // Only continue if new block number is larger than 0.
-      filter(nr => nr > 0),
+      switchMap(() => this.ns.blockHarvester.loadedNumber.pipe(
+        takeUntil(this.destroyer),
+        // Only continue if new block number is larger than 0.
+        filter(nr => nr > 0)
+      )),
       // Watch for changes in new block data.
-      switchMap(nr => this.ns.blockHarvester.blocks[nr]),
+      switchMap(nr => this.ns.blockHarvester.blocks[nr].pipe(
+        takeUntil(this.destroyer))
+      )
     ).subscribe(block => {
       const newBlockCount: number = block.number - this.latestBlockNumber.value;
       if (newBlockCount > 0) {
@@ -108,5 +111,9 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       blocks.splice(latest - nr, 0, block);
     }
     this.blocks.next(blocks);
+  }
+
+  trackByNumber(index: number, item: BehaviorSubject<Block>): number {
+    return item.value.number;
   }
 }
