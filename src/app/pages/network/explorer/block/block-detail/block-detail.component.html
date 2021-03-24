@@ -7,66 +7,75 @@
     <ng-container *ngIf="block.number <= headNumber; else futureBlock">
 
       <ng-container *ngIf="block.status === 'loaded'; else loadingBlock">
-        <div>Timestamp: {{block.datetime}}</div>
-        <div>Finalized: {{block.finalized}}</div>
+        <div>Timestamp: {{block.datetime|date:'medium'}}</div>
         <div>Hash: {{block.hash}}</div>
         <div>Parent hash: {{block.parentHash}}</div>
         <div>State root: {{block.stateRoot}}</div>
         <div>Extrinsics root: {{block.extrinsicsRoot}}</div>
         <div>Extrinsics: {{block.extrinsics.length}}</div>
         <div>Events: {{block.events.length}}</div>
-        <div>Runtime version: {{block.specVersion}}</div>
-        <div>Complete: {{block.complete}}</div>
 
-        <h2>Extrinsics</h2>
-        <table *ngIf="extrinsics|async as extrinsics">
-          <thead>
-            <tr>
-              <th>Extrinsic ID</th>
-              <th>Transaction Hash</th>
-              <th>Transaction From</th>
-              <th>Module</th>
-              <th>Call</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <ng-container *ngFor="let ext of extrinsics">
-              <tr>
-                <td>{{ext.extrinsicIdx}}</td>
-                <td>{{ext.hash}}</td>
-                <td>{{ext.hash}}</td>
-                <td>{{ext.callModule}}</td>
-                <td>{{ext.callName}}</td>
-                <td>Details</td>
-              </tr>
-            </ng-container>
-          </tbody>
-        </table>
+        <ng-container *ngIf="block.finalized; else nonFinalBlock">
 
-        <h2>Events</h2>
-        <table *ngIf="events|async as events">
-          <thead>
-            <tr>
-              <th>Event ID</th>
-              <th>Extrinsic ID</th>
-              <th>Module</th>
-              <th>Event</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <ng-container *ngFor="let event of events">
+          <div>Finalized: {{block.finalized}}</div>
+          <div>Runtime version: {{block.specVersion}}</div>
+          <div>Complete: {{block.complete}}</div>
+
+          <h2>Extrinsics</h2>
+          <table *ngIf="extrinsics|async as extrinsics">
+            <thead>
               <tr>
-                <td>{{event.eventIdx}}</td>
-                <td>{{event.extrinsicIdx}}</td>
-                <td>{{event.eventModule}}</td>
-                <td>{{event.eventName}}</td>
-                <td>Details</td>
+                <th>Extrinsic ID</th>
+                <th>Transaction Hash</th>
+                <th>Transaction From</th>
+                <th>Module</th>
+                <th>Call</th>
+                <th></th>
               </tr>
-            </ng-container>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let ext of extrinsics">
+                <tr>
+                  <td>{{ext.extrinsicIdx}}</td>
+                  <td>{{ext.hash}}</td>
+                  <td>{{ext.hash}}</td>
+                  <td>{{ext.callModule}}</td>
+                  <td>{{ext.callName}}</td>
+                  <td>Details</td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+
+          <h2>Events</h2>
+          <table *ngIf="events|async as events">
+            <thead>
+              <tr>
+                <th>Event ID</th>
+                <th>Extrinsic ID</th>
+                <th>Module</th>
+                <th>Event</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let event of events">
+                <tr>
+                  <td>{{event.eventIdx}}</td>
+                  <td>{{event.extrinsicIdx}}</td>
+                  <td>{{event.eventModule}}</td>
+                  <td>{{event.eventName}}</td>
+                  <td>Details</td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+
+        </ng-container>
+
+        <ng-template #nonFinalBlock>
+          <p>Awaiting finalization...</p>
+        </ng-template>
 
       </ng-container>
 

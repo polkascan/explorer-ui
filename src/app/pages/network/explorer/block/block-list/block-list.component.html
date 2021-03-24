@@ -17,6 +17,7 @@
         <a [routerLink]="block.number.toString()">{{block.number}}</a>
       </div>
       <div class="ps-grid-column">
+        {{block.datetime|date:'mediumTime'}}
       </div>
       <div class="ps-grid-column">
         {{block.hash}}

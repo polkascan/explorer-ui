@@ -95,10 +95,11 @@ export class BlockHarvester {
       const cached = this.cache[newNumber];
       if (!cached.value.finalized) {
         cached.next(Object.assign({}, cached.value, block, {
+          datetime: `${block.datetime}Z`,  // TODO remove when API supplies TZ info.
           status: 'loaded',
           finalized: true,
           extrinsics: new Array(block.countExtrinsics),
-          events: new Array(block.countEvents),
+          events: new Array(block.countEvents)
         }));
       }
       this.finalizedNumber.next(newNumber);
@@ -123,6 +124,7 @@ export class BlockHarvester {
       if (block.number <= finalizedNumber) {
         // Load finalized data from Polkascan.
         block = Object.assign(block, await this.polkadapt.run(this.network).polkascan.getBlock(block.number));
+        block.datetime = `${block.datetime}Z`;  // TODO remove when API supplies TZ info.
         block.finalized = true;
         block.extrinsics = new Array(block.countExtrinsics);
         block.events = new Array(block.countEvents);
@@ -133,15 +135,17 @@ export class BlockHarvester {
         if (!block.hash) {
           block.hash = (await this.polkadapt.run(this.network).rpc.chain.getBlockHash(block.number)).toString();
         }
-        const [signedBlock, allEvents] = await Promise.all([
+        const [signedBlock, allEvents, timestamp] = await Promise.all([
           this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.getBlock(block.hash),
-          this.polkadapt.run(this.network).query.system.events.at(block.hash)
+          this.polkadapt.run(this.network).query.system.events.at(block.hash),
+          this.polkadapt.run(this.network).query.timestamp.now.at(block.hash)
         ]);
         // If finalized data is already loaded into this block, ignore data from rpc node.
         if (cached.value.status !== 'loaded') {
           block.parentHash = signedBlock.block.header.parentHash.toString();
           block.extrinsicsRoot = signedBlock.block.header.extrinsicsRoot.toString();
           block.stateRoot = signedBlock.block.header.stateRoot.toString();
+          block.datetime = timestamp.toString();
           block.extrinsics = new Array(signedBlock.block.extrinsics.length);
           block.events = new Array(allEvents.length);
           block.status = 'loaded';
@@ -188,20 +192,20 @@ export class BlockHarvester {
     // Then, await the result from Polkascan and update our cached block data.
     const data: {objects: pst.Block[], pageInfo: any} = await this.polkadapt.run(this.network)
       .polkascan.getBlocksUntil(this.finalizedNumber.value, pageSize);
-    const loaded: number[] = [];
+
     if (data.objects) {
       for (const obj of data.objects) {
         const blockNr: number = obj.number;
         const cached: BehaviorSubject<Block> = this.cache[blockNr];
         if (!cached.value.finalized || cached.value.status !== 'loaded') {
-          cached.next({
+          const block: Block = Object.assign({}, cached.value, obj, {
             status: 'loaded',
             finalized: true,
-            number: blockNr,
-            hash: obj.hash,
             extrinsics: new Array(obj.countExtrinsics),
             events: new Array(obj.countEvents)
           });
+          block.datetime = `${block.datetime}Z`;  // TODO remove when API supplies TZ info.
+          cached.next(block);
         }
         if (blockNr > this.loadedNumber.value) {
           this.loadedNumber.next(blockNr);
