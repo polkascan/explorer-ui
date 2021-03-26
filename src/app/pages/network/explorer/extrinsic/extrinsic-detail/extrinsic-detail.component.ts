@@ -4,24 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { filter, first, takeUntil } from 'rxjs/operators';
-
-
-type psExtrinsic = {
-  blockNumber: number; // combined primary key blockNumber, extrinsicIdx
-  extrinsicIdx: number; // combined primary key blockNumber, extrinsicIdx
-  hash: string | null;
-  call: number | null;
-  callModule: string | null;
-  callName: string | null;
-  callArguments: string | null;
-  callHash: string | null;
-  signed: number | null;
-  signature: string | null;
-  extrinsicLength: number | null;
-  nonce: number | null;
-  blockDatetime: string | null;
-  blockHash: string | null;
-};
+import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
 
 @Component({
@@ -31,7 +14,7 @@ type psExtrinsic = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
-  extrinsic: psExtrinsic;
+  extrinsic: pst.Extrinsic;
 
   private destroyer: Subject<undefined> = new Subject();
   private onDestroyCalled = false;

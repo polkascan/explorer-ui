@@ -5,15 +5,8 @@ import { NetworkService } from '../../../../../services/network.service';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ListResponse } from '../../../../../../../polkadapt/projects/polkascan/src/lib/polkascan.types';
+import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
-
-type psExtrinsic = {
-  blockNumber: number; // combined primary key blockNumber, extrinsicIdx
-  extrinsicIdx: number; // combined primary key blockNumber, extrinsicIdx
-  callModule: string | null;
-  callName: string | null;
-  signed: number | null;
-};
 
 const temporaryListSize = 100;
 
@@ -25,7 +18,7 @@ const temporaryListSize = 100;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ExtrinsicListComponent implements OnInit, OnDestroy {
-  extrinsics: psExtrinsic[] = [];
+  extrinsics: pst.Extrinsic[] = [];
 
   signedControl: FormControl = new FormControl(true);
   filtersFormGroup: FormGroup = new FormGroup({
@@ -97,7 +90,7 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
     try {
       this.unsubscribeNewExtrinsicFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.subscribeNewExtrinsic(
         filters,
-        (extrinsic: psExtrinsic) => {
+        (extrinsic: pst.Extrinsic) => {
           if (!this.onDestroyCalled) {
             if (!this.extrinsics.some((e) => e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx)) {
               this.extrinsics.splice(0, 0, extrinsic);
@@ -138,7 +131,7 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const response: ListResponse<psExtrinsic> = await this.pa.run(this.ns.currentNetwork.value).polkascan.getExtrinsics(filters, 100);
+      const response: ListResponse<pst.Extrinsic> = await this.pa.run(this.ns.currentNetwork.value).polkascan.getExtrinsics(filters, 100);
       if (!this.onDestroyCalled) {
         response.objects
           .filter((extrinsic) => {
@@ -159,7 +152,7 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
   }
 
 
-  trackByIdFn(i: any, extrinsic: psExtrinsic): string {
+  trackByIdFn(i: any, extrinsic: pst.Extrinsic): string {
     return `${extrinsic.blockNumber}-${extrinsic.extrinsicIdx}`;
   }
 }

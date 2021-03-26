@@ -5,6 +5,7 @@ import { ExtrinsicRoutingModule } from './extrinsic-routing.module';
 import { ExtrinsicListComponent } from './extrinsic-list/extrinsic-list.component';
 import { ExtrinsicDetailComponent } from './extrinsic-detail/extrinsic-detail.component';
 import { ReactiveFormsModule } from '@angular/forms';
+import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
 
 
 @NgModule({
@@ -12,7 +13,8 @@ import { ReactiveFormsModule } from '@angular/forms';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    ExtrinsicRoutingModule
+    ExtrinsicRoutingModule,
+    PolkadotAngularLibModule
   ]
 })
 export class ExtrinsicModule { }
