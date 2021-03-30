@@ -95,7 +95,6 @@ export class BlockHarvester {
       const cached = this.cache[newNumber];
       if (!cached.value.finalized) {
         cached.next(Object.assign({}, cached.value, block, {
-          datetime: `${block.datetime}Z`,  // TODO remove when API supplies TZ info.
           status: 'loaded',
           finalized: true,
           extrinsics: new Array(block.countExtrinsics),
@@ -124,7 +123,6 @@ export class BlockHarvester {
       if (block.number <= finalizedNumber) {
         // Load finalized data from Polkascan.
         block = Object.assign(block, await this.polkadapt.run(this.network).polkascan.getBlock(block.number));
-        block.datetime = `${block.datetime}Z`;  // TODO remove when API supplies TZ info.
         block.finalized = true;
         block.extrinsics = new Array(block.countExtrinsics);
         block.events = new Array(block.countEvents);
@@ -204,7 +202,6 @@ export class BlockHarvester {
             extrinsics: new Array(obj.countExtrinsics),
             events: new Array(obj.countEvents)
           });
-          block.datetime = `${block.datetime}Z`;  // TODO remove when API supplies TZ info.
           cached.next(block);
         }
         if (blockNr > this.loadedNumber.value) {
