@@ -1,6 +1,6 @@
 <ng-container *ngIf="extrinsic">
   <div>Block #{{extrinsic.blockNumber}}</div>
-  <div>Timestamp: !!todo</div>
+  <div>Timestamp: {{extrinsic.blockDatetime|date:'medium'}}</div>
   <div>Extrinsic Index: {{extrinsic.extrinsicIdx}}</div>
   <div>Extrinsic hash: {{extrinsic.hash}}</div>
   <div>Module: {{extrinsic.callModule}}</div>

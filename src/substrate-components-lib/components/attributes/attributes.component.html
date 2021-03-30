@@ -1,40 +1,54 @@
-<ng-container *ngFor="let attribute of parsedAttributes">
-  {{attribute | json}}
+<div *ngFor="let attribute of parsedAttributes">
+  <ng-container [ngSwitch]="attribute.type">
 
+    <attribute-address *ngSwitchCase="'Address'" [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize"
+                       (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-address>
+    <attribute-address *ngSwitchCase="'AuthorityId'" [attribute]="attribute" [iconTheme]="iconTheme"
+                       [iconSize]="iconSize"
+                       (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-address>
+    <attribute-address *ngSwitchCase="'<Lookup as StaticLookup>::Source'" [attribute]="attribute"
+                       [iconTheme]="iconTheme" [iconSize]="iconSize"
+                       (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-address>
+    <attribute-address *ngSwitchCase="'AccountId'" [attribute]="attribute" [iconTheme]="iconTheme"
+                       [iconSize]="iconSize"
+                       (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-address>
 
-<!--  <ng-container [ngSwitch]="attribute.type">-->
+    <attribute-proposal *ngSwitchCase="'PropIndex'" [attribute]="attribute"
+                        (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-proposal>
 
-<!--    <attribute-address *ngSwitchCase="'Address'" [attribute]="attribute"></attribute-address>-->
-<!--    <attribute-address *ngSwitchCase="'AuthorityId'" [attribute]="attribute"></attribute-address>-->
-<!--    <attribute-address *ngSwitchCase="'<Lookup as StaticLookup>::Source'" [attribute]="attribute"></attribute-address>-->
-<!--    <attribute-address *ngSwitchCase="'AccountId'" [attribute]="attribute"></attribute-address>-->
+    <attribute-referendum *ngSwitchCase="'ReferendumIndex'" [attribute]="attribute"
+                          (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-referendum>
+    <attribute-referendum *ngSwitchCase="'Compact<ReferendumIndex>'" [attribute]="attribute"
+                          (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-referendum>
 
-<!--    <attribute-proposal *ngSwitchCase="'PropIndex'" [attribute]="attribute"></attribute-proposal>-->
+    <attribute-session *ngSwitchCase="'SessionIndex'" [attribute]="attribute"
+                       (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-session>
 
-<!--    <attribute-referendum *ngSwitchCase="'ReferendumIndex'" [attribute]="attribute"></attribute-referendum>-->
-<!--    <attribute-referendum *ngSwitchCase="'Compact<ReferendumIndex>'" [attribute]="attribute"></attribute-referendum>-->
+    <attribute-block *ngSwitchCase="'BlockNumber'" [attribute]="attribute"
+                     (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-block>
 
-<!--    <attribute-session *ngSwitchCase="'SessionIndex'" [attribute]="attribute"></attribute-session>-->
+    <attribute-account-index *ngSwitchCase="'AccountIndex'" [attribute]="attribute"
+                             (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-account-index>
 
-<!--    <attribute-block *ngSwitchCase="'BlockNumber'" [attribute]="attribute"></attribute-block>-->
+    <attribute-ethereum-address *ngSwitchCase="'EthereumAddress'" [attribute]="attribute"
+                                [iconSize]="iconSize"
+                                (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-ethereum-address>
 
-<!--    <attribute-account-index *ngSwitchCase="'AccountIndex'" [attribute]="attribute"></attribute-account-index>-->
+    <attribute-balance *ngSwitchCase="'Balance'" [attribute]="attribute" [tokenDecimals]="tokenDecimals"
+                       [tokenSymbol]="tokenSymbol"></attribute-balance>
+    <attribute-balance *ngSwitchCase="'Compact<Balance>'" [attribute]="attribute"></attribute-balance>
+    <attribute-balance *ngSwitchCase="'Compact<BalanceOf>'" [attribute]="attribute"></attribute-balance>
 
-<!--    <attribute-ethereum-address *ngSwitchCase="'EthereumAddress'" [attribute]="attribute"></attribute-ethereum-address>-->
+    <attribute-date *ngSwitchCase="'Compact<Moment>'" [attribute]="attribute"></attribute-date>
 
-<!--    <attribute-balance *ngSwitchCase="'Balance'" [attribute]="attribute"></attribute-balance>-->
-<!--    <attribute-balance *ngSwitchCase="'Compact<Balance>'" [attribute]="attribute"></attribute-balance>-->
-<!--    <attribute-balance *ngSwitchCase="'Compact<BalanceOf>'" [attribute]="attribute"></attribute-balance>-->
+    <attribute-bytes *ngSwitchCase="'Bytes'" [attribute]="attribute"></attribute-bytes>
 
-<!--    <attribute-date *ngSwitchCase="'Compact<Moment>'" [attribute]="attribute"></attribute-date>-->
+    <attribute-downloadable *ngSwitchCase="'DownloadableBytesHash'" [attribute]="attribute"
+                            (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-downloadable>
 
-<!--    <attribute-bytes *ngSwitchCase="'Bytes'" [attribute]="attribute"></attribute-bytes>-->
+    <attribute-boolean *ngSwitchCase="'bool'" [attribute]="attribute"></attribute-boolean>
 
-<!--    <attribute-downloadable *ngSwitchCase="'DownloadableBytesHash'" [attribute]="attribute"></attribute-downloadable>-->
+    <attribute-struct *ngSwitchDefault [attribute]="attribute"></attribute-struct>
 
-<!--    <attribute-boolean *ngSwitchCase="'bool'" [attribute]="attribute"></attribute-boolean>-->
-
-<!--    <attribute-struct *ngSwitchDefault [attribute]="attribute"></attribute-struct>-->
-
-<!--  </ng-container>-->
-</ng-container>
+  </ng-container>
+</div>

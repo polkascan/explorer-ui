@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, ViewEncapsulation } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  ViewEncapsulation,
+  EventEmitter
+} from '@angular/core';
+import { IconTheme } from '../identicon/identicon.types';
 
 
 @Component({
@@ -6,6 +16,11 @@ import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, Vi
 })
 class AttributesBaseComponent implements OnChanges {
   @Input() attributes: any[] | string;
+  @Input() iconTheme: IconTheme;
+  @Input() iconSize: number;
+  @Input() tokenDecimals: number;
+  @Input() tokenSymbol: string;
+  @Output() clicked = new EventEmitter();
 
   parsedAttributes: any[] = [];
 
@@ -56,6 +71,7 @@ export class EventAttributesComponent extends AttributesBaseComponent {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ExtrinsicAttributesComponent extends AttributesBaseComponent {
+
   constructor() {
     super();
   }
