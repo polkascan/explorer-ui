@@ -1,7 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { IdenticonComponent } from './components/identicon/identicon.component';
-import { EventAttributesComponent, ExtrinsicAttributesComponent } from './components/attributes/attributes.component';
+import {
+  ChildAttributesComponent,
+  EventAttributesComponent,
+  ExtrinsicAttributesComponent
+} from './components/attributes/attributes.component';
 import { AttributeAccountIndexComponent } from './components/attributes/attributes/attribute-account-index.component';
 import { AttributeAddressComponent } from './components/attributes/attributes/attribute-address.component';
 import { AttributeBalanceComponent } from './components/attributes/attributes/attribute-balance.component';
@@ -21,6 +25,7 @@ import { AttributeStructComponent } from './components/attributes/attributes/att
     IdenticonComponent,
     EventAttributesComponent,
     ExtrinsicAttributesComponent,
+    ChildAttributesComponent,
     AttributeAccountIndexComponent,
     AttributeAddressComponent,
     AttributeBalanceComponent,

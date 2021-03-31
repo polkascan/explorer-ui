@@ -1,4 +1,4 @@
-<div *ngFor="let attribute of parsedAttributes">
+<div class="attribute" *ngFor="let attribute of parsedAttributes">
   <ng-container [ngSwitch]="attribute.type">
 
     <attribute-address *ngSwitchCase="'Address'" [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize"
@@ -48,7 +48,8 @@
 
     <attribute-boolean *ngSwitchCase="'bool'" [attribute]="attribute"></attribute-boolean>
 
-    <attribute-struct *ngSwitchDefault [attribute]="attribute"></attribute-struct>
+    <attribute-struct *ngSwitchDefault [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize" [tokenDecimals]="tokenDecimals"
+                       [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></attribute-struct>
 
   </ng-container>
 </div>

@@ -13,7 +13,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AttributeReferendumComponent {
-  @Input() attribute: any;
+  @Input() attribute: { type: string, value: number };
   @Output() clicked = new EventEmitter();
 
   constructor() {

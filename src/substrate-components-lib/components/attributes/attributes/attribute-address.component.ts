@@ -18,6 +18,8 @@ export class AttributeAddressComponent {
   @Input() attribute: { type: string, value: string };
   @Input() iconTheme: IconTheme;
   @Input() iconSize: number;
+  @Input() tokenDecimals: number;
+  @Input() tokenSymbol: string;
   @Output() clicked = new EventEmitter();
 
   constructor() {

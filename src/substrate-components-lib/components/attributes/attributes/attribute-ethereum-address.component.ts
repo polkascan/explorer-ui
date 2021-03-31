@@ -14,7 +14,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AttributeEthereumAddressComponent {
-  @Input() attribute: any;
+  @Input() attribute: { type: string, value: string };
   @Input() iconSize: number;
   @Output() clicked = new EventEmitter();
 

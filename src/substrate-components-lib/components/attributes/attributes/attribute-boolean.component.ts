@@ -14,7 +14,7 @@ import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation } from '@a
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AttributeBooleanComponent {
-  @Input() attribute: any;
+  @Input() attribute: { type: string, value: boolean | number };
 
   constructor() {
   }

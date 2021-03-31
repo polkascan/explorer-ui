@@ -40,3 +40,15 @@ body, html {
     }
   }
 }
+
+attribute-struct {
+  label {
+    font-style: italic;
+  }
+
+  child-attributes,
+  attribute-struct {
+    margin-left: 8px;
+    display: block;
+  }
+}

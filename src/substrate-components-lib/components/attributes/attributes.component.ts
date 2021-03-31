@@ -52,6 +52,19 @@ class AttributesBaseComponent implements OnChanges {
 
 
 @Component({
+  selector: 'child-attributes',
+  templateUrl: 'attributes.component.html',
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class ChildAttributesComponent extends AttributesBaseComponent {
+  constructor() {
+    super();
+  }
+}
+
+
+@Component({
   selector: 'event-attributes',
   templateUrl: 'attributes.component.html',
   encapsulation: ViewEncapsulation.None,

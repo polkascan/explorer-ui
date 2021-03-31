@@ -9,7 +9,7 @@ import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation } from '@a
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AttributeBytesComponent {
-  @Input() attribute: any;
+  @Input() attribute: { type: string, value: string };
 
   constructor() {
   }

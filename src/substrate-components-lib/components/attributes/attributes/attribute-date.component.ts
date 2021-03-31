@@ -11,7 +11,7 @@ import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation } from '@a
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AttributeDateComponent {
-  @Input() attribute: any;
+  @Input() attribute: { type: string, value: string };
 
   constructor() {
   }

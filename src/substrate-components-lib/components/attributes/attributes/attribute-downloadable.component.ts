@@ -11,7 +11,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AttributeDownloadableComponent {
-  @Input() attribute: any;
+  @Input() attribute: { type: string, value: any };
   @Output() clicked = new EventEmitter();
 
   constructor() {

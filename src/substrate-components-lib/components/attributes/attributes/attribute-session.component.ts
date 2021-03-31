@@ -13,7 +13,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AttributeSessionComponent {
-  @Input() attribute: any;
+  @Input() attribute: { type: string, value: number };
   @Output() clicked = new EventEmitter();
 
   constructor() {
