@@ -41,19 +41,17 @@ export class BlockListComponent implements OnInit, OnDestroy {
         this.blocks.next([]);
       }),
       // Wait for the first most recent finalized block to arrive from Polkascan.
-      switchMap(() => {
-        return this.ns.blockHarvester.finalizedNumber.pipe(
-          takeUntil(this.destroyer),
-          filter(nr => nr > 0),
-          first(),
-          // Start pre-loading the latest 100 blocks.
-          tap(() => {
-            // We won't wait for the result, but the function will mark the blocks to load,
-            // so other (lazy) block loading mechanics won't kick in.
-            this.ns.blockHarvester.loadBlocksUntil(null, this.blockListSize).then();
-          })
-        );
-      }),
+      switchMap(() => this.ns.blockHarvester.finalizedNumber.pipe(
+        takeUntil(this.destroyer),
+        filter(nr => nr > 0),
+        first(),
+        // Start pre-loading the latest 100 blocks.
+        tap(() => {
+          // We won't wait for the result, but the function will mark the blocks to load,
+          // so other (lazy) block loading mechanics won't kick in.
+          this.ns.blockHarvester.loadBlocksUntil(null, this.blockListSize).then();
+        })
+      )),
       // Watch for new loaded block numbers from the Substrate node.
       switchMap(() => this.ns.blockHarvester.loadedNumber.pipe(
         takeUntil(this.destroyer),

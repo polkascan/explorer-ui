@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { filter, first, takeUntil } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 
 type psEvent = {
@@ -37,30 +37,29 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const id: string = this.route.snapshot.params.id;
-    if (id) {
-      const eventId: number[] = id.split('-').map((v) => parseInt(v, 10));
-
-      this.ns.currentNetwork.pipe(
+    this.ns.currentNetwork.pipe(
+      takeUntil(this.destroyer),
+      // Network must be set.
+      filter(network => !!network),
+      // Only need to load once.
+      first(),
+      // Switch over to the route param from which we extract the extrinsic keys.
+      switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
-        // network must be set.
-        filter(n => !!n),
-        // only need to load once.
-        first()
-      ).subscribe(async (network) => {
-        try {
-          const event = await this.pa.run(network).polkascan.getEvent(eventId[0], eventId[1]);
-          if (!this.onDestroyCalled) {
-            this.event = event;
-            this.cd.markForCheck();
-          }
-        } catch (e) {
-          // Do nothing;
+        map(params => params.id.split('-').map((v: string) => parseInt(v, 10)))
+      ))
+    ).subscribe(async (eventId) => {
+      try {
+        const event = await this.pa.run().polkascan.getEvent(eventId[0], eventId[1]);
+        if (!this.onDestroyCalled) {
+          this.event = event;
+          this.cd.markForCheck();
         }
-      });
-    }
+      } catch (e) {
+        // TODO: What to do if event does not exist?
+      }
+    });
   }
-
 
   ngOnDestroy(): void {
     this.onDestroyCalled = true;

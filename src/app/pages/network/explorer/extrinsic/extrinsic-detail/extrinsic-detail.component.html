@@ -1,5 +1,5 @@
 <ng-container *ngIf="extrinsic">
-  <div>Block #{{extrinsic.blockNumber}}</div>
+  <div>Block <a [routerLink]="'../../block/' + extrinsic.blockNumber">#{{extrinsic.blockNumber}}</a></div>
   <div>Timestamp: {{extrinsic.blockDatetime|date:'medium'}}</div>
   <div>Extrinsic Index: {{extrinsic.extrinsicIdx}}</div>
   <div>Extrinsic hash: {{extrinsic.hash}}</div>
@@ -8,4 +8,26 @@
   <div>Address: {{extrinsic.blockHash}}</div>
   <div>Nonce: {{extrinsic.nonce}}</div>
   <div>Signature: {{extrinsic.signature}}</div>
+
+  <h2>Events</h2>
+  <table *ngIf="events">
+    <thead>
+      <tr>
+        <th>Event ID</th>
+        <th>Module</th>
+        <th>Event</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <ng-container *ngFor="let event of events">
+        <tr>
+          <td><a [routerLink]="'../../event/' + extrinsic.blockNumber + '-' + event.eventIdx">{{event.eventIdx}}</a></td>
+          <td>{{event.eventModule}}</td>
+          <td>{{event.eventName}}</td>
+          <td><a [routerLink]="'../../event/' + extrinsic.blockNumber + '-' + event.eventIdx">Details</a></td>
+        </tr>
+      </ng-container>
+    </tbody>
+  </table>
 </ng-container>

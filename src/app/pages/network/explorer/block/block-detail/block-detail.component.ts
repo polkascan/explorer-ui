@@ -27,15 +27,19 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    const blockNr: number = parseInt(this.route.snapshot.params.id, 10);
     // Wait for network to be set.
     this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
       // Only continue if a network is set.
       filter(network => !!network),
-      // We don't have to wait for further changes to network.
+      // We don't have to wait for further changes to network, so terminate after first.
       first(),
-      switchMap(() => combineLatest(
+      // Switch to the route param, from which we get the block number.
+      switchMap(() => this.route.params.pipe(
+        takeUntil(this.destroyer),
+        map(params => parseInt(params.id, 10))
+      )),
+      switchMap((blockNr) => combineLatest(
         // Update block when block data changes.
         this.ns.blockHarvester.blocks[blockNr].pipe(
           tap(block => {

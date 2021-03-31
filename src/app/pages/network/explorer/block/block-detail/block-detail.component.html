@@ -9,7 +9,9 @@
       <ng-container *ngIf="block.status === 'loaded'; else loadingBlock">
         <div>Timestamp: {{block.datetime|date:'medium'}}</div>
         <div>Hash: {{block.hash}}</div>
-        <div>Parent hash: {{block.parentHash}}</div>
+        <div *ngIf="block.parentHash">
+          Parent hash: <a [routerLink]="'../../block/' + (block.number - 1)">{{block.parentHash}}</a>
+        </div>
         <div>State root: {{block.stateRoot}}</div>
         <div>Extrinsics root: {{block.extrinsicsRoot}}</div>
         <div>Extrinsics: {{block.extrinsics.length}}</div>
@@ -36,12 +38,12 @@
             <tbody>
               <ng-container *ngFor="let ext of extrinsics">
                 <tr>
-                  <td>{{ext.extrinsicIdx}}</td>
+                  <td><a [routerLink]="'../../extrinsic/' + block.number + '-' + ext.extrinsicIdx">{{ext.extrinsicIdx}}</a></td>
                   <td>{{ext.hash}}</td>
-                  <td>{{ext.hash}}</td>
+                  <td></td>
                   <td>{{ext.callModule}}</td>
                   <td>{{ext.callName}}</td>
-                  <td>Details</td>
+                  <td><a [routerLink]="'../../extrinsic/' + block.number + '-' + ext.extrinsicIdx">Details</a></td>
                 </tr>
               </ng-container>
             </tbody>
@@ -61,11 +63,11 @@
             <tbody>
               <ng-container *ngFor="let event of events">
                 <tr>
-                  <td>{{event.eventIdx}}</td>
-                  <td>{{event.extrinsicIdx}}</td>
+                  <td><a [routerLink]="'../../event/' + block.number + '-' + event.eventIdx">{{event.eventIdx}}</a></td>
+                  <td><a [routerLink]="'../../extrinsic/' + block.number + '-' + event.extrinsicIdx">{{event.extrinsicIdx}}</a></td>
                   <td>{{event.eventModule}}</td>
                   <td>{{event.eventName}}</td>
-                  <td>Details</td>
+                  <td><a [routerLink]="'../../event/' + block.number + '-' + event.eventIdx">Details</a></td>
                 </tr>
               </ng-container>
             </tbody>

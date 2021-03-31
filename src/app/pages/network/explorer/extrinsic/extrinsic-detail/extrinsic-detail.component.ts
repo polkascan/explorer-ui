@@ -3,8 +3,9 @@ import { Subject } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { filter, first, takeUntil } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { ListResponse } from '@polkadapt/polkascan/lib/polkascan.types';
 
 
 @Component({
@@ -15,6 +16,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 })
 export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
   extrinsic: pst.Extrinsic;
+  events: pst.Event[];
 
   private destroyer: Subject<undefined> = new Subject();
   private onDestroyCalled = false;
@@ -27,30 +29,32 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    const id: string = this.route.snapshot.params.id;
-    if (id) {
-      const extrinsicId: number[] = id.split('-').map((v) => parseInt(v, 10));
-
-      this.ns.currentNetwork.pipe(
+    this.ns.currentNetwork.pipe(
+      takeUntil(this.destroyer),
+      // Network must be set.
+      filter(network => !!network),
+      // Only need to load once.
+      first(),
+      // Switch over to the route param from which we extract the extrinsic keys.
+      switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
-        // network must be set.
-        filter(n => !!n),
-        // only need to load once.
-        first()
-      ).subscribe(async (network) => {
-        try {
-          const extrinsic = await this.pa.run(network).polkascan.getExtrinsic(extrinsicId[0], extrinsicId[1]);
-          if (!this.onDestroyCalled) {
-            this.extrinsic = extrinsic;
-            this.cd.markForCheck();
-          }
-        } catch (e) {
-          // Do nothing;
+        map(params => params.id.split('-').map((v: string) => parseInt(v, 10)))
+      ))
+    ).subscribe(async (extrinsicId) => {
+      try {
+        const extrinsic: pst.Extrinsic = await this.pa.run().polkascan.getExtrinsic(extrinsicId[0], extrinsicId[1]);
+        const eventsResponse: ListResponse<pst.Event> = await this.pa.run().polkascan.getEvents({blockNumber: extrinsicId[0]});
+        const events = eventsResponse.objects.filter(event => event.extrinsicIdx === extrinsicId[1]);
+        if (!this.onDestroyCalled) {
+          this.extrinsic = extrinsic;
+          this.events = events;
+          this.cd.markForCheck();
         }
-      });
-    }
+      } catch (e) {
+        // TODO: What to do if extrinsic does not exist?
+      }
+    });
   }
-
 
   ngOnDestroy(): void {
     this.onDestroyCalled = true;
