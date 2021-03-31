@@ -73,6 +73,6 @@ export class AttributeStructComponent implements OnChanges {
 
 
   isObject(attribute: any): boolean {
-    return attribute && typeof attribute === 'object' && !Array.isArray(attribute);
+    return Object.prototype.toString.call(attribute) === '[object Object]';
   }
 }
