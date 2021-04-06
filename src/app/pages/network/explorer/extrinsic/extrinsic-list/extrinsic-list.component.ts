@@ -88,21 +88,26 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
     }
 
     try {
-      this.unsubscribeNewExtrinsicFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.subscribeNewExtrinsic(
-        filters,
-        (extrinsic: pst.Extrinsic) => {
-          if (!this.onDestroyCalled) {
-            if (!this.extrinsics.some((e) => e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx)) {
-              this.extrinsics.splice(0, 0, extrinsic);
-              this.extrinsics.sort((a, b) => b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx);
-              this.extrinsics.length = Math.min(this.extrinsics.length, temporaryListSize);
-              this.cd.markForCheck();
+      this.unsubscribeNewExtrinsicFn =
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewExtrinsic(
+          filters,
+          (extrinsic: pst.Extrinsic) => {
+            if (!this.onDestroyCalled) {
+              if (!this.extrinsics.some((e) =>
+                e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
+              )) {
+                this.extrinsics.splice(0, 0, extrinsic);
+                this.extrinsics.sort((a, b) =>
+                  b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
+                );
+                this.extrinsics.length = Math.min(this.extrinsics.length, temporaryListSize);
+                this.cd.markForCheck();
+              }
+            } else {
+              // If still listening but component is already destroyed.
+              this.unsubscribeNewExtrinsic();
             }
-          } else {
-            // If still listening but component is already destroyed.
-            this.unsubscribeNewExtrinsic();
-          }
-        });
+          });
     } catch (e) {
       console.error(e);
       // Ignore for now...
@@ -135,14 +140,18 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
       if (!this.onDestroyCalled) {
         response.objects
           .filter((extrinsic) => {
-            return !this.extrinsics.some((e) => e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx);
+            return !this.extrinsics.some((e) =>
+              e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
+            );
           })
           .forEach((extrinsic) => {
             this.extrinsics.push(extrinsic);
           });
 
         this.extrinsics.length = Math.min(this.extrinsics.length, temporaryListSize);
-        this.extrinsics.sort((a, b) => b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx);
+        this.extrinsics.sort((a, b) =>
+          b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
+        );
         this.cd.markForCheck();
       }
     } catch (e) {

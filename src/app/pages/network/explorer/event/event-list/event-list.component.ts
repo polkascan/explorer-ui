@@ -117,7 +117,7 @@ export class EventListComponent implements OnInit, OnDestroy {
     }
 
     try {
-      this.unsubscribeNewEventFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.subscribeNewEvent(
+      this.unsubscribeNewEventFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewEvent(
         filters,
         (event: psEvent) => {
           if (!this.onDestroyCalled) {
@@ -162,7 +162,8 @@ export class EventListComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const response: ListResponse<psEvent> = await this.pa.run(this.ns.currentNetwork.value).polkascan.getEvents(filters, 100);
+      const response: ListResponse<psEvent> =
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getEvents(filters, 100);
       if (!this.onDestroyCalled) {
         response.objects
           .filter((event) => {

@@ -64,28 +64,28 @@ ENV NGINX_CONF=$NGINX_CONF
 ARG POLKADOT_SUBSTRATE_RPC_URL=wss://rpc.polkadot.io
 ENV POLKADOT_SUBSTRATE_RPC_URL=$POLKADOT_SUBSTRATE_RPC_URL
 
-ARG POLKADOT_POLKASCAN_API_URL=https://explorer-01.polkascan.io/api/v2/polkadot/graphql
+ARG POLKADOT_POLKASCAN_API_URL=https://explorer-37.polkascan.io/api/v2/polkadot/
 ENV POLKADOT_POLKASCAN_API_URL=$POLKADOT_POLKASCAN_API_URL
 
-ARG POLKADOT_POLKASCAN_WS_URL=wss://explorer-01.polkascan.io/api/v2/polkadot/graphql-ws
+ARG POLKADOT_POLKASCAN_WS_URL=wss://explorer-37.polkascan.io/api/v2/polkadot/graphql-ws
 ENV POLKADOT_POLKASCAN_WS_URL=$POLKADOT_POLKASCAN_WS_URL
 
 ARG KUSAMA_SUBSTRATE_RPC_URL=wss://kusama-rpc.polkadot.io
 ENV KUSAMA_SUBSTRATE_RPC_URL=$KUSAMA_SUBSTRATE_RPC_URL
 
-ARG KUSAMA_POLKASCAN_API_URL=https://explorer-01.polkascan.io/api/v2/kusama/graphql
+ARG KUSAMA_POLKASCAN_API_URL=https://explorer-37.polkascan.io/api/v2/kusama/
 ENV KUSAMA_POLKASCAN_API_URL=$KUSAMA_POLKASCAN_API_URL
 
-ARG KUSAMA_POLKASCAN_WS_URL=wss://explorer-01.polkascan.io/api/v2/kusama/graphql-ws
+ARG KUSAMA_POLKASCAN_WS_URL=wss://explorer-37.polkascan.io/api/v2/kusama/graphql-ws
 ENV KUSAMA_POLKASCAN_WS_URL=$KUSAMA_POLKASCAN_WS_URL
 
 ARG ROCOCO_SUBSTRATE_RPC_URL=wss://rococo-rpc.polkadot.io
 ENV ROCOCO_SUBSTRATE_RPC_URL=$KUSAMA_SUBSTRATE_RPC_URL
 
-ARG ROCOCO_POLKASCAN_API_URL=https://explorer-01.polkascan.io/api/v2/rococo/graphql
+ARG ROCOCO_POLKASCAN_API_URL=https://explorer-37.polkascan.io/api/v2/rococo/
 ENV ROCOCO_POLKASCAN_API_URL=$ROCOCO_POLKASCAN_API_URL
 
-ARG ROCOCO_POLKASCAN_WS_URL=wss://explorer-01.polkascan.io/api/v2/rococo/graphql-ws
+ARG ROCOCO_POLKASCAN_WS_URL=wss://explorer-37.polkascan.io/api/v2/rococo/graphql-ws
 ENV ROCOCO_POLKASCAN_WS_URL=$ROCOCO_POLKASCAN_WS_URL
 
 
