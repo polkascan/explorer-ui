@@ -3,7 +3,7 @@ import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt } from '@polkadapt/core';
 import { Header } from '@polkadot/types/interfaces';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { filter, first, switchMap } from 'rxjs/operators';
+import { filter, first } from 'rxjs/operators';
 
 export type Block = Partial<pst.Block> & {
   status: 'new' | 'loading' | 'loaded',

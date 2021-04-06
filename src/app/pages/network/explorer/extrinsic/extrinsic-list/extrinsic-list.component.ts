@@ -136,7 +136,8 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const response: ListResponse<pst.Extrinsic> = await this.pa.run(this.ns.currentNetwork.value).polkascan.getExtrinsics(filters, 100);
+      const response: ListResponse<pst.Extrinsic> =
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100);
       if (!this.onDestroyCalled) {
         response.objects
           .filter((extrinsic) => {
