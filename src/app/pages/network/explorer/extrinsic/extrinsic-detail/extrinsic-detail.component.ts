@@ -42,8 +42,10 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       ))
     ).subscribe(async (extrinsicId) => {
       try {
-        const extrinsic: pst.Extrinsic = await this.pa.run().polkascan.getExtrinsic(extrinsicId[0], extrinsicId[1]);
-        const eventsResponse: ListResponse<pst.Event> = await this.pa.run().polkascan.getEvents({blockNumber: extrinsicId[0]});
+        const extrinsic: pst.Extrinsic =
+          await this.pa.run().polkascan.chain.getExtrinsic(extrinsicId[0], extrinsicId[1]);
+        const eventsResponse: ListResponse<pst.Event> =
+          await this.pa.run().polkascan.chain.getEvents({blockNumber: extrinsicId[0]});
         const events = eventsResponse.objects.filter(event => event.extrinsicIdx === extrinsicId[1]);
         if (!this.onDestroyCalled) {
           this.extrinsic = extrinsic;

@@ -3,7 +3,7 @@ import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt } from '@polkadapt/core';
 import { Header } from '@polkadot/types/interfaces';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { filter, first, switchMap } from 'rxjs/operators';
+import { filter, first } from 'rxjs/operators';
 
 export type Block = Partial<pst.Block> & {
   status: 'new' | 'loading' | 'loaded',
@@ -66,7 +66,7 @@ export class BlockHarvester {
     if (!this.unsubscribeNewBlocks) {
       // Subscribe to new finalized blocks from Polkascan.
       this.unsubscribeNewBlocks = await this.polkadapt.run(this.network)
-        .polkascan.subscribeNewBlock((block: pst.Block) => this.finalizedBlockHandler(block));
+        .polkascan.chain.subscribeNewBlock((block: pst.Block) => this.finalizedBlockHandler(block));
     }
   }
 
@@ -122,7 +122,7 @@ export class BlockHarvester {
 
       if (block.number <= finalizedNumber) {
         // Load finalized data from Polkascan.
-        block = Object.assign(block, await this.polkadapt.run(this.network).polkascan.getBlock(block.number));
+        block = Object.assign(block, await this.polkadapt.run(this.network).polkascan.chain.getBlock(block.number));
         block.finalized = true;
         block.extrinsics = new Array(block.countExtrinsics);
         block.events = new Array(block.countEvents);
@@ -188,8 +188,8 @@ export class BlockHarvester {
       this.cache[nr].next(Object.assign(this.cache[nr].value, {status: 'loading'}));
     }
     // Then, await the result from Polkascan and update our cached block data.
-    const data: {objects: pst.Block[], pageInfo: any} = await this.polkadapt.run(this.network)
-      .polkascan.getBlocksUntil(this.finalizedNumber.value, pageSize);
+    const data: pst.ListResponse<pst.Block> =
+      await this.polkadapt.run(this.network).polkascan.chain.getBlocksUntil(this.finalizedNumber.value, pageSize);
 
     if (data.objects) {
       for (const obj of data.objects) {

@@ -45,11 +45,11 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
           tap(block => {
             this.block.next(block);
             if (block.finalized) {
-              this.pa.run().polkascan.getExtrinsics({blockNumber: blockNr}, 100)
+              this.pa.run().polkascan.chain.getExtrinsics({blockNumber: blockNr}, 100)
                 .then((result: pst.ListResponse<pst.Extrinsic>) => {
                   this.extrinsics.next(result.objects);
                 });
-              this.pa.run().polkascan.getEvents({blockNumber: blockNr}, 100)
+              this.pa.run().polkascan.chain.getEvents({blockNumber: blockNr}, 100)
                 .then((result: pst.ListResponse<pst.Event>) => {
                   this.events.next(result.objects);
                 });

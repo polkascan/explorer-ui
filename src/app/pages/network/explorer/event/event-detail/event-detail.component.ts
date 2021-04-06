@@ -50,7 +50,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       ))
     ).subscribe(async (eventId) => {
       try {
-        const event = await this.pa.run().polkascan.getEvent(eventId[0], eventId[1]);
+        const event = await this.pa.run().polkascan.chain.getEvent(eventId[0], eventId[1]);
         if (!this.onDestroyCalled) {
           this.event = event;
           this.cd.markForCheck();
