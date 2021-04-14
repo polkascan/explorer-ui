@@ -2,19 +2,11 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { Subject } from 'rxjs';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil, first, filter } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
-import { ListResponse } from '../../../../../../../polkadapt/projects/polkascan/src/lib/polkascan.types';
+import { RuntimeService } from '../../../../../services/runtime/runtime.service';
+import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
-
-type psEvent = {
-  blockNumber: number; // combined primary key blockNumber, eventIdx
-  eventIdx: number; // combined primary key blockNumber, eventIdx
-  extrinsicIdx: number | null;
-  event: string | null;
-  eventModule: string | null;
-  eventName: string | null;
-};
 
 const temporaryListSize = 100;
 
@@ -26,14 +18,14 @@ const temporaryListSize = 100;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EventListComponent implements OnInit, OnDestroy {
-  events: psEvent[] = [];
-  filters = new Map();  // TODO get filters through a query.
+  events: pst.Event[] = [];
+  filters = new Map();
 
-  eventModuleControl: FormControl = new FormControl('');
-  eventNameControl: FormControl = new FormControl('');
+  palletControl: FormControl = new FormControl('');
+  eventControl: FormControl = new FormControl('');
   filtersFormGroup: FormGroup = new FormGroup({
-    eventModule: this.eventModuleControl,
-    eventName: this.eventNameControl
+    eventModule: this.palletControl,
+    eventName: this.eventControl
   });
 
   private network: string;
@@ -43,20 +35,14 @@ export class EventListComponent implements OnInit, OnDestroy {
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
+              private rs: RuntimeService,
               private cd: ChangeDetectorRef) {
-    // TODO remove these temporary filters when a query is available.
-    this.filters.set('AuthorityDiscovery', []);
-    this.filters.set('Authorship', []);
-    this.filters.set('Babe', []);
-    this.filters.set('Balances', ['BalanceSet', 'Deposit', 'DustLow', 'Endowed', 'Reserved']);
-    this.filters.set('Bounties', ['BountyAwarded', 'BountyBecameActive', 'BountyCanceled', 'BountyClaimed', 'BountyExtended']);
-    this.filters.set('Council', ['Approved', 'Closed', 'Disapproved', 'Executed', 'MemberExecuted', 'Proposed', 'Voted']);
   }
 
   ngOnInit(): void {
     this.filtersFormGroup.valueChanges
       .pipe(
-        debounceTime(100),  // Also to make sure eventNameControl reset has taken place
+        debounceTime(100),  // Also to make sure eventControl reset has taken place
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
@@ -68,12 +54,12 @@ export class EventListComponent implements OnInit, OnDestroy {
         this.getEvents();
       });
 
-    this.eventModuleControl.valueChanges
+    this.palletControl.valueChanges
       .pipe(
         takeUntil(this.destroyer)
       )
       .subscribe(() => {
-        this.eventNameControl.reset(null, {emitEvent: false});
+        this.eventControl.reset(null, {emitEvent: false});
       });
 
     this.ns.currentNetwork
@@ -88,6 +74,24 @@ export class EventListComponent implements OnInit, OnDestroy {
         if (network) {
           this.subscribeNewEvent();
           this.getEvents();
+
+          this.rs.getRuntime(network)
+            .pipe(
+              takeUntil(this.destroyer),
+              filter((r) => r !== null),
+              first()
+            )
+            .subscribe(async (runtime): Promise<void> => {
+                const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
+                const events = await this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion);
+
+                if (pallets) {
+                  pallets.forEach((pallet) => {
+                    this.filters.set(pallet, events ? events.filter((event) => pallet.pallet === event.pallet).sort() : []);
+                  });
+                  this.cd.markForCheck();
+                }
+            });
         }
       });
   }
@@ -109,17 +113,17 @@ export class EventListComponent implements OnInit, OnDestroy {
     }
 
     const filters: any = {};
-    if (this.eventModuleControl.value) {
-      filters.eventModule = this.eventModuleControl.value;
+    if (this.palletControl.value) {
+      filters.eventModule = this.palletControl.value;
     }
-    if (this.eventNameControl.value) {
-      filters.eventName = this.eventNameControl.value;
+    if (this.eventControl.value) {
+      filters.eventName = this.eventControl.value;
     }
 
     try {
       this.unsubscribeNewEventFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewEvent(
         filters,
-        (event: psEvent) => {
+        (event: pst.Event) => {
           if (!this.onDestroyCalled) {
             if (!this.events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx)) {
               this.events.splice(0, 0, event);
@@ -154,16 +158,16 @@ export class EventListComponent implements OnInit, OnDestroy {
     }
 
     const filters: any = {};
-    if (this.eventModuleControl.value) {
-      filters.eventModule = this.eventModuleControl.value;
+    if (this.palletControl.value) {
+      filters.eventModule = this.palletControl.value;
     }
-    if (this.eventNameControl.value) {
-      filters.eventName = this.eventNameControl.value;
+    if (this.eventControl.value) {
+      filters.eventName = this.eventControl.value;
     }
 
     try {
-      const response: ListResponse<psEvent> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getEvents(filters, 100);
+      const response: pst.ListResponse<pst.Event> =
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getEvents(filters, temporaryListSize);
       if (!this.onDestroyCalled) {
         response.objects
           .filter((event) => {
@@ -173,8 +177,8 @@ export class EventListComponent implements OnInit, OnDestroy {
             this.events.push(event);
           });
 
-        this.events.length = Math.min(this.events.length, temporaryListSize);
         this.events.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
+        this.events.length = Math.min(this.events.length, temporaryListSize);
         this.cd.markForCheck();
       }
     } catch (e) {
@@ -184,7 +188,7 @@ export class EventListComponent implements OnInit, OnDestroy {
   }
 
 
-  trackByIdFn(i: any, event: psEvent): string {
+  track(i: any, event: pst.Event): string {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 }

@@ -27,12 +27,12 @@ export class AttributeBalanceComponent implements OnChanges {
     }
 
     if (changes.tokenDecimals || changes.attribute || changes.decimals) {
-      let converted: number | null = null;
+      let converted: number | null;
 
       try {
         converted = Math.max(0, this.attribute.value) / Math.pow(10, this.decimals);
       } catch (e) {
-        // Ignore for now.
+        converted = null;
       }
 
       this.convertedValue = converted;

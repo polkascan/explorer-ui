@@ -1,0 +1,3 @@
+.ps-log-grid {
+  grid-template-columns: [icon] 40px [logIdx] 140px [block] minmax(120px, 180px) [type] minmax(140px, 180px) [details] 100px;
+}

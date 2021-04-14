@@ -1,1 +1,37 @@
-<p>balances-transfer-list works!</p>
+<a routerLink="..">Back to dashboard</a>
+<h1>Balance transfers</h1>
+
+<div class="ps-grid ps-transfer-grid">
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-header-column">Block</div>
+  <div class="ps-grid-header-column">From</div>
+  <div class="ps-grid-header-column">To</div>
+  <div class="ps-grid-header-column">Value</div>
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-row" *ngFor="let transfer of transfers; trackBy: track">
+    <div class="ps-grid-column">
+      <i class="fas fa-book"></i>
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="'../block/' + transfer.blockNumber">{{transfer.blockNumber}}</a>
+    </div>
+    <div class="ps-grid-column">
+      <a *ngIf="transfer.fromMultiAddressAccountId" [routerLink]="'../address/' + transfer.fromMultiAddressAccountId">
+        <identicon [value]="transfer.fromMultiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
+        {{ transfer.fromMultiAddressAccountId }}
+      </a>
+    </div>
+    <div class="ps-grid-column">
+      <a *ngIf="transfer.toMultiAddressAccountId" [routerLink]="'../address/' + transfer.toMultiAddressAccountId">
+        <identicon [value]="transfer.toMultiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
+        {{ transfer.toMultiAddressAccountId }}
+      </a>
+    </div>
+    <div class="ps-grid-column">
+      {{transfer.value}}
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="transfer.blockNumber + '-' + transfer.eventIdx">Details</a>
+    </div>
+  </div>
+</div>

@@ -1,1 +1,56 @@
-<p>inherent-list works!</p>
+<h1>inherents</h1>
+
+<div class="ps-grid-filters">
+  <select [formControl]="palletControl">
+    <option [ngValue]="null">All pallets</option>
+    <option *ngFor="let item of filters | keyvalue" [ngValue]="item.key.pallet">{{item.key.pallet}}</option>
+  </select>
+  <select [formControl]="callControl">
+    <option [ngValue]="null">All event</option>
+    <ng-container *ngFor="let item of filters | keyvalue">
+      <ng-container *ngIf="item.key === palletControl.value">
+        <option *ngFor="let call of item.value" [ngValue]="call.callName">{{call.callName}}</option>
+      </ng-container>
+    </ng-container>
+  </select>
+</div>
+
+<div class="ps-grid ps-inherent-grid">
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-header-column">Inherent ID</div>
+  <div class="ps-grid-header-column">Block</div>
+  <div class="ps-grid-header-column">Pallet</div>
+  <div class="ps-grid-header-column">Call</div>
+  <div class="ps-grid-header-column">Success</div>
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-row" *ngFor="let inherent of inherents; trackBy: track">
+    <div class="ps-grid-column">
+      <i class="fas fa-file-signature"></i>
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="inherent.blockNumber + '-' + inherent.extrinsicIdx">{{inherent.blockNumber}}-{{inherent.extrinsicIdx}}</a>
+    </div>
+    <div class="ps-grid-column">
+      <!-- todo fix me to actual address hash -->
+      <a *ngIf="inherent.hash" [routerLink]="'../address/' + inherent.hash">
+        <identicon [value]="inherent.hash" [theme]="'polkadot'" [size]="16"></identicon>
+        {{ inherent.hash }}
+      </a>
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="'../block/' + inherent.blockNumber">{{inherent.blockNumber}}</a>
+    </div>
+    <div class="ps-grid-column">
+      {{inherent.callModule}}
+    </div>
+    <div class="ps-grid-column">
+      {{inherent.callName}}
+    </div>
+    <div class="ps-grid-column">
+      <!-- TODO fix me -->
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="inherent.blockNumber + '-' + inherent.extrinsicIdx">Details</a>
+    </div>
+  </div>
+</div>

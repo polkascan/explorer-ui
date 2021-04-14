@@ -48,15 +48,11 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer),
         map(params => params.id.split('-').map((v: string) => parseInt(v, 10)))
       ))
-    ).subscribe(async (eventId) => {
-      try {
-        const event = await this.pa.run().polkascan.chain.getEvent(eventId[0], eventId[1]);
-        if (!this.onDestroyCalled) {
-          this.event = event;
-          this.cd.markForCheck();
-        }
-      } catch (e) {
-        // TODO: What to do if event does not exist?
+    ).subscribe(async ([blockNr, eventIdx]) => {
+      const event = await this.pa.run().polkascan.chain.getEvent(blockNr, eventIdx);
+      if (!this.onDestroyCalled) {
+        this.event = event;
+        this.cd.markForCheck();
       }
     });
   }

@@ -1,20 +1,28 @@
 <ng-container *ngIf="extrinsic">
   <div>Block <a [routerLink]="'../../block/' + extrinsic.blockNumber">#{{extrinsic.blockNumber}}</a></div>
-  <div>Timestamp: {{extrinsic.blockDatetime|date:'medium'}}</div>
+  <div>Timestamp: {{extrinsic.blockDatetime | date: 'medium'}}</div>
   <div>Extrinsic Index: {{extrinsic.extrinsicIdx}}</div>
   <div>Extrinsic hash: {{extrinsic.hash}}</div>
-  <div>Module: {{extrinsic.callModule}}</div>
+  <div>Pallet: {{extrinsic.callModule}}</div>
   <div>Call: {{extrinsic.callName}}</div>
   <div>Address: {{extrinsic.blockHash}}</div>
   <div>Nonce: {{extrinsic.nonce}}</div>
   <div>Signature: {{extrinsic.signature}}</div>
+
+  <h2>Parameters</h2>
+  <ng-container *ngIf="callArguments">
+    <ng-container *ngFor="let item of callArguments | keyvalue">
+      <b>{{item.key}}</b>
+      <extrinsic-attributes [attributes]="$any(item.value)" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="10" [tokenSymbol]="'DOT'"></extrinsic-attributes>
+    </ng-container>
+  </ng-container>
 
   <h2>Events</h2>
   <table *ngIf="events">
     <thead>
       <tr>
         <th>Event ID</th>
-        <th>Module</th>
+        <th>Pallet</th>
         <th>Event</th>
         <th></th>
       </tr>

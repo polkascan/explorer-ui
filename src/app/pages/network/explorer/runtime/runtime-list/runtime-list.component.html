@@ -1,1 +1,43 @@
-<p>runtime-list works!</p>
+<a routerLink="..">Back to dashboard</a>
+<h1>Runtimes</h1>
+<div class="ps-grid ps-runtime-grid">
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-header-column">Name</div>
+  <div class="ps-grid-header-column">Version</div>
+  <div class="ps-grid-header-column">Pallets</div>
+  <div class="ps-grid-header-column">Events</div>
+  <div class="ps-grid-header-column">Calls</div>
+  <div class="ps-grid-header-column">Storage</div>
+  <div class="ps-grid-header-column">Constants</div>
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-row" *ngFor="let runtime of runtimes|async; trackBy: track">
+    <div class="ps-grid-column">
+      <i class="fas fa-cogs"></i>
+    </div>
+    <div class="ps-grid-column">
+      {{runtime.specName}}
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="runtime.specName + '/' + runtime.specVersion">{{runtime.specVersion}}</a>
+    </div>
+    <div class="ps-grid-column">
+      {{runtime.countPallets}}
+    </div>
+    <div class="ps-grid-column">
+      {{runtime.countEvents}}
+    </div>
+    <div class="ps-grid-column">
+      {{runtime.countCallFunctions}}
+    </div>
+    <div class="ps-grid-column">
+      {{runtime.countStorageFunctions}}
+    </div>
+    <div class="ps-grid-column">
+      {{runtime.countConstants}}
+    </div>
+    <div class="ps-grid-column">
+        <a [routerLink]="runtime.specName + '/' + runtime.specVersion">Details</a>
+    </div>
+  </div>
+</div>
+

@@ -2,15 +2,15 @@
 <h1>Event</h1>
 
 <div class="ps-grid-filters">
-  <select [formControl]="eventModuleControl">
-    <option [ngValue]="null">All modules</option>
-    <option *ngFor="let item of filters | keyvalue" [ngValue]="item.key">{{item.key}}</option>
+  <select [formControl]="palletControl">
+    <option [ngValue]="null">All pallets</option>
+    <option *ngFor="let item of filters | keyvalue" [ngValue]="item.key.pallet">{{item.key.pallet}}</option>
   </select>
-  <select [formControl]="eventNameControl">
+  <select [formControl]="eventControl">
     <option [ngValue]="null">All event</option>
     <ng-container *ngFor="let item of filters | keyvalue">
-      <ng-container *ngIf="item.key === eventModuleControl.value">
-        <option *ngFor="let eventName of item.value" [ngValue]="eventName">{{eventName}}</option>
+      <ng-container *ngIf="item.key === palletControl.value">
+        <option *ngFor="let event of item.value" [ngValue]="event.eventName">{{event.eventName}}</option>
       </ng-container>
     </ng-container>
   </select>
@@ -21,10 +21,10 @@
   <div class="ps-grid-header-column">Event ID</div>
   <div class="ps-grid-header-column">Block</div>
   <div class="ps-grid-header-column">Referenced Transaction</div>
-  <div class="ps-grid-header-column">Module</div>
+  <div class="ps-grid-header-column">Pallet</div>
   <div class="ps-grid-header-column">Events</div>
   <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let event of events; trackBy: trackByIdFn">
+  <div class="ps-grid-row" *ngFor="let event of events; trackBy: track">
     <div class="ps-grid-column">
       <i class="fas fa-calendar-check"></i>
     </div>
@@ -38,7 +38,7 @@
       <a [routerLink]="'../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a>
     </div>
     <div class="ps-grid-column">
-      {{event.eventModule}}
+      {{event.eventModule}} <!-- todo event.eventPallet -->
     </div>
     <div class="ps-grid-column">
       {{event.eventName}}

@@ -1,1 +1,42 @@
-<p>runtime-detail works!</p>
+<ng-container *ngIf="runtime|async as runtime; else loading">
+  <h1>Runtime '{{runtime.specName}}' {{runtime.specVersion}}</h1>
+
+  <h2>Pallets</h2>
+  <div class="ps-grid ps-pallet-grid">
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-header-column">Name</div>
+    <div class="ps-grid-header-column">Events</div>
+    <div class="ps-grid-header-column">Calls</div>
+    <div class="ps-grid-header-column">Storage</div>
+    <div class="ps-grid-header-column">Constants</div>
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-row" *ngFor="let pallet of pallets|async; trackBy: track">
+      <div class="ps-grid-column">
+        <i class="fas fa-cog"></i>
+      </div>
+      <div class="ps-grid-column">
+        <a [routerLink]="pallet.pallet">{{pallet.pallet}}</a>
+      </div>
+      <div class="ps-grid-column">
+        {{pallet.countEvents}}
+      </div>
+      <div class="ps-grid-column">
+        {{pallet.countCallFunctions}}
+      </div>
+      <div class="ps-grid-column">
+        {{pallet.countStorageFunctions}}
+      </div>
+      <div class="ps-grid-column">
+        {{pallet.countConstants}}
+      </div>
+      <div class="ps-grid-column">
+          <a [routerLink]="pallet.pallet">Details</a>
+      </div>
+    </div>
+  </div>
+
+</ng-container>
+
+<ng-template #loading>
+  Loading...
+</ng-template>

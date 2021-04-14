@@ -1,1 +1,22 @@
-<p>runtime-event-detail works!</p>
+<ng-container *ngIf="event|async as event; else loading">
+  <h1>Event '{{event.eventName}}'</h1>
+
+  <h2>Attributes</h2>
+  <div class="ps-grid ps-event-attributes-grid">
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-header-column">Type</div>
+    <div class="ps-grid-row" *ngFor="let attr of eventAttributes|async; trackBy: trackEventAttribute">
+      <div class="ps-grid-column">
+        <i class="fa fa-stream"></i>
+      </div>
+      <div class="ps-grid-column">
+        {{attr.scaleType}}
+      </div>
+    </div>
+  </div>
+
+</ng-container>
+
+<ng-template #loading>
+  Loading...
+</ng-template>

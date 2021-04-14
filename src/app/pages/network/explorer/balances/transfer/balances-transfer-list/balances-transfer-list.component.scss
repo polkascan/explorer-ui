@@ -1,0 +1,3 @@
+.ps-transfer-grid {
+  grid-template-columns: [icon] 40px [block] minmax(120px, 180px) [from] minmax(180px, auto) [to] minmax(180px, auto) [value] minmax(140px, 180px) [details] 100px;
+}

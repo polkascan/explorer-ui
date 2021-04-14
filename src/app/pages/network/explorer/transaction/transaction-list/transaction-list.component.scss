@@ -1,3 +1,3 @@
 .ps-transaction-grid {
-  grid-template-columns: [icon] 20px [id] 10% [from] 10% [block] 10% [module] 10% [call] 10% [success] 10% [details] 40px;
+  grid-template-columns: [icon] 40px [extrinsicIdx] 140px [from] minmax(140px, auto) [block] minmax(120px, 180px) [module] minmax(140px, 180px) [call] minmax(140px, 180px) [signed] 100px [details] 100px;
 }

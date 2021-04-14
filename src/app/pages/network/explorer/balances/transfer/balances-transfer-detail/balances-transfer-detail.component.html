@@ -1,1 +1,20 @@
-<p>balances-transfer-detail works!</p>
+<ng-container *ngIf="transfer">
+  <div>Block <a [routerLink]="'../../block/' + transfer.blockNumber">#{{transfer.blockNumber}}</a></div>
+  <div>Event Index: {{transfer.eventIdx}}</div>
+  <div>
+    From:
+    <a *ngIf="transfer.fromMultiAddressAccountId" [routerLink]="'../address/' + transfer.fromMultiAddressAccountId">
+      <identicon [value]="transfer.fromMultiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
+      {{ transfer.fromMultiAddressAccountId }}
+    </a>
+  </div>
+  <div>
+    To:
+    <a *ngIf="transfer.toMultiAddressAccountId" [routerLink]="'../address/' + transfer.toMultiAddressAccountId">
+      <identicon [value]="transfer.toMultiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
+      {{ transfer.toMultiAddressAccountId }}
+    </a>
+  </div>
+  <div>Value: {{transfer.value}}</div>
+  <div>Fee: {{transfer.fee}}</div>
+</ng-container>

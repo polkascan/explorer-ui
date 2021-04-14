@@ -1,1 +1,41 @@
-<p>transaction-detail works!</p>
+<ng-container *ngIf="transaction">
+  <div>Block <a [routerLink]="'../../block/' + transaction.blockNumber">#{{transaction.blockNumber}}</a></div>
+  <div>Timestamp: {{transaction.blockDatetime | date: 'medium'}}</div>
+  <div>Transaction Index: {{transaction.extrinsicIdx}}</div>
+  <div>Transaction hash: {{transaction.hash}}</div>
+  <div>Pallet: {{transaction.callModule}}</div>
+  <div>Call: {{transaction.callName}}</div>
+  <div>Address: {{transaction.blockHash}}</div>
+  <div>Nonce: {{transaction.nonce}}</div>
+  <div>Signature: {{transaction.signature}}</div>
+
+  <h2>Parameters</h2>
+  <ng-container *ngIf="callArguments">
+    <ng-container *ngFor="let item of callArguments | keyvalue">
+      <b>{{item.key}}</b>
+      <extrinsic-attributes [attributes]="$any(item.value)" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="10" [tokenSymbol]="'DOT'"></extrinsic-attributes>
+    </ng-container>
+  </ng-container>
+
+  <h2>Events</h2>
+  <table *ngIf="events">
+    <thead>
+      <tr>
+        <th>Event ID</th>
+        <th>Pallet</th>
+        <th>Event</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <ng-container *ngFor="let event of events">
+        <tr>
+          <td><a [routerLink]="'../../event/' + transaction.blockNumber + '-' + event.eventIdx">{{event.eventIdx}}</a></td>
+          <td>{{event.eventModule}}</td>
+          <td>{{event.eventName}}</td>
+          <td><a [routerLink]="'../../event/' + transaction.blockNumber + '-' + event.eventIdx">Details</a></td>
+        </tr>
+      </ng-container>
+    </tbody>
+  </table>
+</ng-container>

@@ -1,1 +1,26 @@
-<p>runtime-call-detail works!</p>
+<ng-container *ngIf="call|async as call; else loading">
+  <h1>Event '{{call.callName}}'</h1>
+
+  <h2>Arguments</h2>
+  <div class="ps-grid ps-call-arguments-grid">
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-header-column">Name</div>
+    <div class="ps-grid-header-column">Type</div>
+    <div class="ps-grid-row" *ngFor="let arg of callArguments|async; trackBy: trackCallArgument">
+      <div class="ps-grid-column">
+        <i class="fa fa-stream"></i>
+      </div>
+      <div class="ps-grid-column">
+        {{arg.name}}
+      </div>
+      <div class="ps-grid-column">
+        {{arg.scaleType}}
+      </div>
+    </div>
+  </div>
+
+</ng-container>
+
+<ng-template #loading>
+  Loading...
+</ng-template>

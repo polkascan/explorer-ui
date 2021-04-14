@@ -162,7 +162,7 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
   }
 
 
-  trackByIdFn(i: any, extrinsic: pst.Extrinsic): string {
+  track(i: any, extrinsic: pst.Extrinsic): string {
     return `${extrinsic.blockNumber}-${extrinsic.extrinsicIdx}`;
   }
 }

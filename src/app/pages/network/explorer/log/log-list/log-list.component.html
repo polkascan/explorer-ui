@@ -1,1 +1,27 @@
-<p>log-list works!</p>
+<a routerLink="..">Back to dashboard</a>
+<h1>Logs</h1>
+
+<div class="ps-grid ps-log-grid">
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-header-column">Log ID</div>
+  <div class="ps-grid-header-column">Block</div>
+  <div class="ps-grid-header-column">Type</div>
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-row" *ngFor="let log of logs; trackBy: track">
+    <div class="ps-grid-column">
+      <i class="fas fa-book"></i>
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="log.blockNumber + '-' + log.logIdx">{{log.blockNumber}}-{{log.logIdx}}</a>
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="'../block/' + log.blockNumber">{{log.blockNumber}}</a>
+    </div>
+    <div class="ps-grid-column">
+      {{log.type}}
+    </div>
+    <div class="ps-grid-column">
+      <a [routerLink]="log.blockNumber + '-' + log.logIdx">Details</a>
+    </div>
+  </div>
+</div>

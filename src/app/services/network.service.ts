@@ -3,6 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { PolkadaptService } from './polkadapt.service';
 import { BlockHarvester } from './block/block.harvester';
 import { BlockService } from './block/block.service';
+import { RuntimeService } from './runtime/runtime.service';
 
 
 @Injectable({providedIn: 'root'})
@@ -12,7 +13,9 @@ export class NetworkService {
   currentNetwork: BehaviorSubject<string> = new BehaviorSubject('');
   blockHarvester: BlockHarvester;
 
-  constructor(private pa: PolkadaptService, private bs: BlockService) {
+  constructor(private pa: PolkadaptService,
+              private bs: BlockService,
+              private rs: RuntimeService) {
   }
 
   async setNetwork(network: string): Promise<void> {
@@ -47,6 +50,9 @@ export class NetworkService {
       if (this.blockHarvester.paused) {
         this.blockHarvester.resume();
       }
+
+      // TODO this.rs.init en destroy.
+      this.rs.initialize(network);
     }
     this.currentNetwork.next(network);
   }

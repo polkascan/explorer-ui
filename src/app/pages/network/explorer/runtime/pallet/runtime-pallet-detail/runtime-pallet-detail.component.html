@@ -1,0 +1,130 @@
+<ng-container *ngIf="pallet|async as pallet; else loading">
+  <h1>Pallet '{{pallet.pallet}}'</h1>
+
+  <h2>Call Functions</h2>
+  <div class="ps-grid ps-calls-grid">
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-header-column">Name</div>
+    <div class="ps-grid-header-column">Lookup</div>
+    <div class="ps-grid-header-column">Arguments</div>
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-row" *ngFor="let callFunction of calls|async; trackBy: trackCall">
+      <div class="ps-grid-column">
+        <i class="fas fa-file-alt"></i>
+      </div>
+      <div class="ps-grid-column">
+        <a [routerLink]="'call/' + callFunction.callName">{{callFunction.callName}}</a>
+      </div>
+      <div class="ps-grid-column">
+        {{callFunction.lookup}}
+      </div>
+      <div class="ps-grid-column">
+        {{callFunction.countArguments}}
+      </div>
+      <div class="ps-grid-column">
+          <a [routerLink]="'call/' + callFunction.callName">Details</a>
+      </div>
+    </div>
+  </div>
+
+  <h2>Events</h2>
+  <div class="ps-grid ps-events-grid">
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-header-column">Name</div>
+    <div class="ps-grid-header-column">Lookup</div>
+    <div class="ps-grid-header-column">Attributes</div>
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-row" *ngFor="let event of events|async; trackBy: trackEvent">
+      <div class="ps-grid-column">
+        <i class="fas fa-calendar-check"></i>
+      </div>
+      <div class="ps-grid-column">
+        <a [routerLink]="'event/' + event.eventName">{{event.eventName}}</a>
+      </div>
+      <div class="ps-grid-column">
+        {{event.lookup}}
+      </div>
+      <div class="ps-grid-column">
+        {{event.countAttributes}}
+      </div>
+      <div class="ps-grid-column">
+          <a [routerLink]="'event/' + event.eventName">Details</a>
+      </div>
+    </div>
+  </div>
+
+  <h2>Storage Functions</h2>
+  <div class="ps-grid ps-storage-grid">
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-header-column">Name</div>
+    <div class="ps-grid-header-column">Type</div>
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-row" *ngFor="let storage of storages|async; trackBy: trackStorage">
+      <div class="ps-grid-column">
+        <i class="fas fa-database"></i>
+      </div>
+      <div class="ps-grid-column">
+        <a [routerLink]="'storage/' + storage.storageName">{{storage.storageName}}</a>
+      </div>
+      <div class="ps-grid-column">
+        {{storage.valueScaleType}}
+      </div>
+      <div class="ps-grid-column">
+          <a [routerLink]="'storage/' + storage.storageName">Details</a>
+      </div>
+    </div>
+  </div>
+
+  <h2>Constants</h2>
+  <div class="ps-grid ps-constants-grid">
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-header-column">Name</div>
+    <div class="ps-grid-header-column">Type</div>
+    <div class="ps-grid-header-column">Value</div>
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-row" *ngFor="let constant of constants|async; trackBy: trackConstant">
+      <div class="ps-grid-column">
+        <i class="fas fa-memory"></i>
+      </div>
+      <div class="ps-grid-column">
+        <a [routerLink]="'constant/' + constant.constantName">{{constant.constantName}}</a>
+      </div>
+      <div class="ps-grid-column">
+        {{constant.scaleType}}
+      </div>
+      <div class="ps-grid-column">
+        {{constant.value}}
+      </div>
+      <div class="ps-grid-column">
+          <a [routerLink]="'constant/' + constant.constantName">Details</a>
+      </div>
+    </div>
+  </div>
+
+  <h2>Error Messages</h2>
+  <div class="ps-grid ps-errors-grid">
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-header-column">Name</div>
+    <div class="ps-grid-header-column">Index</div>
+    <div class="ps-grid-header-column">Description</div>
+    <div class="ps-grid-row" *ngFor="let error of errors|async; trackBy: trackError">
+      <div class="ps-grid-column">
+        <i class="fa fa-exclamation-triangle"></i>
+      </div>
+      <div class="ps-grid-column">
+        {{error.errorName}}
+      </div>
+      <div class="ps-grid-column">
+        {{error.errorIdx}}
+      </div>
+      <div class="ps-grid-column">
+        {{error.documentation}}
+      </div>
+    </div>
+  </div>
+
+</ng-container>
+
+<ng-template #loading>
+  Loading...
+</ng-template>

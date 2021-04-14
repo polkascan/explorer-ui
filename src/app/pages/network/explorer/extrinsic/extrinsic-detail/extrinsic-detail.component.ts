@@ -5,7 +5,6 @@ import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { ListResponse } from '@polkadapt/polkascan/lib/polkascan.types';
 
 
 @Component({
@@ -16,6 +15,7 @@ import { ListResponse } from '@polkadapt/polkascan/lib/polkascan.types';
 })
 export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
   extrinsic: pst.Extrinsic;
+  callArguments: any;
   events: pst.Event[];
 
   private destroyer: Subject<undefined> = new Subject();
@@ -40,20 +40,22 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer),
         map(params => params.id.split('-').map((v: string) => parseInt(v, 10)))
       ))
-    ).subscribe(async (extrinsicId) => {
-      try {
-        const extrinsic: pst.Extrinsic =
-          await this.pa.run().polkascan.chain.getExtrinsic(extrinsicId[0], extrinsicId[1]);
-        const eventsResponse: ListResponse<pst.Event> =
-          await this.pa.run().polkascan.chain.getEvents({blockNumber: extrinsicId[0]});
-        const events = eventsResponse.objects.filter(event => event.extrinsicIdx === extrinsicId[1]);
-        if (!this.onDestroyCalled) {
-          this.extrinsic = extrinsic;
-          this.events = events;
-          this.cd.markForCheck();
+    ).subscribe(async ([blockNr, extrinsicIdx]) => {
+      const extrinsic: pst.Extrinsic =
+        await this.pa.run().polkascan.chain.getExtrinsic(blockNr, extrinsicIdx);
+      const eventsResponse: pst.ListResponse<pst.Event> =
+        await this.pa.run().polkascan.chain.getEvents({blockNumber: blockNr});
+      const events = eventsResponse.objects.filter(event => event.extrinsicIdx === extrinsicIdx);
+      if (!this.onDestroyCalled) {
+        this.extrinsic = extrinsic;
+        this.events = events;
+        this.callArguments = null;
+        try {
+          this.callArguments = JSON.parse(extrinsic.callArguments as string);
+        } catch (e) {
+          // TODO what to do?
         }
-      } catch (e) {
-        // TODO: What to do if extrinsic does not exist?
+        this.cd.markForCheck();
       }
     });
   }

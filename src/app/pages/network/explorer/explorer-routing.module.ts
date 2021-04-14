@@ -33,7 +33,7 @@ const routes: Routes = [
   },
   {
     path: 'runtime',
-    loadChildren: () => import('./runtime/runtime.module').then(m => m.RuntimeModule)
+    loadChildren: () => import('./runtime/runtime.module').then(m => m.RuntimePallet)
   },
   {
     path: 'account',

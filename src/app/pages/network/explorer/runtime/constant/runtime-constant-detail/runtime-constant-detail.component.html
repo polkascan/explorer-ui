@@ -1,1 +1,12 @@
-<p>runtime-constant-detail works!</p>
+<ng-container *ngIf="constant|async as constant; else loading">
+  <h1>Storage Function '{{constant.constantName}}'</h1>
+
+  <div>Type: {{constant.scaleType}}</div>
+  <div>Value: {{constant.value}}</div>
+  <div>Documentation: {{constant.documentation}}</div>
+
+</ng-container>
+
+<ng-template #loading>
+  Loading...
+</ng-template>

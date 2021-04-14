@@ -75,3 +75,16 @@ export class EventAttributesComponent extends AttributesBaseComponent {
     super();
   }
 }
+
+
+@Component({
+  selector: 'extrinsic-attributes',
+  templateUrl: 'attributes.component.html',
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class ExtrinsicAttributesComponent extends AttributesBaseComponent {
+  constructor() {
+    super();
+  }
+}

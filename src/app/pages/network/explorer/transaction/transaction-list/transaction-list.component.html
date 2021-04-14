@@ -1,52 +1,56 @@
 <h1>Transactions</h1>
-<div class="ps-grid ps-transaction-grid">
-  <div class="ps-grid-header-column">
-  </div>
-  <div class="ps-grid-header-column">
-    Transaction ID
-  </div>
-  <div class="ps-grid-header-column">
-    From
-  </div>
-  <div class="ps-grid-header-column">
-    Block
-  </div>
-  <div class="ps-grid-header-column">
-    Module
-  </div>
-  <div class="ps-grid-header-column">
-    Call
-  </div>
-  <div class="ps-grid-header-column">
-    Success
-  </div>
-  <div class="ps-grid-header-column">
-  </div>
 
-  <ng-container *ngFor="let transaction of [1, 2]">
+<div class="ps-grid-filters">
+  <select [formControl]="palletControl">
+    <option [ngValue]="null">All pallets</option>
+    <option *ngFor="let item of filters | keyvalue" [ngValue]="item.key.pallet">{{item.key.pallet}}</option>
+  </select>
+  <select [formControl]="callControl">
+    <option [ngValue]="null">All event</option>
+    <ng-container *ngFor="let item of filters | keyvalue">
+      <ng-container *ngIf="item.key === palletControl.value">
+        <option *ngFor="let call of item.value" [ngValue]="call.callName">{{call.callName}}</option>
+      </ng-container>
+    </ng-container>
+  </select>
+</div>
+
+<div class="ps-grid ps-transaction-grid">
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-header-column">Transaction ID</div>
+  <div class="ps-grid-header-column">From</div>
+  <div class="ps-grid-header-column">Block</div>
+  <div class="ps-grid-header-column">Pallet</div>
+  <div class="ps-grid-header-column">Call</div>
+  <div class="ps-grid-header-column">Success</div>
+  <div class="ps-grid-header-column"></div>
+  <div class="ps-grid-row" *ngFor="let transaction of transactions; trackBy: track">
     <div class="ps-grid-column">
       <i class="fas fa-file-signature"></i>
     </div>
     <div class="ps-grid-column">
-      <a [routerLink]="['id']" [title]="'id'">0xa26896acf267b068d5b9554d4bfdcdfac04ef5e5a5a4d068cce0c0b3c2382eea</a>
+      <a [routerLink]="transaction.blockNumber + '-' + transaction.extrinsicIdx">{{transaction.blockNumber}}-{{transaction.extrinsicIdx}}</a>
     </div>
     <div class="ps-grid-column">
-      <identicon value="0xa26896acf267b068d5b9554d4bfdcdfac04ef5e5a5a4d068cce0c0b3c2382eea" theme="polkadot" [size]="64"></identicon>
+      <a *ngIf="transaction.multiAddressAccountId" [routerLink]="'../address/' + transaction.multiAddressAccountId">
+        <identicon [value]="transaction.multiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
+        {{ transaction.multiAddressAccountId }}
+      </a>
     </div>
     <div class="ps-grid-column">
-      <a [routerLink]="['../block', 'id']" [title]="3351695">3351695</a>
+      <a [routerLink]="'../block/' + transaction.blockNumber">{{transaction.blockNumber}}</a>
     </div>
     <div class="ps-grid-column">
-      balances
+      {{transaction.callModule}}
     </div>
     <div class="ps-grid-column">
-      transfer
+      {{transaction.callName}}
     </div>
     <div class="ps-grid-column">
-
+      <!-- TODO fix me -->
     </div>
     <div class="ps-grid-column">
+      <a [routerLink]="transaction.blockNumber + '-' + transaction.extrinsicIdx">Details</a>
     </div>
-  </ng-container>
-
+  </div>
 </div>

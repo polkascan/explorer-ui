@@ -43,7 +43,6 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
 
   constructor(
-    private cd: ChangeDetectorRef,
     private pa: PolkadaptService,
     private ns: NetworkService
   ) {}
@@ -61,7 +60,6 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       tap(() => {
         this.latestBlockNumber.next(0);
         this.blocks.next([]);
-        this.cd.markForCheck();
       }),
       // Wait for the first most recent finalized block to arrive from Polkascan.
       switchMap(() => this.ns.blockHarvester.finalizedNumber.pipe(
