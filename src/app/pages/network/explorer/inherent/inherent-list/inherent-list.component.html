@@ -1,4 +1,5 @@
-<h1>inherents</h1>
+<a routerLink="..">Back to dashboard</a>
+<h1>Inherents</h1>
 
 <div class="ps-grid-filters">
   <select [formControl]="palletControl">
@@ -29,13 +30,6 @@
     </div>
     <div class="ps-grid-column">
       <a [routerLink]="inherent.blockNumber + '-' + inherent.extrinsicIdx">{{inherent.blockNumber}}-{{inherent.extrinsicIdx}}</a>
-    </div>
-    <div class="ps-grid-column">
-      <!-- todo fix me to actual address hash -->
-      <a *ngIf="inherent.hash" [routerLink]="'../address/' + inherent.hash">
-        <identicon [value]="inherent.hash" [theme]="'polkadot'" [size]="16"></identicon>
-        {{ inherent.hash }}
-      </a>
     </div>
     <div class="ps-grid-column">
       <a [routerLink]="'../block/' + inherent.blockNumber">{{inherent.blockNumber}}</a>
