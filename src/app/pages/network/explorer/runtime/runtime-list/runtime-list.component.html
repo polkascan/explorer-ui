@@ -18,7 +18,7 @@
       {{runtime.specName}}
     </div>
     <div class="ps-grid-column">
-      <a [routerLink]="runtime.specName + '/' + runtime.specVersion">{{runtime.specVersion}}</a>
+      <a [routerLink]="runtime.specVersion.toString()">{{runtime.specVersion}}</a>
     </div>
     <div class="ps-grid-column">
       {{runtime.countPallets}}
@@ -36,7 +36,7 @@
       {{runtime.countConstants}}
     </div>
     <div class="ps-grid-column">
-        <a [routerLink]="runtime.specName + '/' + runtime.specVersion">Details</a>
+        <a [routerLink]="runtime.specVersion.toString()">Details</a>
     </div>
   </div>
 </div>

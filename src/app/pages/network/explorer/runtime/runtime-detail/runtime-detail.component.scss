@@ -1,0 +1,3 @@
+.ps-pallet-grid {
+  grid-template-columns: [icon] 40px [name] auto [events] minmax(90px, 180px) [calls] minmax(90px, 180px) [storage] minmax(90px, 180px) [constants] minmax(90px, 180px) [details] 100px;
+}

@@ -1,0 +1,20 @@
+.ps-pallet-calls-grid {
+  grid-template-columns: [icon] 40px [name] auto [lookup] minmax(120px, 180px) [arguments] minmax(120px, auto) [details] 100px;
+}
+
+.ps-pallet-events-grid {
+  grid-template-columns: [icon] 40px [name] auto [type] minmax(120px, 180px) [attributes] minmax(120px, auto) [details] 100px;
+}
+
+.ps-pallet-storage-grid {
+  grid-template-columns: [icon] 40px [name] auto [type] minmax(120px, auto) [details] 100px;
+}
+
+.ps-pallet-constants-grid {
+  grid-template-columns: [icon] 40px [name] auto [type] minmax(120px, 180px) [value] minmax(90px, auto)[details] 100px;
+}
+
+.ps-pallet-errors-grid {
+  grid-template-columns: [icon] 40px [name] auto [index] minmax(120px, 180px) [description] minmax(90px, auto);
+}
+

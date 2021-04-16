@@ -54,8 +54,9 @@ export class RuntimeService {
 
     const runtime = await this.pa.run().polkascan.state.getLatestRuntime();
 
-    this.latestRuntimes[network].next(runtime);
+    // First cache the runtime, then broadcast it. This order is important.
     this.cacheRuntime(network, runtime);
+    this.latestRuntimes[network].next(runtime);
     // TODO what more to prefetch?
   }
 
@@ -67,15 +68,23 @@ export class RuntimeService {
     if (!cache.has(version)) {
       cache.set(version, {runtime: new BehaviorSubject<pst.Runtime | null>(runtime)});
     } else {
-      (cache.get(version) as RuntimeCache).runtime.next(runtime);
+      const versionCache = cache.get(version) as RuntimeCache;
+      if (!versionCache.runtime.value) {
+        // Only update cache if it's still empty.
+        versionCache.runtime.next(runtime);
+      }
     }
   }
 
 
   getRuntime(network: string, specVersion?: number): BehaviorSubject<pst.Runtime | null> {
+    if (!this.latestRuntimes[network]) {
+      // We need the BehaviorSubject for the latest runtime, because it tells us which specName to use.
+      this.initialize(network).then();
+    }
+
     if (typeof specVersion !== 'number' || specVersion < 0) {
       // Without given specVersion, return latest runtime.
-      this.initialize(network).then();
       return this.latestRuntimes[network] as BehaviorSubject<pst.Runtime | null>;
     }
 
@@ -90,19 +99,22 @@ export class RuntimeService {
       // Create a new BehaviorSubject in cache, so we can fill it with the loaded runtime later ons
       cachedRuntime = new BehaviorSubject<pst.Runtime | null>(null);
       cache.set(specVersion, {runtime: cachedRuntime});
+
+      this.latestRuntimes[network]
+      .pipe(
+        filter(r => r !== null),
+        map((r: pst.Runtime | null): string => (r as pst.Runtime).specName),
+        first()
+      ).subscribe(async (specName) => {
+        const runtime = await this.pa.run().polkascan.state.getRuntime(specName, specVersion);
+        if (!cachedRuntime.value) {
+          // Only update cache if it's still empty.
+          cachedRuntime.next(runtime);
+        }
+      });
+
+      return cachedRuntime;
     }
-
-    this.latestRuntimes[network]
-    .pipe(
-      filter(r => r !== null),
-      map((r: pst.Runtime | null): string => (r as pst.Runtime).specName),
-      first()
-    ).subscribe(async (specName) => {
-      const runtime = await this.pa.run().polkascan.state.getRuntime(specName, specVersion);
-      cachedRuntime.next(runtime);
-    });
-
-    return cachedRuntime;
   }
 
 
@@ -128,17 +140,12 @@ export class RuntimeService {
 
 
   private async getRuntimeCache(network: string, specVersion: number): Promise<RuntimeCache & RuntimeCacheAttributes> {
-    if (!this.runtimes[network] && !this.runtimes[network].has(specVersion)) {
-      throw new Error('There is no runtime loading with this specVersion. Please initiate loading of the runtime first.');
+    if (!this.runtimes[network]
+      || !this.runtimes[network].has(specVersion)
+      || !(this.runtimes[network].get(specVersion) as RuntimeCache & RuntimeCacheAttributes).runtime.value) {
+      throw new Error('There is no runtime loaded with this specVersion. Please load the runtime first.');
     }
-
-    const cache = this.runtimes[network].get(specVersion) as RuntimeCache & RuntimeCacheAttributes;
-
-    if (!cache.runtime.value) {
-      throw new Error('There is no runtime loaded with this specVersion yet. Please wait and try again or re-initiate loading of the runtime.');
-    }
-
-    return cache;
+    return this.runtimes[network].get(specVersion) as RuntimeCache & RuntimeCacheAttributes;
   }
 
 

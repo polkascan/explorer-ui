@@ -15,7 +15,7 @@
         <i class="fas fa-cog"></i>
       </div>
       <div class="ps-grid-column">
-        <a [routerLink]="pallet.pallet">{{pallet.pallet}}</a>
+        <a [routerLink]="'pallet/' + pallet.pallet">{{pallet.pallet}}</a>
       </div>
       <div class="ps-grid-column">
         {{pallet.countEvents}}
@@ -30,7 +30,7 @@
         {{pallet.countConstants}}
       </div>
       <div class="ps-grid-column">
-          <a [routerLink]="pallet.pallet">Details</a>
+          <a [routerLink]="'pallet/' + pallet.pallet">Details</a>
       </div>
     </div>
   </div>

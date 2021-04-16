@@ -4,7 +4,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
-import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-runtime-pallet-detail',
@@ -14,7 +14,6 @@ import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
 })
 export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
-  runtime: Observable<pst.Runtime | null>;
   pallet = new BehaviorSubject<pst.RuntimePallet | null>(null);
   calls = new BehaviorSubject<pst.RuntimeCall[]>([]);
   events = new BehaviorSubject<pst.RuntimeEvent[]>([]);
@@ -32,44 +31,47 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     // Get the network.
     this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
-      filter(network => network !== null),
+      filter(network => network !== ''),
       first(),
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
         map(params => [network, parseInt(params.specVersion, 10), params.pallet])
-      ))
-    ).subscribe(([network, specVersion, pallet]) => {
-      this.runtime = this.rs.getRuntime(network as string, specVersion as number).pipe(
-        takeUntil(this.destroyer),
-        filter(r => r !== null),
-        first()
-      );
-      this.rs.getRuntimePallets(network as string, specVersion as number).then(pallets => {
-        const matchedPallet: pst.RuntimePallet = pallets.filter(p => p.pallet === pallet)[0];
-        this.pallet.next(matchedPallet);
-      });
-      this.rs.getRuntimeCalls(network as string, specVersion as number).then(calls => {
-        const palletCalls: pst.RuntimeCall[] = calls.filter(c => c.pallet === pallet);
-        this.calls.next(palletCalls);
-      });
-      this.rs.getRuntimeEvents(network as string, specVersion as number).then(events => {
-        const palletEvents: pst.RuntimeEvent[] = events.filter(e => e.pallet === pallet);
-        this.events.next(palletEvents);
-      });
-      this.rs.getRuntimeStorages(network as string, specVersion as number).then(storages => {
-        const palletStorage: pst.RuntimeStorage[] = storages.filter(s => s.pallet === pallet);
-        this.storages.next(palletStorage);
-      });
-      this.rs.getRuntimeConstants(network as string, specVersion as number).then(constants => {
-        const palletConstants: pst.RuntimeConstant[] = constants.filter(c => c.pallet === pallet);
-        this.constants.next(palletConstants);
-      });
-      this.rs.getRuntimeErrorMessages(network as string, specVersion as number).then(errors => {
-        const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet === pallet);
-        this.errors.next(palletErrors);
-      });
-    });
+      )),
+      switchMap(([network, specVersion, pallet]) =>
+        this.rs.getRuntime(network as string, specVersion as number).pipe(
+          takeUntil(this.destroyer),
+          filter(r => r !== null),
+          tap((r) => {
+            console.log('getRuntime', r);
+            this.rs.getRuntimePallets(network as string, specVersion as number).then(pallets => {
+              const matchedPallet: pst.RuntimePallet = pallets.filter(p => p.pallet === pallet)[0];
+              this.pallet.next(matchedPallet);
+            });
+            this.rs.getRuntimeCalls(network as string, specVersion as number).then(calls => {
+              const palletCalls: pst.RuntimeCall[] = calls.filter(c => c.pallet === pallet);
+              this.calls.next(palletCalls);
+            });
+            this.rs.getRuntimeEvents(network as string, specVersion as number).then(events => {
+              const palletEvents: pst.RuntimeEvent[] = events.filter(e => e.pallet === pallet);
+              this.events.next(palletEvents);
+            });
+            this.rs.getRuntimeStorages(network as string, specVersion as number).then(storages => {
+              const palletStorage: pst.RuntimeStorage[] = storages.filter(s => s.pallet === pallet);
+              this.storages.next(palletStorage);
+            });
+            this.rs.getRuntimeConstants(network as string, specVersion as number).then(constants => {
+              const palletConstants: pst.RuntimeConstant[] = constants.filter(c => c.pallet === pallet);
+              this.constants.next(palletConstants);
+            });
+            this.rs.getRuntimeErrorMessages(network as string, specVersion as number).then(errors => {
+              const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet === pallet);
+              this.errors.next(palletErrors);
+            });
+          })
+        )
+      )
+    ).subscribe();
   }
 
   ngOnDestroy(): void {

@@ -26,22 +26,23 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.runtime = this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
-      filter(network => network !== null),
+      filter(network => network !== ''),
       first(),
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
         map(params => [network, parseInt(params.specVersion, 10)])
       )),
-      switchMap(([network, specVersion]) => {
-        const runtime = this.rs.getRuntime(network as string, specVersion as number).pipe(
+      switchMap(([network, specVersion]) =>
+        this.rs.getRuntime(network as string, specVersion as number).pipe(
           takeUntil(this.destroyer),
-          filter(r => r !== null)
-        );
-        this.rs.getRuntimePallets(network as string, specVersion as number).then(pallets => {
-          this.pallets.next(pallets);
-        });
-        return runtime;
-      })
+          filter(r => r !== null),
+          tap(() => {
+            this.rs.getRuntimePallets(network as string, specVersion as number).then(pallets => {
+              this.pallets.next(pallets);
+            });
+          })
+        )
+      )
     );
   }
 

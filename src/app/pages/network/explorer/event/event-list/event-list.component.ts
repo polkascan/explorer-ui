@@ -76,22 +76,22 @@ export class EventListComponent implements OnInit, OnDestroy {
           this.getEvents();
 
           this.rs.getRuntime(network)
-            .pipe(
-              takeUntil(this.destroyer),
-              filter((r) => r !== null),
-              first()
-            )
-            .subscribe(async (runtime): Promise<void> => {
-                const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
-                const events = await this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion);
+          .pipe(
+            takeUntil(this.destroyer),
+            filter((r) => r !== null),
+            first()
+          )
+          .subscribe(async (runtime): Promise<void> => {
+            const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
+            const events = await this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion);
 
-                if (pallets) {
-                  pallets.forEach((pallet) => {
-                    this.filters.set(pallet, events ? events.filter((event) => pallet.pallet === event.pallet).sort() : []);
-                  });
-                  this.cd.markForCheck();
-                }
-            });
+            if (pallets) {
+              pallets.forEach((pallet) => {
+                this.filters.set(pallet, events ? events.filter((event) => pallet.pallet === event.pallet).sort() : []);
+              });
+              this.cd.markForCheck();
+            }
+          });
         }
       });
   }
