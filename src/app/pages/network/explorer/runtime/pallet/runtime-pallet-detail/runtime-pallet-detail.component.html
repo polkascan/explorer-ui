@@ -101,6 +101,32 @@
     </div>
   </div>
 
+  <h2>Types</h2>
+  <div class="ps-grid ps-pallet-types-grid">
+    <div class="ps-grid-header-column"></div>
+    <div class="ps-grid-header-column">Name</div>
+    <div class="ps-grid-header-column">Decoder class</div>
+    <div class="ps-grid-header-column">Core primitive</div>
+    <div class="ps-grid-header-column">Runtime primitive</div>
+    <div class="ps-grid-row" *ngFor="let type of types|async; trackBy: trackType">
+      <div class="ps-grid-column">
+        <i class="fa fa-exclamation-triangle"></i>
+      </div>
+      <div class="ps-grid-column">
+        {{type.scaleType}}
+      </div>
+      <div class="ps-grid-column">
+        {{type.decoderClass}}
+      </div>
+      <div class="ps-grid-column">
+        {{type.isCorePrimitive}}
+      </div>
+      <div class="ps-grid-column">
+        {{type.isRuntimePrimitive}}
+      </div>
+    </div>
+  </div>
+
   <h2>Error Messages</h2>
   <div class="ps-grid ps-pallet-errors-grid">
     <div class="ps-grid-header-column"></div>

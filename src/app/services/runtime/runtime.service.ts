@@ -209,6 +209,18 @@ export class RuntimeService {
   }
 
 
+  async getRuntimeTypes(network: string, specVersion: number): Promise<pst.RuntimeType[]> {
+    const cache = await this.getRuntimeCache(network, specVersion);
+
+    if (!cache.hasOwnProperty('runtimeType')) {
+      const response = await this.pa.run().polkascan.state.getRuntimeTypes((cache.runtime.value as pst.Runtime).specName, specVersion);
+      cache.runtimeTypes = response.objects;
+    }
+
+    return cache.runtimeTypes as pst.RuntimeType[];
+  }
+
+
   async getRuntimeErrorMessages(network: string, specVersion: number): Promise<pst.RuntimeErrorMessage[]> {
     const cache = await this.getRuntimeCache(network, specVersion);
 

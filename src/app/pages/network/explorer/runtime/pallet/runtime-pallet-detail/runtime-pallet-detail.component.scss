@@ -14,7 +14,10 @@
   grid-template-columns: [icon] 40px [name] auto [type] minmax(120px, 180px) [value] minmax(90px, auto)[details] 100px;
 }
 
+.ps-pallet-types-grid {
+  grid-template-columns: [icon] 40px [name] auto [decoder] minmax(120px, 180px) [coreprimitive] minmax(90px, auto) [runtimeprimitive] minmax(90px, auto);
+}
+
 .ps-pallet-errors-grid {
   grid-template-columns: [icon] 40px [name] auto [index] minmax(120px, 180px) [description] minmax(90px, auto);
 }
-

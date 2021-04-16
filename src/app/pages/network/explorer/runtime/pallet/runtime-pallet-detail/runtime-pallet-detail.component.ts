@@ -19,6 +19,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
   events = new BehaviorSubject<pst.RuntimeEvent[]>([]);
   storages = new BehaviorSubject<pst.RuntimeStorage[]>([]);
   constants = new BehaviorSubject<pst.RuntimeConstant[]>([]);
+  types = new BehaviorSubject<pst.RuntimeType[]>([]);
   errors = new BehaviorSubject<pst.RuntimeErrorMessage[]>([]);
 
   constructor(
@@ -64,6 +65,10 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
               const palletConstants: pst.RuntimeConstant[] = constants.filter(c => c.pallet === pallet);
               this.constants.next(palletConstants);
             });
+            this.rs.getRuntimeTypes(network as string, specVersion as number).then(types => {
+              const palletTypes: pst.RuntimeType[] = types.filter(t => t.pallet === pallet);
+              this.types.next(palletTypes);
+            });
             this.rs.getRuntimeErrorMessages(network as string, specVersion as number).then(errors => {
               const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet === pallet);
               this.errors.next(palletErrors);
@@ -93,6 +98,10 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
 
   trackConstant(index: number, item: pst.RuntimeConstant): string {
     return item.constantName as string;
+  }
+
+  trackType(index: number, item: pst.RuntimeType): string {
+    return item.scaleType as string;
   }
 
   trackError(index: number, item: pst.RuntimeErrorMessage): string {
