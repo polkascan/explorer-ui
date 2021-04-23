@@ -9,12 +9,9 @@
   <div>Nonce: {{extrinsic.nonce}}</div>
   <div>Signature: {{extrinsic.signature}}</div>
 
-  <h2>Parameters</h2>
+  <h2>Call Arguments</h2>
   <ng-container *ngIf="callArguments">
-    <ng-container *ngFor="let item of callArguments | keyvalue">
-      <b>{{item.key}}</b>
-      <extrinsic-attributes [attributes]="$any(item.value)" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="10" [tokenSymbol]="'DOT'"></extrinsic-attributes>
-    </ng-container>
+    <extrinsic-attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="10" [tokenSymbol]="'DOT'"></extrinsic-attributes>
   </ng-container>
 
   <h2>Events</h2>

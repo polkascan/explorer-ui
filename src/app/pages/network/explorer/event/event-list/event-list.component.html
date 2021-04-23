@@ -3,13 +3,13 @@
 
 <div class="ps-grid-filters">
   <select [formControl]="palletControl">
-    <option [ngValue]="null">All pallets</option>
+    <option [ngValue]="''">All pallets</option>
     <option *ngFor="let item of filters | keyvalue" [ngValue]="item.key.pallet">{{item.key.pallet}}</option>
   </select>
-  <select [formControl]="eventControl">
-    <option [ngValue]="null">All event</option>
+  <select [formControl]="eventNameControl">
+    <option [ngValue]="''">All events</option>
     <ng-container *ngFor="let item of filters | keyvalue">
-      <ng-container *ngIf="item.key === palletControl.value">
+      <ng-container *ngIf="item.key.pallet === palletControl.value">
         <option *ngFor="let event of item.value" [ngValue]="event.eventName">{{event.eventName}}</option>
       </ng-container>
     </ng-container>

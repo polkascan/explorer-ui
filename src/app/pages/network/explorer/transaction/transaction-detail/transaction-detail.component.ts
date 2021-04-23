@@ -39,13 +39,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer),
         map(params => params.id.split('-').map((v: string) => parseInt(v, 10)))
       ))
-    ).subscribe(async (transactionId) => {
+    ).subscribe(async ([blockNr, extrinsicIdx]) => {
       try {
         const transaction: pst.Extrinsic =
-          await this.pa.run().polkascan.chain.getExtrinsic(transactionId[0], transactionId[1]);
+          await this.pa.run().polkascan.chain.getExtrinsic(blockNr, extrinsicIdx);
         const eventsResponse: pst.ListResponse<pst.Event> =
-          await this.pa.run().polkascan.chain.getEvents({blockNumber: transactionId[0]});
-        const events = eventsResponse.objects.filter(event => event.extrinsicIdx === transactionId[1]);
+          await this.pa.run().polkascan.chain.getEvents({blockNumber: blockNr});
+        const events = eventsResponse.objects.filter(event => event.extrinsicIdx === extrinsicIdx);
         if (!this.onDestroyCalled) {
           this.transaction = transaction;
           this.events = events;

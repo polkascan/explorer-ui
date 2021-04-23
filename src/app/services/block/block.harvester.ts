@@ -102,6 +102,9 @@ export class BlockHarvester {
         }));
       }
       this.finalizedNumber.next(newNumber);
+      if (newNumber > this.loadedNumber.value) {
+        this.loadedNumber.next(newNumber);
+      }
     }
   }
 

@@ -26,7 +26,7 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
     // Get the network.
     this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
-      filter(network => network !== null),
+      filter(network => !!network),
       first(),
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(

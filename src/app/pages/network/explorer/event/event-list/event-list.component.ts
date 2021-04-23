@@ -22,10 +22,10 @@ export class EventListComponent implements OnInit, OnDestroy {
   filters = new Map();
 
   palletControl: FormControl = new FormControl('');
-  eventControl: FormControl = new FormControl('');
+  eventNameControl: FormControl = new FormControl('');
   filtersFormGroup: FormGroup = new FormGroup({
     eventModule: this.palletControl,
-    eventName: this.eventControl
+    eventName: this.eventNameControl
   });
 
   private network: string;
@@ -42,7 +42,7 @@ export class EventListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.filtersFormGroup.valueChanges
       .pipe(
-        debounceTime(100),  // Also to make sure eventControl reset has taken place
+        debounceTime(100),  // Also to make sure eventNameControl reset has taken place
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
@@ -59,7 +59,7 @@ export class EventListComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer)
       )
       .subscribe(() => {
-        this.eventControl.reset(null, {emitEvent: false});
+        this.eventNameControl.reset('', {emitEvent: false});
       });
 
     this.ns.currentNetwork
@@ -67,7 +67,11 @@ export class EventListComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer)
       )
       .subscribe((network: string) => {
-        this.filtersFormGroup.reset({}, {emitEvent: false});
+        this.filtersFormGroup.reset({
+          eventModule: '',
+          eventName: ''
+        }, {emitEvent: false});
+
         this.network = network;
         this.unsubscribeNewEvent();
 
@@ -116,8 +120,8 @@ export class EventListComponent implements OnInit, OnDestroy {
     if (this.palletControl.value) {
       filters.eventModule = this.palletControl.value;
     }
-    if (this.eventControl.value) {
-      filters.eventName = this.eventControl.value;
+    if (this.eventNameControl.value) {
+      filters.eventName = this.eventNameControl.value;
     }
 
     try {
@@ -161,8 +165,8 @@ export class EventListComponent implements OnInit, OnDestroy {
     if (this.palletControl.value) {
       filters.eventModule = this.palletControl.value;
     }
-    if (this.eventControl.value) {
-      filters.eventName = this.eventControl.value;
+    if (this.eventNameControl.value) {
+      filters.eventName = this.eventNameControl.value;
     }
 
     try {

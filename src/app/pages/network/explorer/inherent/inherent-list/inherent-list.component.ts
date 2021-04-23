@@ -22,10 +22,10 @@ export class InherentListComponent implements OnInit, OnDestroy {
   filters = new Map();
 
   palletControl: FormControl = new FormControl('');
-  callControl: FormControl = new FormControl('');
+  callNameControl: FormControl = new FormControl('');
   filtersFormGroup: FormGroup = new FormGroup({
     eventModule: this.palletControl,
-    callName: this.callControl
+    callName: this.callNameControl
   });
 
   private network: string;
@@ -59,7 +59,7 @@ export class InherentListComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer)
       )
       .subscribe(() => {
-        this.callControl.reset(null, {emitEvent: false});
+        this.callNameControl.reset('', {emitEvent: false});
       });
 
     this.ns.currentNetwork
@@ -68,6 +68,11 @@ export class InherentListComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer)
       )
       .subscribe((network: string) => {
+        this.filtersFormGroup.reset({
+          eventModule: '',
+          callName: ''
+        }, {emitEvent: false});
+
         this.network = network;
         this.unsubscribeNewInherent();
 
@@ -119,8 +124,8 @@ export class InherentListComponent implements OnInit, OnDestroy {
     if (this.palletControl.value) {
       filters.eventModule = this.palletControl.value;
     }
-    if (this.callControl.value) {
-      filters.CallName = this.callControl.value;
+    if (this.callNameControl.value) {
+      filters.CallName = this.callNameControl.value;
     }
 
     try {
@@ -172,8 +177,8 @@ export class InherentListComponent implements OnInit, OnDestroy {
     if (this.palletControl.value) {
       filters.eventModule = this.palletControl.value;
     }
-    if (this.callControl.value) {
-      filters.CallName = this.callControl.value;
+    if (this.callNameControl.value) {
+      filters.CallName = this.callNameControl.value;
     }
 
     try {

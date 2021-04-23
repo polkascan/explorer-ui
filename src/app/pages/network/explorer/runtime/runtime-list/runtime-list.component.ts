@@ -26,7 +26,7 @@ export class RuntimeListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
-      filter(network => network !== null),
+      filter(network => !!network),
       first(),
       switchMap(network => this.rs.getRuntimes(network).pipe(
         takeUntil(this.destroyer)

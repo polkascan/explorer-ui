@@ -29,7 +29,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
     // Get the network.
     this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
-      filter(network => network !== null),
+      filter(network => !!network),
       first(),
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
@@ -47,7 +47,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
     ).subscribe(async ([network, runtime, pallet, callName]) => {
       this.rs.getRuntimeCalls(network, runtime.specVersion).then(calls => {
         const palletCalls: pst.RuntimeCall[] = calls.filter(c =>
-          c.pallet === pallet && c.callName == callName
+          c.pallet === pallet && c.callName === callName
         );
         this.call.next(palletCalls[0]);
       });
