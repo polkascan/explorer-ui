@@ -9,10 +9,10 @@ import {
   ViewEncapsulation
 } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import { NetworkService } from '../../services/network.service';
-import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { distinctUntilChanged, filter, switchMap, takeUntil } from 'rxjs/operators';
 import { AppConfig } from '../../app-config';
 
 @Component({
@@ -26,6 +26,7 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
   networks: string[];
   networkControl: FormControl = new FormControl('');
   languageControl: FormControl = new FormControl('');
+  blockNr = new BehaviorSubject<number>(0);
 
   private destroyer = new Subject();
 
@@ -57,8 +58,17 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
       .subscribe((network) => {
         if (network) {
           this.networkControl.setValue(network, {onlySelf: true, emitEvent: false});
+          this.networkService.blockHarvester.loadedNumber.pipe(
+            takeUntil(this.destroyer),
+            takeUntil(this.networkService.currentNetwork.pipe(
+              filter(n => n !== network)
+            ))
+          ).subscribe(blockNr => {
+            this.blockNr.next(blockNr);
+          });
         } else {
           this.networkControl.reset('', {onlySelf: true, emitEvent: false});
+          this.blockNr.next(0);
         }
       });
   }

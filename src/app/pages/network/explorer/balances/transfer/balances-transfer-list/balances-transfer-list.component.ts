@@ -48,7 +48,9 @@ export class BalancesTransferListComponent implements OnInit {
     try {
       this.unsubscribeNewTransferFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewTransfer(
         (transfer: pst.Transfer) => {
-          if (!this.transfers.some((l) => l.blockNumber === transfer.blockNumber && l.eventIdx === transfer.eventIdx)) {
+          if (!this.transfers.some((l) =>
+            l.blockNumber === transfer.blockNumber && l.eventIdx === transfer.eventIdx
+          )) {
             this.transfers.splice(0, 0, transfer);
             this.transfers.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
             this.transfers.length = Math.min(this.transfers.length, temporaryListSize);

@@ -2,6 +2,9 @@
   <img class="ps-top-bar-brand-img" src="/assets/logo.png">
 </a>
 <div class="ps-top-bar-selectors">
+  <div class="ps-top-bar-block-nr" *ngIf="blockNr|async as blockNr">
+    {{blockNr}}
+  </div>
   <div class="ps-top-bar-network-selector">
     <select [formControl]="networkControl">
       <option disabled="true" value="">Select a network</option>

@@ -5,6 +5,7 @@ ps-top-bar {
   align-items: center;
   justify-content: space-between;
   background: var(--ps-top-bar-bg-color);
+  color: var(--ps-top-bar-text-color);
 }
 
 .ps-top-bar-brand {
@@ -21,6 +22,10 @@ ps-top-bar {
   order: 1;
 
   display: flex;
+}
+
+.ps-top-bar-block-nr {
+  margin: 0 0.3rem;
 }
 
 .ps-top-bar-network-selector {

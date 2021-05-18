@@ -1,6 +1,6 @@
 <ng-container *ngIf="log">
   <div>Block <a [routerLink]="'../../block/' + log.blockNumber">#{{log.blockNumber}}</a></div>
   <div>Log Index: {{log.logIdx}}</div>
-  <div>Type: {{log.type}}</div>
+  <div>Type: {{log.typeName}}</div>
   <div>Data: {{log.data | json}}</div>
 </ng-container>
