@@ -6,7 +6,6 @@
   <div class="ps-grid-header-column">Log ID</div>
   <div class="ps-grid-header-column">Block</div>
   <div class="ps-grid-header-column">Type</div>
-  <div class="ps-grid-header-column">Data</div>
   <div class="ps-grid-header-column"></div>
   <div class="ps-grid-row" *ngFor="let log of logs; trackBy: track">
     <div class="ps-grid-column">
@@ -17,9 +16,6 @@
     </div>
     <div class="ps-grid-column">
       <a [routerLink]="'../block/' + log.blockNumber">{{log.blockNumber}}</a>
-    </div>
-    <div class="ps-grid-column">
-      {{log.data}}
     </div>
     <div class="ps-grid-column">
       {{log.typeName}}
