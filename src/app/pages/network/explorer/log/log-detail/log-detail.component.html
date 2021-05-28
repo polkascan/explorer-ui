@@ -2,6 +2,8 @@
   <div>Block <a [routerLink]="'../../block/' + log.blockNumber">#{{log.blockNumber}}</a></div>
   <div>Log Index: {{log.logIdx}}</div>
   <div>Type: {{log.typeName}}</div>
-  <div>Data:</div>
-  <div>{{log.data}}</div>
+  <div *ngIf="log.data">
+    <div><b>Data</b></div>
+    <attribute-struct [attribute]="log.data" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="10" [tokenSymbol]="'DOT'"></attribute-struct>
+  </div>
 </ng-container>
