@@ -4,11 +4,9 @@
   "scripts": {
     "ng": "ng",
     "prestart": "cd node_modules/@polkadapt && rm -rf * && ln -s ../../polkadapt/dist/core && ln -s ../../polkadapt/dist/substrate-rpc && ln -s ../../polkadapt/dist/polkascan",
-    "start": "ng serve",
-    "build": "ng build",
-    "test": "ng test",
-    "lint": "ng lint",
-    "e2e": "ng e2e"
+    "start": "ng serve --configuration development",
+    "build": "ng build --configuration production",
+    "test": "ng test"
   },
   "private": true,
   "dependencies": {
