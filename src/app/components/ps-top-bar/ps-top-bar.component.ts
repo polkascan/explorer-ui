@@ -11,9 +11,9 @@ import {
 import { FormControl } from '@angular/forms';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { Router } from '@angular/router';
-import { NetworkService } from '../../services/network.service';
 import { distinctUntilChanged, filter, switchMap, takeUntil } from 'rxjs/operators';
 import { AppConfig } from '../../app-config';
+import { VariablesService } from '../../services/variables.service';
 
 @Component({
   templateUrl: 'ps-top-bar.component.html',
@@ -26,7 +26,6 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
   networks: string[];
   networkControl: FormControl = new FormControl('');
   languageControl: FormControl = new FormControl('');
-  blockNr = new BehaviorSubject<number>(0);
 
   private destroyer = new Subject();
 
@@ -34,8 +33,8 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
               private renderer: Renderer2,
               private cd: ChangeDetectorRef,
               private router: Router,
-              private networkService: NetworkService,
-              private config: AppConfig) {
+              private config: AppConfig,
+              public vars: VariablesService) {
   }
 
   ngOnInit(): void {
@@ -50,7 +49,7 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
         this.router.navigateByUrl(`/n/${value}`);
       });
 
-    this.networkService.currentNetwork
+    this.vars.network
       .pipe(
         takeUntil(this.destroyer),
         distinctUntilChanged()
@@ -58,17 +57,8 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
       .subscribe((network) => {
         if (network) {
           this.networkControl.setValue(network, {onlySelf: true, emitEvent: false});
-          this.networkService.blockHarvester.loadedNumber.pipe(
-            takeUntil(this.destroyer),
-            takeUntil(this.networkService.currentNetwork.pipe(
-              filter(n => n !== network)
-            ))
-          ).subscribe(blockNr => {
-            this.blockNr.next(blockNr);
-          });
         } else {
           this.networkControl.reset('', {onlySelf: true, emitEvent: false});
-          this.blockNr.next(0);
         }
       });
   }
