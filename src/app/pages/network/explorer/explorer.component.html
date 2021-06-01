@@ -1,4 +1,6 @@
-<div class="last-block" *ngIf="((latestBlockNumber|async) || 0) > 0">{{latestBlockNumber|async}}</div>
+<div class="last-block" *ngIf="((latestBlockNumber|async) || 0) > 0">
+  {{latestBlockNumber|async}}
+</div>
 <div class="blocks" [@blocksAnimation]="latestBlockNumber|async">
   <div class="block-outer" *ngFor="let block$ of blocks|async; trackBy: trackByNumber">
     <ng-container *ngIf="block$|async as block">

@@ -1,6 +1,6 @@
 # STAGE 1: layered build of PolkADAPT submodule and Polkascan application.
 
-FROM node:10-alpine as builder
+FROM node:14-alpine as builder
 RUN npm update -g yarn
 
 # The application depends on PolkADAPT, so we have to install and build PolkADAPT first.
@@ -15,11 +15,11 @@ RUN yarn
 COPY polkadapt/projects/core/package.json projects/core/package.json
 RUN cd projects/core && yarn
 
-# We build the core libary now, because PolkADAPT adapters depend on it.
+# We build the core libary first, because PolkADAPT adapters depend on it.
 
 COPY polkadapt/angular.json polkadapt/tsconfig.json polkadapt/tslint.json ./
 COPY polkadapt/projects/core projects/core
-RUN yarn exec ng build core --prod
+RUN yarn exec ng build -- --configuration production core
 
 COPY polkadapt/projects/substrate-rpc/package.json projects/substrate-rpc/package.json
 RUN cd projects/substrate-rpc && yarn
@@ -30,8 +30,8 @@ RUN cd projects/polkascan && yarn
 # Copy the rest of the files and build all PolkADAPT libraries.
 
 COPY polkadapt .
-RUN yarn exec ng build substrate-rpc --prod
-RUN yarn exec ng build polkascan --prod
+RUN yarn exec ng build -- --configuration production substrate-rpc
+RUN yarn exec ng build -- --configuration production polkascan
 
 # Install the application dependencies.
 
@@ -46,13 +46,12 @@ COPY . .
 ARG ENV_CONFIG=production
 ENV ENV_CONFIG=$ENV_CONFIG
 
-#TODO RUN yarn build --configuration=${ENV_CONFIG} raises an exception, maybe caused by experimental Webpack 5 support in Angular 11? For now we build without the environment option.
-RUN yarn build
+RUN yarn exec ng build -- --configuration ${ENV_CONFIG}
 
 
 # STAGE 2: Nginx setup to serve the application.
 
-FROM nginx:1.14.1-alpine
+FROM nginx:stable-alpine
 
 # Allow for various nginx proxy configuration.
 
@@ -64,28 +63,28 @@ ENV NGINX_CONF=$NGINX_CONF
 ARG POLKADOT_SUBSTRATE_RPC_URL=wss://rpc.polkadot.io
 ENV POLKADOT_SUBSTRATE_RPC_URL=$POLKADOT_SUBSTRATE_RPC_URL
 
-ARG POLKADOT_POLKASCAN_API_URL=https://explorer-37.polkascan.io/api/v2/polkadot/
+ARG POLKADOT_POLKASCAN_API_URL=https://explorer-35.polkascan.io/api/v2/polkadot/
 ENV POLKADOT_POLKASCAN_API_URL=$POLKADOT_POLKASCAN_API_URL
 
-ARG POLKADOT_POLKASCAN_WS_URL=wss://explorer-37.polkascan.io/api/v2/polkadot/graphql-ws
+ARG POLKADOT_POLKASCAN_WS_URL=wss://explorer-35.polkascan.io/api/v2/polkadot/graphql-ws
 ENV POLKADOT_POLKASCAN_WS_URL=$POLKADOT_POLKASCAN_WS_URL
 
 ARG KUSAMA_SUBSTRATE_RPC_URL=wss://kusama-rpc.polkadot.io
 ENV KUSAMA_SUBSTRATE_RPC_URL=$KUSAMA_SUBSTRATE_RPC_URL
 
-ARG KUSAMA_POLKASCAN_API_URL=https://explorer-37.polkascan.io/api/v2/kusama/
+ARG KUSAMA_POLKASCAN_API_URL=https://explorer-35.polkascan.io/api/v2/kusama/
 ENV KUSAMA_POLKASCAN_API_URL=$KUSAMA_POLKASCAN_API_URL
 
-ARG KUSAMA_POLKASCAN_WS_URL=wss://explorer-37.polkascan.io/api/v2/kusama/graphql-ws
+ARG KUSAMA_POLKASCAN_WS_URL=wss://explorer-35.polkascan.io/api/v2/kusama/graphql-ws
 ENV KUSAMA_POLKASCAN_WS_URL=$KUSAMA_POLKASCAN_WS_URL
 
 ARG ROCOCO_SUBSTRATE_RPC_URL=wss://rococo-rpc.polkadot.io
 ENV ROCOCO_SUBSTRATE_RPC_URL=$ROCOCO_SUBSTRATE_RPC_URL
 
-ARG ROCOCO_POLKASCAN_API_URL=https://explorer-37.polkascan.io/api/v2/rococo/
+ARG ROCOCO_POLKASCAN_API_URL=https://explorer-35.polkascan.io/api/v2/rococo/
 ENV ROCOCO_POLKASCAN_API_URL=$ROCOCO_POLKASCAN_API_URL
 
-ARG ROCOCO_POLKASCAN_WS_URL=wss://explorer-37.polkascan.io/api/v2/rococo/graphql-ws
+ARG ROCOCO_POLKASCAN_WS_URL=wss://explorer-35.polkascan.io/api/v2/rococo/graphql-ws
 ENV ROCOCO_POLKASCAN_WS_URL=$ROCOCO_POLKASCAN_WS_URL
 
 
