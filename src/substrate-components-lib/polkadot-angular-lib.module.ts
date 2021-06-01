@@ -3,7 +3,8 @@ import { NgModule } from '@angular/core';
 import { IdenticonComponent } from './components/identicon/identicon.component';
 import {
   ChildAttributesComponent,
-  EventAttributesComponent, ExtrinsicAttributesComponent
+  EventAttributesComponent,
+  ExtrinsicAttributesComponent
 } from './components/attributes/attributes.component';
 import { AttributeAccountIndexComponent } from './components/attributes/attributes/attribute-account-index.component';
 import { AttributeAddressComponent } from './components/attributes/attributes/attribute-address.component';

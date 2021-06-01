@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input, Output, ViewEncapsulation, EventEmitter } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
 import { IconTheme } from '../../identicon/identicon.types';
 
 @Component({

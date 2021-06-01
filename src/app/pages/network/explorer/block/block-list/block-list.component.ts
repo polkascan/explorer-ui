@@ -1,6 +1,4 @@
-import {
-  ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { rowsAnimationByCounter } from '../../../../../animations';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { NetworkService } from '../../../../../services/network.service';

@@ -9,9 +9,9 @@ import {
   ViewEncapsulation
 } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { Router } from '@angular/router';
-import { distinctUntilChanged, filter, switchMap, takeUntil } from 'rxjs/operators';
+import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { AppConfig } from '../../app-config';
 import { VariablesService } from '../../services/variables.service';
 

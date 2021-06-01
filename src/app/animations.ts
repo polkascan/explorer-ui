@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { animate, animation, group, query, stagger, style, transition, trigger } from '@angular/animations';
+import { animate, group, query, style, transition, trigger } from '@angular/animations';
 
 export const rowsAnimationByCounter = trigger('rowsAnimationByCounter', [
   transition(':increment', group([

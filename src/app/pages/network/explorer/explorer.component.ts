@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { animate, group, query, stagger, style, transition, trigger } from '@angular/animations';
 import { PolkadaptService } from '../../../services/polkadapt.service';
 import { NetworkService } from '../../../services/network.service';

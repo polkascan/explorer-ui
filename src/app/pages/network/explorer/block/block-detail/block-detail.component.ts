@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { BehaviorSubject, combineLatest, Subject } from 'rxjs';
 import { Block } from '../../../../../services/block/block.harvester';
-import { distinctUntilChanged, filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 

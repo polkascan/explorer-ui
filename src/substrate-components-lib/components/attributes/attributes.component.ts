@@ -1,12 +1,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  EventEmitter,
   Input,
   OnChanges,
   Output,
   SimpleChanges,
-  ViewEncapsulation,
-  EventEmitter
+  ViewEncapsulation
 } from '@angular/core';
 import { IconTheme } from '../identicon/identicon.types';
 

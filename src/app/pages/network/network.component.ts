@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { distinctUntilChanged, filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { distinctUntilChanged, filter, map, switchMap, takeUntil } from 'rxjs/operators';
 import { NetworkService } from '../../services/network.service';
 import { Subject } from 'rxjs';
 import { VariablesService } from '../../services/variables.service';

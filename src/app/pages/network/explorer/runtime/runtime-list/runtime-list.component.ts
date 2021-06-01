@@ -4,7 +4,6 @@ import { BehaviorSubject, Subject } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { NetworkService } from '../../../../../services/network.service';
 import { filter, first, switchMap, takeUntil } from 'rxjs/operators';
-import { Block } from '../../../../../services/block/block.harvester';
 
 
 @Component({
