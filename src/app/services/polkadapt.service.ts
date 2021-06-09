@@ -20,9 +20,10 @@ import { Injectable } from '@angular/core';
 import { AdapterBase, Polkadapt, PolkadaptRunConfig } from '@polkadapt/core';
 import * as substrate from '@polkadapt/substrate-rpc';
 import * as polkascan from '@polkadapt/polkascan';
+import * as coingecko from '@polkadapt/coingecko';
 import { AppConfig } from '../app-config';
 
-export type AugmentedApi = substrate.Api & polkascan.Api;
+export type AugmentedApi = substrate.Api & polkascan.Api & coingecko.Api;
 
 @Injectable({providedIn: 'root'})
 export class PolkadaptService {
@@ -47,6 +48,10 @@ export class PolkadaptService {
           chain: network,
           apiEndpoint: this.config.networks[network].polkascanApiUrl,
           wsEndpoint: this.config.networks[network].polkascanWsUrl
+        }),
+        coingeckoAPI: new coingecko.Adapter({
+          chain: network,
+          apiEndpoint: 'https://api.coingecko.com/api/v3/'
         })
       };
     }

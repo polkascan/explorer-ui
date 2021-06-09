@@ -23,4 +23,5 @@ import { BehaviorSubject } from 'rxjs';
 export class VariablesService {
   network = new BehaviorSubject<string>('none');
   blockNumber = new BehaviorSubject<number>(0);
+  currency = new BehaviorSubject('USD');
 }

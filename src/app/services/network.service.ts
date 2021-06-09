@@ -22,6 +22,8 @@ import { PolkadaptService } from './polkadapt.service';
 import { BlockHarvester } from './block/block.harvester';
 import { BlockService } from './block/block.service';
 import { RuntimeService } from './runtime/runtime.service';
+import { PricingService } from './pricing.service';
+import { VariablesService } from './variables.service';
 
 
 @Injectable({providedIn: 'root'})
@@ -33,7 +35,9 @@ export class NetworkService {
 
   constructor(private pa: PolkadaptService,
               private bs: BlockService,
-              private rs: RuntimeService) {
+              private rs: RuntimeService,
+              private ps: PricingService,
+              private vs: VariablesService) {
   }
 
   async setNetwork(network: string): Promise<void> {
@@ -69,13 +73,15 @@ export class NetworkService {
         this.blockHarvester.resume();
       }
 
-      // TODO this.rs.init en destroy.
+      this.ps.initialize(network, this.vs.currency.value);
+      // TODO this.rs.init and destroy.
       this.rs.initialize(network);
     }
     this.currentNetwork.next(network);
   }
 
   destroy(): void {
+    this.ps.destroy();
     this.pa.clearNetwork();
     this.currentNetwork.next('');
     this.settingNetwork = '';
