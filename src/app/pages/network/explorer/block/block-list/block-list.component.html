@@ -1,36 +1,72 @@
 <a routerLink="..">Back to dashboard</a>
 <h1>Blocks</h1>
-<div class="ps-grid ps-block-grid">
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-header-column">Number</div>
-  <div class="ps-grid-header-column">Age</div>
-  <div class="ps-grid-header-column">Block Hash</div>
-  <div class="ps-grid-header-column">Signed Extrinsics</div>
-  <div class="ps-grid-header-column">Module Events</div>
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let block of blocks|async; trackBy: trackByNumber">
-    <ng-container *ngIf="block|async as block">
-      <div class="ps-grid-column" [class.finalized]="block.finalized">
-        <i class="fas fa-cube"></i>
-      </div>
-      <div class="ps-grid-column">
-        <a [routerLink]="block.number.toString()">{{block.number}}</a>
-      </div>
-      <div class="ps-grid-column">
-        {{block.datetime|date:'mediumTime'}}
-      </div>
-      <div class="ps-grid-column">
-        {{block.hash}}
-      </div>
-      <div class="ps-grid-column">
-        {{block.extrinsics.length}}
-      </div>
-      <div class="ps-grid-column">
-        {{block.events.length}}
-      </div>
-      <div class="ps-grid-column">
-          <a [routerLink]="block.number.toString()">Details</a>
-      </div>
+
+<ng-container *ngIf="(blocks | async) as dataSource">
+  <table mat-table [dataSource]="dataSource" [trackBy]="trackByNumber">
+
+    <ng-container matColumnDef="icon">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef>
+          <i class="fas fa-cube"></i>
+      </td>
     </ng-container>
-  </div>
-</div>
+
+    <ng-container matColumnDef="number">
+      <th mat-header-cell *matHeaderCellDef>Number</th>
+      <td mat-cell *matCellDef="let block">
+        <ng-container *ngIf="(block | async) as block">
+          <a [routerLink]="$any(block).number.toString()">{{$any(block).number}}</a>
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="age">
+      <th mat-header-cell *matHeaderCellDef>Age</th>
+      <td mat-cell *matCellDef="let block">
+        <ng-container *ngIf="(block | async) as block">
+          {{$any(block).datetime | date:'mediumTime'}}
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="blockHash">
+      <th mat-header-cell *matHeaderCellDef>Block Hash</th>
+      <td mat-cell *matCellDef="let block">
+        <div *ngIf="(block | async) as block" [title]="$any(block).hash">
+          {{$any(block).hash}}
+        </div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="signedExtrinsics">
+      <th mat-header-cell *matHeaderCellDef>Signed Extrinsics</th>
+      <td mat-cell *matCellDef="let block">
+        <ng-container *ngIf="(block | async) as block">
+          {{$any(block).extrinsics.length}}
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="moduleEvents">
+      <th mat-header-cell *matHeaderCellDef>Module Events</th>
+      <td mat-cell *matCellDef="let block">
+        <ng-container *ngIf="(block | async) as block">
+          {{$any(block).events.length}}
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="details">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let block">
+        <ng-container *ngIf="(block | async) as block">
+          <a [routerLink]="$any(block).number.toString()">Details</a>
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+
+  </table>
+</ng-container>

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { PolkadaptService } from './polkadapt.service';
 import { ReplaySubject, Subject } from 'rxjs';
+import { VariablesService } from './variables.service';
 
 @Injectable({providedIn: 'root'})
 export class PricingService {
@@ -10,11 +11,9 @@ export class PricingService {
   network: string | null;
   interval: number | null;
 
-  constructor(private pa: PolkadaptService) {
-    this.price.subscribe((val) => {
-      // TODO REMOVE ME!
-      console.log(val);
-    });
+  constructor(private pa: PolkadaptService,
+              private vs: VariablesService) {
+    this.price.subscribe(this.vs.price);
   }
 
 

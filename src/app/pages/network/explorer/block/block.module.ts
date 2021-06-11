@@ -21,13 +21,14 @@ import { CommonModule } from '@angular/common';
 import { BlockListComponent } from './block-list/block-list.component';
 import { BlockDetailComponent } from './block-detail/block-detail.component';
 import { BlockRoutingModule } from './block-routing.module';
-
+import { MatTableModule } from '@angular/material/table';
 
 @NgModule({
   declarations: [BlockListComponent, BlockDetailComponent],
   imports: [
     CommonModule,
-    BlockRoutingModule
+    BlockRoutingModule,
+    MatTableModule
   ]
 })
 export class BlockModule { }

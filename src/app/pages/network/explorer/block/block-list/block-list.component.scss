@@ -16,14 +16,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-.ps-block-grid {
-  grid-template-columns: [icon] 40px [number] 140px [date] minmax(140px, 180px) [hash] minmax(200px, auto) [transactions] minmax(90px, 180px) [events] minmax(90px, 180px) [details] 100px;
-}
 
 .fa-cube {
   color: #020024;
 }
 
-.finalized .fa-cube {
+.fa-cube.block-finalized {
   color: #556b2f;
+}
+
+table {
+  width: 100%;
+}
+
+th.mat-header-cell, td.mat-cell, td.mat-footer-cell {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.mat-column-age {
+  white-space: nowrap;
+}
+
+.mat-column-blockHash div {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

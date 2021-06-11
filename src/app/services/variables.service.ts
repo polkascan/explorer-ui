@@ -17,11 +17,12 @@
  */
 
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, ReplaySubject } from 'rxjs';
 
 @Injectable({providedIn: 'root'})
 export class VariablesService {
   network = new BehaviorSubject<string>('none');
   blockNumber = new BehaviorSubject<number>(0);
-  currency = new BehaviorSubject('USD');
+  currency = new BehaviorSubject('USD'); // for now USD
+  price = new ReplaySubject(1);
 }
