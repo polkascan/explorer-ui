@@ -16,35 +16,60 @@
   </select>
 </div>
 
-<div class="ps-grid ps-inherent-grid">
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-header-column">Inherent ID</div>
-  <div class="ps-grid-header-column">Block</div>
-  <div class="ps-grid-header-column">Pallet</div>
-  <div class="ps-grid-header-column">Call</div>
-  <div class="ps-grid-header-column">Success</div>
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let inherent of inherents; trackBy: track">
-    <div class="ps-grid-column">
-      <i class="fas fa-file-signature"></i>
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="inherent.blockNumber + '-' + inherent.extrinsicIdx">{{inherent.blockNumber}}-{{inherent.extrinsicIdx}}</a>
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="'../block/' + inherent.blockNumber">{{inherent.blockNumber}}</a>
-    </div>
-    <div class="ps-grid-column">
-      {{inherent.callModule}}
-    </div>
-    <div class="ps-grid-column">
-      {{inherent.callName}}
-    </div>
-    <div class="ps-grid-column">
-      <!-- TODO fix me -->
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="inherent.blockNumber + '-' + inherent.extrinsicIdx">Details</a>
-    </div>
-  </div>
-</div>
+<ng-container *ngIf="(inherents | async) as dataSource">
+  <table mat-table [dataSource]="dataSource" [trackBy]="track">
+
+    <ng-container matColumnDef="icon">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef>
+          <i class="fas fa-file-signature"></i>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="inherentID">
+      <th mat-header-cell *matHeaderCellDef>Inherent ID</th>
+      <td mat-cell *matCellDef="let inherent">
+        <a [routerLink]="inherent.blockNumber + '-' + inherent.extrinsicIdx">{{inherent.blockNumber}}-{{inherent.extrinsicIdx}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="block">
+      <th mat-header-cell *matHeaderCellDef>Block</th>
+      <td mat-cell *matCellDef="let inherent">
+        <a [routerLink]="'../block/' + inherent.blockNumber">{{inherent.blockNumber}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="pallet">
+      <th mat-header-cell *matHeaderCellDef>Pallet</th>
+      <td mat-cell *matCellDef="let inherent">
+        {{inherent.callModule}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="call">
+      <th mat-header-cell *matHeaderCellDef>Call</th>
+      <td mat-cell *matCellDef="let inherent">
+        {{inherent.callName}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="success">
+      <th mat-header-cell *matHeaderCellDef>Success</th>
+      <td mat-cell *matCellDef="let inherent">
+        <!-- TODO build me -->
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="details">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let inherent">
+          <a [routerLink]="inherent.blockNumber + '-' + inherent.extrinsicIdx">Details</a>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+
+  </table>
+</ng-container>

@@ -16,6 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-.ps-runtime-grid {
-  grid-template-columns: [icon] 40px [name] 140px [version] minmax(90px, 180px) [pallets] minmax(90px, 180px) [events] minmax(90px, 180px) [calls] minmax(90px, 180px) [storage] minmax(90px, 180px) [constants] minmax(90px, auto) [details] 100px;
+table {
+  width: 100%;
+}
+
+th.mat-header-cell, td.mat-cell, td.mat-footer-cell {
+  padding-left: 4px;
+  padding-right: 4px;
 }

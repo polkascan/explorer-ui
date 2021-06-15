@@ -1,43 +1,74 @@
 <a routerLink="..">Back to dashboard</a>
 <h1>Runtimes</h1>
-<div class="ps-grid ps-runtime-grid">
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-header-column">Name</div>
-  <div class="ps-grid-header-column">Version</div>
-  <div class="ps-grid-header-column">Pallets</div>
-  <div class="ps-grid-header-column">Events</div>
-  <div class="ps-grid-header-column">Calls</div>
-  <div class="ps-grid-header-column">Storage</div>
-  <div class="ps-grid-header-column">Constants</div>
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let runtime of runtimes|async; trackBy: track">
-    <div class="ps-grid-column">
-      <i class="fas fa-cogs"></i>
-    </div>
-    <div class="ps-grid-column">
-      {{runtime.specName}}
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="runtime.specVersion.toString()">{{runtime.specVersion}}</a>
-    </div>
-    <div class="ps-grid-column">
-      {{runtime.countPallets}}
-    </div>
-    <div class="ps-grid-column">
-      {{runtime.countEvents}}
-    </div>
-    <div class="ps-grid-column">
-      {{runtime.countCallFunctions}}
-    </div>
-    <div class="ps-grid-column">
-      {{runtime.countStorageFunctions}}
-    </div>
-    <div class="ps-grid-column">
-      {{runtime.countConstants}}
-    </div>
-    <div class="ps-grid-column">
-        <a [routerLink]="runtime.specVersion.toString()">Details</a>
-    </div>
-  </div>
-</div>
 
+<ng-container *ngIf="(runtimes | async) as dataSource">
+  <table mat-table [dataSource]="dataSource" [trackBy]="track">
+
+    <ng-container matColumnDef="icon">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef>
+          <i class="fas fa-cogs"></i>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let runtime">
+        {{runtime.specName}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="version">
+      <th mat-header-cell *matHeaderCellDef>Version</th>
+      <td mat-cell *matCellDef="let runtime">
+        <a [routerLink]="runtime.specVersion.toString()">{{runtime.specVersion}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="pallets">
+      <th mat-header-cell *matHeaderCellDef>Pallets</th>
+      <td mat-cell *matCellDef="let runtime">
+        {{runtime.countPallets}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="events">
+      <th mat-header-cell *matHeaderCellDef>Events</th>
+      <td mat-cell *matCellDef="let runtime">
+        {{runtime.countEvents}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="calls">
+      <th mat-header-cell *matHeaderCellDef>Calls</th>
+      <td mat-cell *matCellDef="let runtime">
+        {{runtime.countCallFunctions}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="storage">
+      <th mat-header-cell *matHeaderCellDef>Storage</th>
+      <td mat-cell *matCellDef="let runtime">
+        {{runtime.countStorageFunctions}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="constants">
+      <th mat-header-cell *matHeaderCellDef>Constants</th>
+      <td mat-cell *matCellDef="let runtime">
+        {{runtime.countConstants}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="details">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let runtime">
+          <a [routerLink]="runtime.specVersion.toString()">Details</a>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+
+  </table>
+</ng-container>

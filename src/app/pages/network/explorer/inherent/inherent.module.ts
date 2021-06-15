@@ -24,6 +24,7 @@ import { InherentListComponent } from './inherent-list/inherent-list.component';
 import { InherentDetailComponent } from './inherent-detail/inherent-detail.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
+import { MatTableModule } from '@angular/material/table';
 
 
 @NgModule({
@@ -32,7 +33,9 @@ import { PolkadotAngularLibModule } from '../../../../../substrate-components-li
     CommonModule,
     ReactiveFormsModule,
     InherentRoutingModule,
-    PolkadotAngularLibModule
+    PolkadotAngularLibModule,
+    MatTableModule
   ]
 })
-export class InherentModule { }
+export class InherentModule {
+}

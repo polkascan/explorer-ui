@@ -18,15 +18,12 @@
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-
-
-const temporaryListSize = 100;
 
 
 @Component({
@@ -36,7 +33,7 @@ const temporaryListSize = 100;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InherentListComponent implements OnInit, OnDestroy {
-  inherents: pst.Extrinsic[] = [];
+  inherents = new BehaviorSubject<pst.Extrinsic[]>([]);
   filters = new Map();
 
   palletControl: FormControl = new FormControl('');
@@ -45,6 +42,8 @@ export class InherentListComponent implements OnInit, OnDestroy {
     eventModule: this.palletControl,
     callName: this.callNameControl
   });
+
+  columnsToDisplay = ['icon', 'inherentID', 'block', 'pallet', 'call', 'success', 'details'];
 
   private network: string;
   private unsubscribeNewInherentFn: null | (() => void);
@@ -65,8 +64,7 @@ export class InherentListComponent implements OnInit, OnDestroy {
       )
       .subscribe((values) => {
         this.unsubscribeNewInherent();
-        this.inherents = [];
-        this.cd.markForCheck();
+        this.inherents.next([]);
 
         this.subscribeNewInherent();
         this.getInherents();
@@ -152,15 +150,15 @@ export class InherentListComponent implements OnInit, OnDestroy {
           filters,
           (extrinsic: pst.Extrinsic) => {
             if (!this.onDestroyCalled) {
-              if (!this.inherents.some((e) =>
+              const inherents = [...this.inherents.value];
+              if (!inherents.some((e) =>
                 e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
               )) {
-                this.inherents.splice(0, 0, extrinsic);
-                this.inherents.sort((a, b) =>
+                inherents.splice(0, 0, extrinsic);
+                inherents.sort((a, b) =>
                   b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
                 );
-                this.inherents.length = Math.min(this.inherents.length, temporaryListSize);
-                this.cd.markForCheck();
+                this.inherents.next(inherents);
               }
             } else {
               // If still listening but component is already destroyed.
@@ -203,21 +201,21 @@ export class InherentListComponent implements OnInit, OnDestroy {
       const response: pst.ListResponse<pst.Extrinsic> =
         await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100);
       if (!this.onDestroyCalled) {
+        const inherents = [...this.inherents.value]
         response.objects
           .filter((extrinsic) => {
-            return !this.inherents.some((e) =>
+            return !inherents.some((e) =>
               e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
             );
           })
           .forEach((extrinsic) => {
-            this.inherents.push(extrinsic);
+            inherents.push(extrinsic);
           });
 
-        this.inherents.length = Math.min(this.inherents.length, temporaryListSize);
-        this.inherents.sort((a, b) =>
+        inherents.sort((a, b) =>
           b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
         );
-        this.cd.markForCheck();
+        this.inherents.next(inherents);
       }
     } catch (e) {
       console.error(e);
@@ -229,5 +227,4 @@ export class InherentListComponent implements OnInit, OnDestroy {
   track(i: any, inherent: pst.Extrinsic): string {
     return `${inherent.blockNumber}-${inherent.extrinsicIdx}`;
   }
-
 }

@@ -16,15 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { Subject } from 'rxjs';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { NetworkService } from '../../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 import { takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-
-
-const temporaryListSize = 100;
 
 
 @Component({
@@ -34,15 +31,16 @@ const temporaryListSize = 100;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BalancesTransferListComponent implements OnInit {
-  transfers: pst.Transfer[] = [];
+  transfers = new BehaviorSubject<pst.Transfer[]>([]);
+
+  columnsToDisplay = ['icon', 'block', 'from', 'to', 'value', 'details'];
 
   private network: string;
   private unsubscribeNewTransferFn: null | (() => void);
   private destroyer: Subject<undefined> = new Subject();
 
   constructor(private ns: NetworkService,
-              private pa: PolkadaptService,
-              private cd: ChangeDetectorRef) {
+              private pa: PolkadaptService) {
   }
 
   ngOnInit(): void {
@@ -66,13 +64,13 @@ export class BalancesTransferListComponent implements OnInit {
     try {
       this.unsubscribeNewTransferFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewTransfer(
         (transfer: pst.Transfer) => {
-          if (!this.transfers.some((l) =>
+          const transfers = [...this.transfers.value]
+          if (!transfers.some((l) =>
             l.blockNumber === transfer.blockNumber && l.eventIdx === transfer.eventIdx
           )) {
-            this.transfers.splice(0, 0, transfer);
-            this.transfers.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
-            this.transfers.length = Math.min(this.transfers.length, temporaryListSize);
-            this.cd.markForCheck();
+            transfers.splice(0, 0, transfer);
+            transfers.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
+            this.transfers.next(transfers);
           }
         });
     } catch (e) {
@@ -93,19 +91,19 @@ export class BalancesTransferListComponent implements OnInit {
   async getTransfers(): Promise<void> {
     try {
       const response: pst.ListResponse<pst.Transfer> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getTransfers(temporaryListSize);
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getTransfers();
 
+      const transfers = [...this.transfers.value]
       response.objects
       .filter((transfer) => {
-        return !this.transfers.some((l) => l.blockNumber === transfer.blockNumber && l.eventIdx === transfer.eventIdx);
+        return !transfers.some((l) => l.blockNumber === transfer.blockNumber && l.eventIdx === transfer.eventIdx);
       })
       .forEach((transfer) => {
-        this.transfers.push(transfer);
+        transfers.push(transfer);
       });
 
-      this.transfers.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
-      this.transfers.length = Math.min(this.transfers.length, temporaryListSize);
-      this.cd.markForCheck();
+      transfers.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
+      this.transfers.next(transfers);
     } catch (e) {
       console.error(e);
       // Ignore for now...

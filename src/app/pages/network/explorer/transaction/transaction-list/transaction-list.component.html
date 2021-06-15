@@ -16,42 +16,70 @@
   </select>
 </div>
 
-<div class="ps-grid ps-transaction-grid">
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-header-column">Transaction ID</div>
-  <div class="ps-grid-header-column">From</div>
-  <div class="ps-grid-header-column">Block</div>
-  <div class="ps-grid-header-column">Pallet</div>
-  <div class="ps-grid-header-column">Call</div>
-  <div class="ps-grid-header-column">Success</div>
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let transaction of transactions; trackBy: track">
-    <div class="ps-grid-column">
-      <i class="fas fa-file-signature"></i>
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="transaction.blockNumber + '-' + transaction.extrinsicIdx">{{transaction.blockNumber}}-{{transaction.extrinsicIdx}}</a>
-    </div>
-    <div class="ps-grid-column">
-      <a *ngIf="transaction.multiAddressAccountId" [routerLink]="'../address/' + transaction.multiAddressAccountId">
+<ng-container *ngIf="(transactions | async) as dataSource">
+  <table mat-table [dataSource]="dataSource" [trackBy]="track">
+
+    <ng-container matColumnDef="icon">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef>
+          <i class="fas fa-file-signature"></i>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="transactionID">
+      <th mat-header-cell *matHeaderCellDef>Transaction ID</th>
+      <td mat-cell *matCellDef="let transaction">
+        <a [routerLink]="transaction.blockNumber + '-' + transaction.extrinsicIdx">{{transaction.blockNumber}}-{{transaction.extrinsicIdx}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="from">
+      <th mat-header-cell *matHeaderCellDef>From</th>
+      <td mat-cell *matCellDef="let transaction">
+        <a *ngIf="transaction.multiAddressAccountId" [routerLink]="'../address/' + transaction.multiAddressAccountId">
         <identicon [value]="transaction.multiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
         {{ transaction.multiAddressAccountId }}
       </a>
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="'../block/' + transaction.blockNumber">{{transaction.blockNumber}}</a>
-    </div>
-    <div class="ps-grid-column">
-      {{transaction.callModule}}
-    </div>
-    <div class="ps-grid-column">
-      {{transaction.callName}}
-    </div>
-    <div class="ps-grid-column">
-      <!-- TODO fix me -->
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="transaction.blockNumber + '-' + transaction.extrinsicIdx">Details</a>
-    </div>
-  </div>
-</div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="block">
+      <th mat-header-cell *matHeaderCellDef>Block</th>
+      <td mat-cell *matCellDef="let transaction">
+        <a [routerLink]="'../block/' + transaction.blockNumber">{{transaction.blockNumber}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="pallet">
+      <th mat-header-cell *matHeaderCellDef>Pallet</th>
+      <td mat-cell *matCellDef="let transaction">
+        {{transaction.callModule}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="call">
+      <th mat-header-cell *matHeaderCellDef>Call</th>
+      <td mat-cell *matCellDef="let transaction">
+        {{transaction.callName}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="success">
+      <th mat-header-cell *matHeaderCellDef>Success</th>
+      <td mat-cell *matCellDef="let transaction">
+        <!-- TODO build me -->
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="details">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let transaction">
+          <a [routerLink]="transaction.blockNumber + '-' + transaction.extrinsicIdx">Details</a>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+
+  </table>
+</ng-container>

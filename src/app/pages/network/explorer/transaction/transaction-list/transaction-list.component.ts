@@ -18,15 +18,12 @@
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-
-
-const temporaryListSize = 100;
 
 
 @Component({
@@ -36,7 +33,7 @@ const temporaryListSize = 100;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TransactionListComponent implements OnInit, OnDestroy {
-  transactions: pst.Extrinsic[] = [];
+  transactions = new BehaviorSubject<pst.Extrinsic[]>([]);
   filters = new Map();
 
   palletControl: FormControl = new FormControl('');
@@ -45,6 +42,8 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     eventModule: this.palletControl,
     callName: this.callNameControl
   });
+
+  columnsToDisplay = ['icon', 'transactionID', 'from', 'block', 'pallet', 'call', 'success', 'details'];
 
   private network: string;
   private unsubscribeNewTransactionFn: null | (() => void);
@@ -65,8 +64,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       )
       .subscribe((values) => {
         this.unsubscribeNewTransaction();
-        this.transactions = [];
-        this.cd.markForCheck();
+        this.transactions.next([]);
 
         this.subscribeNewTransaction();
         this.getTransactions();
@@ -152,15 +150,15 @@ export class TransactionListComponent implements OnInit, OnDestroy {
           filters,
           (extrinsic: pst.Extrinsic) => {
             if (!this.onDestroyCalled) {
-              if (!this.transactions.some((e) =>
+              const transactions = [...this.transactions.value]
+              if (!transactions.some((e) =>
                 e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
               )) {
-                this.transactions.splice(0, 0, extrinsic);
-                this.transactions.sort((a, b) =>
+                transactions.splice(0, 0, extrinsic);
+                transactions.sort((a, b) =>
                   b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
                 );
-                this.transactions.length = Math.min(this.transactions.length, temporaryListSize);
-                this.cd.markForCheck();
+                this.transactions.next(transactions);
               }
             } else {
               // If still listening but component is already destroyed.
@@ -203,21 +201,21 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       const response: pst.ListResponse<pst.Extrinsic> =
         await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100);
       if (!this.onDestroyCalled) {
+        const transactions = [...this.transactions.value];
         response.objects
           .filter((extrinsic) => {
-            return !this.transactions.some((e) =>
+            return !transactions.some((e) =>
               e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
             );
           })
           .forEach((extrinsic) => {
-            this.transactions.push(extrinsic);
+            transactions.push(extrinsic);
           });
 
-        this.transactions.length = Math.min(this.transactions.length, temporaryListSize);
-        this.transactions.sort((a, b) =>
+        transactions.sort((a, b) =>
           b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
         );
-        this.cd.markForCheck();
+        this.transactions.next(transactions);
       }
     } catch (e) {
       console.error(e);

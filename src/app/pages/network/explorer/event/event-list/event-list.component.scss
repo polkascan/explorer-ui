@@ -16,6 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-.ps-event-grid {
-  grid-template-columns: [icon] 40px [eventIdx] 140px [block] minmax(120px, 180px) [refTrans] minmax(140px, 180px) [module] minmax(140px, 180px) [event] minmax(140px, 180px) [details] 100px;
+
+table {
+  width: 100%;
+}
+
+th.mat-header-cell, td.mat-cell, td.mat-footer-cell {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.mat-column-age {
+  white-space: nowrap;
+}
+
+.mat-column-blockHash div {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

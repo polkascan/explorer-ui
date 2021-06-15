@@ -1,27 +1,46 @@
 <a routerLink="..">Back to dashboard</a>
 <h1>Logs</h1>
 
-<div class="ps-grid ps-log-grid">
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-header-column">Log ID</div>
-  <div class="ps-grid-header-column">Block</div>
-  <div class="ps-grid-header-column">Type</div>
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let log of logs; trackBy: track">
-    <div class="ps-grid-column">
-      <i class="fas fa-book"></i>
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="log.blockNumber + '-' + log.logIdx">{{log.blockNumber}}-{{log.logIdx}}</a>
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="'../block/' + log.blockNumber">{{log.blockNumber}}</a>
-    </div>
-    <div class="ps-grid-column">
-      {{log.typeName}}
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="log.blockNumber + '-' + log.logIdx">Details</a>
-    </div>
-  </div>
-</div>
+<ng-container *ngIf="(logs | async) as dataSource">
+  <table mat-table [dataSource]="dataSource" [trackBy]="track">
+
+    <ng-container matColumnDef="icon">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef>
+          <i class="fas fa-book"></i>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="logID">
+      <th mat-header-cell *matHeaderCellDef>Log ID</th>
+      <td mat-cell *matCellDef="let log">
+        <a [routerLink]="log.blockNumber + '-' + log.logIdx">{{log.blockNumber}}-{{log.logIdx}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="block">
+      <th mat-header-cell *matHeaderCellDef>Block</th>
+      <td mat-cell *matCellDef="let log">
+        <a [routerLink]="'../block/' + log.blockNumber">{{log.blockNumber}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="type">
+      <th mat-header-cell *matHeaderCellDef>Type</th>
+      <td mat-cell *matCellDef="let log">
+        {{log.typeName}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="details">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let log">
+          <a [routerLink]="log.blockNumber + '-' + log.logIdx">Details</a>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+
+  </table>
+</ng-container>
