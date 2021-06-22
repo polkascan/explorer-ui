@@ -1,7 +1,7 @@
 <a routerLink="..">Back to dashboard</a>
 <h1>Transactions</h1>
 
-<div class="ps-grid-filters">
+<div>
   <select [formControl]="palletControl">
     <option [ngValue]="''">All pallets</option>
     <option *ngFor="let item of filters | keyvalue" [ngValue]="item.key.pallet">{{item.key.pallet}}</option>

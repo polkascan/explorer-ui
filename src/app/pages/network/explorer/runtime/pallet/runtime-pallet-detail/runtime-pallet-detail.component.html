@@ -1,153 +1,271 @@
 <ng-container *ngIf="pallet|async as pallet; else loading">
-  <h1>Pallet '{{pallet.pallet}}'</h1>
+  <h1>Pallet '{{ $any(pallet).pallet }}'</h1>
 
   <h2>Call Functions</h2>
-  <div class="ps-grid ps-pallet-calls-grid">
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-header-column">Name</div>
-    <div class="ps-grid-header-column">Lookup</div>
-    <div class="ps-grid-header-column">Arguments</div>
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-row" *ngFor="let callFunction of calls|async; trackBy: trackCall">
-      <div class="ps-grid-column">
-        <i class="fas fa-file-alt"></i>
-      </div>
-      <div class="ps-grid-column">
-        <a [routerLink]="'call/' + callFunction.callName">{{callFunction.callName}}</a>
-      </div>
-      <div class="ps-grid-column">
-        {{callFunction.lookup}}
-      </div>
-      <div class="ps-grid-column">
-        {{callFunction.countArguments}}
-      </div>
-      <div class="ps-grid-column">
+
+  <ng-container *ngIf="(calls | async) as dataSource">
+    <table mat-table [dataSource]="dataSource" [trackBy]="trackCall">
+
+      <ng-container matColumnDef="icon">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef>
+          <i class="fas fa-file-alt"></i>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let callFunction">
+          <a [routerLink]="'call/' + callFunction.callName">{{callFunction.callName}}</a>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="lookup">
+        <th mat-header-cell *matHeaderCellDef>Lookup</th>
+        <td mat-cell *matCellDef="let callFunction">
+          {{callFunction.lookup}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="arguments">
+        <th mat-header-cell *matHeaderCellDef>Arguments</th>
+        <td mat-cell *matCellDef="let callFunction">
+          {{callFunction.countArguments}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="details">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let callFunction">
           <a [routerLink]="'call/' + callFunction.callName">Details</a>
-      </div>
-    </div>
-  </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.calls; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.calls"></tr>
+
+    </table>
+  </ng-container>
 
   <h2>Events</h2>
-  <div class="ps-grid ps-pallet-events-grid">
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-header-column">Name</div>
-    <div class="ps-grid-header-column">Lookup</div>
-    <div class="ps-grid-header-column">Attributes</div>
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-row" *ngFor="let event of events|async; trackBy: trackEvent">
-      <div class="ps-grid-column">
-        <i class="fas fa-calendar-check"></i>
-      </div>
-      <div class="ps-grid-column">
-        <a [routerLink]="'event/' + event.eventName">{{event.eventName}}</a>
-      </div>
-      <div class="ps-grid-column">
-        {{event.lookup}}
-      </div>
-      <div class="ps-grid-column">
-        {{event.countAttributes}}
-      </div>
-      <div class="ps-grid-column">
+
+  <ng-container *ngIf="(events | async) as dataSource">
+    <table mat-table [dataSource]="dataSource" [trackBy]="trackEvent">
+
+      <ng-container matColumnDef="icon">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef>
+          <i class="fas fa-calendar-check"></i>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let event">
+          <a [routerLink]="'event/' + event.eventName">{{event.eventName}}</a>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="lookup">
+        <th mat-header-cell *matHeaderCellDef>Lookup</th>
+        <td mat-cell *matCellDef="let event">
+          {{event.lookup}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="attributes">
+        <th mat-header-cell *matHeaderCellDef>Attributes</th>
+        <td mat-cell *matCellDef="let event">
+          {{event.countAttributes}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="details">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let event">
           <a [routerLink]="'event/' + event.eventName">Details</a>
-      </div>
-    </div>
-  </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.events; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.events"></tr>
+
+    </table>
+  </ng-container>
+
 
   <h2>Storage Functions</h2>
-  <div class="ps-grid ps-pallet-storage-grid">
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-header-column">Name</div>
-    <div class="ps-grid-header-column">Type</div>
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-row" *ngFor="let storage of storages|async; trackBy: trackStorage">
-      <div class="ps-grid-column">
-        <i class="fas fa-database"></i>
-      </div>
-      <div class="ps-grid-column">
-        <a [routerLink]="'storage/' + storage.storageName">{{storage.storageName}}</a>
-      </div>
-      <div class="ps-grid-column">
-        {{storage.valueScaleType}}
-      </div>
-      <div class="ps-grid-column">
+
+  <ng-container *ngIf="(storages | async) as dataSource">
+    <table mat-table [dataSource]="dataSource" [trackBy]="trackStorage">
+
+      <ng-container matColumnDef="icon">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef>
+          <i class="fas fa-database"></i>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let storage">
+          <a [routerLink]="'storage/' + storage.storageName">{{storage.storageName}}</a>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef>Type</th>
+        <td mat-cell *matCellDef="let storage">
+          {{storage.valueScaleType}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="details">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let storage">
           <a [routerLink]="'storage/' + storage.storageName">Details</a>
-      </div>
-    </div>
-  </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.storages; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.storages"></tr>
+
+    </table>
+  </ng-container>
+
 
   <h2>Constants</h2>
-  <div class="ps-grid ps-pallet-constants-grid">
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-header-column">Name</div>
-    <div class="ps-grid-header-column">Type</div>
-    <div class="ps-grid-header-column">Value</div>
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-row" *ngFor="let constant of constants|async; trackBy: trackConstant">
-      <div class="ps-grid-column">
-        <i class="fas fa-memory"></i>
-      </div>
-      <div class="ps-grid-column">
-        <a [routerLink]="'constant/' + constant.constantName">{{constant.constantName}}</a>
-      </div>
-      <div class="ps-grid-column">
-        {{constant.scaleType}}
-      </div>
-      <div class="ps-grid-column">
-        {{constant.value}}
-      </div>
-      <div class="ps-grid-column">
+
+  <ng-container *ngIf="(constants | async) as dataSource">
+    <table mat-table [dataSource]="dataSource" [trackBy]="trackConstant">
+
+      <ng-container matColumnDef="icon">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef>
+          <i class="fas fa-memory"></i>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let constant">
+          <a [routerLink]="'constant/' + constant.constantName">{{constant.constantName}}</a>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef>Type</th>
+        <td mat-cell *matCellDef="let constant">
+          {{constant.scaleType}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="value">
+        <th mat-header-cell *matHeaderCellDef>Value</th>
+        <td mat-cell *matCellDef="let constant">
+          {{constant.value}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="details">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let constant">
           <a [routerLink]="'constant/' + constant.constantName">Details</a>
-      </div>
-    </div>
-  </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.constants; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.constants"></tr>
+
+    </table>
+  </ng-container>
+
 
   <h2>Types</h2>
-  <div class="ps-grid ps-pallet-types-grid">
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-header-column">Name</div>
-    <div class="ps-grid-header-column">Decoder class</div>
-    <div class="ps-grid-header-column">Core primitive</div>
-    <div class="ps-grid-header-column">Runtime primitive</div>
-    <div class="ps-grid-row" *ngFor="let type of types|async; trackBy: trackType">
-      <div class="ps-grid-column">
-        <i class="fa fa-exclamation-triangle"></i>
-      </div>
-      <div class="ps-grid-column">
-        {{type.scaleType}}
-      </div>
-      <div class="ps-grid-column">
-        {{type.decoderClass}}
-      </div>
-      <div class="ps-grid-column">
-        {{type.isCorePrimitive}}
-      </div>
-      <div class="ps-grid-column">
-        {{type.isRuntimePrimitive}}
-      </div>
-    </div>
-  </div>
+
+  <ng-container *ngIf="(types | async) as dataSource">
+    <table mat-table [dataSource]="dataSource" [trackBy]="trackType">
+
+      <ng-container matColumnDef="icon">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef>
+          <i class="fa fa-exclamation-triangle"></i>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let type">
+          {{type.scaleType}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="decoderClass">
+        <th mat-header-cell *matHeaderCellDef>Decoder class</th>
+        <td mat-cell *matCellDef="let type">
+          {{type.decoderClass}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="corePrimitive">
+        <th mat-header-cell *matHeaderCellDef>corePrimitive</th>
+        <td mat-cell *matCellDef="let type">
+          {{type.isCorePrimitive}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="runtimePrimitive">
+        <th mat-header-cell *matHeaderCellDef>Runtime primitive</th>
+        <td mat-cell *matCellDef="let type">
+          {{type.isRuntimePrimitive}}
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.types; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.types"></tr>
+
+    </table>
+  </ng-container>
+
 
   <h2>Error Messages</h2>
-  <div class="ps-grid ps-pallet-errors-grid">
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-header-column">Name</div>
-    <div class="ps-grid-header-column">Index</div>
-    <div class="ps-grid-header-column">Description</div>
-    <div class="ps-grid-row" *ngFor="let error of errors|async; trackBy: trackError">
-      <div class="ps-grid-column">
-        <i class="fa fa-exclamation-triangle"></i>
-      </div>
-      <div class="ps-grid-column">
-        {{error.errorName}}
-      </div>
-      <div class="ps-grid-column">
-        {{error.errorIdx}}
-      </div>
-      <div class="ps-grid-column">
-        {{error.documentation}}
-      </div>
-    </div>
-  </div>
+
+  <ng-container *ngIf="(errors | async) as dataSource">
+    <table mat-table [dataSource]="dataSource" [trackBy]="trackError">
+
+      <ng-container matColumnDef="icon">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef>
+          <i class="fa fa-exclamation-triangle"></i>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let error">
+          {{error.errorName}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="index">
+        <th mat-header-cell *matHeaderCellDef>Index</th>
+        <td mat-cell *matCellDef="let error">
+          {{error.errorIdx}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="documentation">
+        <th mat-header-cell *matHeaderCellDef>Documentation</th>
+        <td mat-cell *matCellDef="let error">
+          {{error.documentation}}
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.errors; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.errors"></tr>
+
+    </table>
+  </ng-container>
 
 </ng-container>
 

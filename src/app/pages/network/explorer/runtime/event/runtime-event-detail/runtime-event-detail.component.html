@@ -1,20 +1,30 @@
 <ng-container *ngIf="event|async as event; else loading">
-  <h1>Event '{{event.eventName}}'</h1>
+  <h1>Event '{{ $any(event).eventName }}'</h1>
 
   <h2>Attributes</h2>
-  <div class="ps-grid ps-event-attributes-grid">
-    <div class="ps-grid-header-column"></div>
-    <div class="ps-grid-header-column">Type</div>
-    <div class="ps-grid-row" *ngFor="let attr of eventAttributes|async; trackBy: trackEventAttribute">
-      <div class="ps-grid-column">
-        <i class="fa fa-stream"></i>
-      </div>
-      <div class="ps-grid-column">
-        {{attr.scaleType}}
-      </div>
-    </div>
-  </div>
 
+  <ng-container *ngIf="(eventAttributes | async) as dataSource">
+    <table mat-table [dataSource]="dataSource" [trackBy]="trackEventAttribute">
+
+      <ng-container matColumnDef="icon">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef>
+          <i class="fas fa-stream"></i>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef>Type</th>
+        <td mat-cell *matCellDef="let attr">
+          {{attr.scaleType}}
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+
+    </table>
+  </ng-container>
 </ng-container>
 
 <ng-template #loading>

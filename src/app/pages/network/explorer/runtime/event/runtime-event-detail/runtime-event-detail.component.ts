@@ -32,9 +32,12 @@ import { PolkadaptService } from '../../../../../../services/polkadapt.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
   event = new BehaviorSubject<pst.RuntimeEvent | null>(null);
   eventAttributes = new BehaviorSubject<pst.RuntimeEventAttribute[]>([]);
+
+  columnsToDisplay = ['icon', 'type'];
+
+  private destroyer: Subject<undefined> = new Subject();
 
   constructor(
     private route: ActivatedRoute,
