@@ -18,7 +18,7 @@
 
 ps-top-bar {
   display: flex;
-  height: 2.75rem;
+  height: 4.25rem;
   padding: 0 2rem;
   align-items: center;
   justify-content: space-between;
@@ -40,6 +40,7 @@ ps-top-bar {
   order: 1;
 
   display: flex;
+  align-items: baseline;
 }
 
 .ps-top-bar-block-nr {
@@ -50,4 +51,12 @@ ps-top-bar {
 }
 
 .ps-top-bar-language-selector {
+}
+
+.mat-form-field-appearance-fill .mat-form-field-flex {
+  background: white;
+}
+
+.mat-form-field-wrapper {
+  margin-bottom: -1.34375em;
 }

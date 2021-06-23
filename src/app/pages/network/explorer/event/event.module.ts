@@ -25,6 +25,7 @@ import { EventDetailComponent } from './event-detail/event-detail.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
 import { MatTableModule } from '@angular/material/table';
+import { MatSelectModule } from '@angular/material/select';
 
 
 @NgModule({
@@ -37,7 +38,8 @@ import { MatTableModule } from '@angular/material/table';
     EventRoutingModule,
     ReactiveFormsModule,
     PolkadotAngularLibModule,
-    MatTableModule
+    MatTableModule,
+    MatSelectModule
   ]
 })
 export class EventModule {

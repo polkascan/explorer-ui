@@ -25,6 +25,7 @@ import { TransactionDetailComponent } from './transaction-detail/transaction-det
 import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
+import { MatSelectModule } from '@angular/material/select';
 
 
 @NgModule({
@@ -37,7 +38,8 @@ import { MatTableModule } from '@angular/material/table';
     ReactiveFormsModule,
     TransactionRoutingModule,
     PolkadotAngularLibModule,
-    MatTableModule
+    MatTableModule,
+    MatSelectModule
   ]
 })
 export class TransactionModule {

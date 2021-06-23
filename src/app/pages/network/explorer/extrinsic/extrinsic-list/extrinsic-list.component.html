@@ -2,10 +2,7 @@
 <h1>Extrinsics</h1>
 
 <div>
-  <label>
-    <input type="checkbox" [formControl]="signedControl">
-    Signed only
-  </label>
+  <mat-checkbox [formControl]="signedControl">Signed only</mat-checkbox>
 </div>
 
 <ng-container *ngIf="(extrinsics | async) as dataSource">

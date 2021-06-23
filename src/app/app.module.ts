@@ -29,6 +29,7 @@ import { TempHomeComponent } from './components/temp-home/temp-home.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppConfig, initConfig } from './app-config';
 import { HttpClientModule } from '@angular/common/http';
+import { MatSelectModule } from '@angular/material/select';
 
 @NgModule({
   declarations: [
@@ -43,7 +44,8 @@ import { HttpClientModule } from '@angular/common/http';
     AppRoutingModule,
     CommonModule,
     HttpClientModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MatSelectModule
   ],
   providers: [
     AppConfig,

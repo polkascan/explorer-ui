@@ -138,10 +138,10 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     };
 
     if (this.palletControl.value) {
-      filters.eventModule = this.palletControl.value;
+      filters.callModule = this.palletControl.value;
     }
     if (this.callNameControl.value) {
-      filters.CallName = this.callNameControl.value;
+      filters.callName = this.callNameControl.value;
     }
 
     try {
@@ -191,10 +191,10 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     };
 
     if (this.palletControl.value) {
-      filters.eventModule = this.palletControl.value;
+      filters.callModule = this.palletControl.value;
     }
     if (this.callNameControl.value) {
-      filters.CallName = this.callNameControl.value;
+      filters.callName = this.callNameControl.value;
     }
 
     try {
@@ -203,12 +203,12 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       if (!this.onDestroyCalled) {
         const transactions = [...this.transactions.value];
         response.objects
-          .filter((extrinsic) => {
+          .filter((extrinsic: pst.Extrinsic) => {
             return !transactions.some((e) =>
               e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
             );
           })
-          .forEach((extrinsic) => {
+          .forEach((extrinsic: pst.Extrinsic) => {
             transactions.push(extrinsic);
           });
 

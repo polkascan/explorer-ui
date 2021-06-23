@@ -25,6 +25,7 @@ import { InherentDetailComponent } from './inherent-detail/inherent-detail.compo
 import { ReactiveFormsModule } from '@angular/forms';
 import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
 import { MatTableModule } from '@angular/material/table';
+import { MatSelectModule } from '@angular/material/select';
 
 
 @NgModule({
@@ -34,7 +35,8 @@ import { MatTableModule } from '@angular/material/table';
     ReactiveFormsModule,
     InherentRoutingModule,
     PolkadotAngularLibModule,
-    MatTableModule
+    MatTableModule,
+    MatSelectModule
   ]
 })
 export class InherentModule {
