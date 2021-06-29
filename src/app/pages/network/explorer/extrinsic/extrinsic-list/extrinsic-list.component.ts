@@ -174,7 +174,6 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
           });
 
         this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
-        console.log(response);
 
         extrinsics.sort((a, b) =>
           b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
