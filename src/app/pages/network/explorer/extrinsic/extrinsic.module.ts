@@ -24,6 +24,8 @@ import { ExtrinsicListComponent } from './extrinsic-list/extrinsic-list.componen
 import { ExtrinsicDetailComponent } from './extrinsic-detail/extrinsic-detail.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
+import { MatTableModule } from '@angular/material/table';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 
 @NgModule({
@@ -32,7 +34,9 @@ import { PolkadotAngularLibModule } from '../../../../../substrate-components-li
     CommonModule,
     ReactiveFormsModule,
     ExtrinsicRoutingModule,
-    PolkadotAngularLibModule
+    PolkadotAngularLibModule,
+    MatTableModule,
+    MatCheckboxModule
   ]
 })
 export class ExtrinsicModule { }

@@ -23,6 +23,7 @@ import { BalancesRoutingModule } from './balances-routing.module';
 import { BalancesTransferListComponent } from './transfer/balances-transfer-list/balances-transfer-list.component';
 import { BalancesTransferDetailComponent } from './transfer/balances-transfer-detail/balances-transfer-detail.component';
 import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
+import { MatTableModule } from '@angular/material/table';
 
 
 @NgModule({
@@ -30,7 +31,8 @@ import { PolkadotAngularLibModule } from '../../../../../substrate-components-li
   imports: [
     CommonModule,
     BalancesRoutingModule,
-    PolkadotAngularLibModule
+    PolkadotAngularLibModule,
+    MatTableModule
   ]
 })
 export class BalancesModule { }

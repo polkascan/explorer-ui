@@ -17,16 +17,13 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-
-
-const temporaryListSize = 100;
 
 
 @Component({
@@ -36,7 +33,7 @@ const temporaryListSize = 100;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EventListComponent implements OnInit, OnDestroy {
-  events: pst.Event[] = [];
+  events = new BehaviorSubject<pst.Event[]>([]);
   filters = new Map();
 
   palletControl: FormControl = new FormControl('');
@@ -45,6 +42,8 @@ export class EventListComponent implements OnInit, OnDestroy {
     eventModule: this.palletControl,
     eventName: this.eventNameControl
   });
+
+  columnsToDisplay = ['icon', 'eventID', 'referencedTransaction', 'pallet', 'events', 'details'];
 
   private network: string;
   private unsubscribeNewEventFn: null | (() => void);
@@ -65,8 +64,7 @@ export class EventListComponent implements OnInit, OnDestroy {
       )
       .subscribe((values) => {
         this.unsubscribeNewEvent();
-        this.events = [];
-        this.cd.markForCheck();
+        this.events.next([]);
 
         this.subscribeNewEvent();
         this.getEvents();
@@ -105,11 +103,11 @@ export class EventListComponent implements OnInit, OnDestroy {
           )
           .subscribe(async (runtime): Promise<void> => {
             const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
-            const events = await this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion);
+            const rEvents = await this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion);
 
             if (pallets) {
               pallets.forEach((pallet) => {
-                this.filters.set(pallet, events ? events.filter((event) => pallet.pallet === event.pallet).sort() : []);
+                this.filters.set(pallet, rEvents ? rEvents.filter((event) => pallet.pallet === event.pallet).sort() : []);
               });
               this.cd.markForCheck();
             }
@@ -147,11 +145,11 @@ export class EventListComponent implements OnInit, OnDestroy {
         filters,
         (event: pst.Event) => {
           if (!this.onDestroyCalled) {
-            if (!this.events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx)) {
-              this.events.splice(0, 0, event);
-              this.events.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
-              this.events.length = Math.min(this.events.length, temporaryListSize);
-              this.cd.markForCheck();
+            const events = [...this.events.value];
+            if (!events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx)) {
+              events.splice(0, 0, event);
+              events.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
+              this.events.next(events);
             }
           } else {
             // If still listening but component is already destroyed.
@@ -189,19 +187,19 @@ export class EventListComponent implements OnInit, OnDestroy {
 
     try {
       const response: pst.ListResponse<pst.Event> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getEvents(filters, temporaryListSize);
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getEvents(filters);
       if (!this.onDestroyCalled) {
+        const events = [...this.events.value];
         response.objects
           .filter((event) => {
-            return !this.events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx);
+            return !events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx);
           })
           .forEach((event) => {
-            this.events.push(event);
+            events.push(event);
           });
 
-        this.events.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
-        this.events.length = Math.min(this.events.length, temporaryListSize);
-        this.cd.markForCheck();
+        events.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
+        this.events.next(events);
       }
     } catch (e) {
       console.error(e);

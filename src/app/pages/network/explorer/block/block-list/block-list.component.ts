@@ -37,6 +37,8 @@ export class BlockListComponent implements OnInit, OnDestroy {
   latestBlockNumber = new BehaviorSubject<number>(0);
   blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
 
+  columnsToDisplay = ['icon', 'number', 'age', 'blockHash', 'signedExtrinsics', 'moduleEvents', 'details'];
+
   constructor(
     private pa: PolkadaptService,
     private ns: NetworkService

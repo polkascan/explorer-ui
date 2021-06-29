@@ -32,7 +32,9 @@ import { filter, first, switchMap, takeUntil } from 'rxjs/operators';
 })
 export class RuntimeListComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
-  runtimes = new BehaviorSubject<pst.Runtime[] | null>(null);
+  runtimes = new BehaviorSubject<pst.Runtime[]>([]);
+
+  columnsToDisplay = ['icon', 'name', 'version', 'pallets', 'events', 'calls', 'storage', 'constants', 'details'];
 
   constructor(
     private rs: RuntimeService,
@@ -61,5 +63,4 @@ export class RuntimeListComponent implements OnInit, OnDestroy {
   track(index: number, item: pst.Runtime): string {
     return `${item.specName}-${item.specVersion}`;
   }
-
 }

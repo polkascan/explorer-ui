@@ -16,16 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { takeUntil } from 'rxjs/operators';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-
-
-const temporaryListSize = 100;
-
 
 @Component({
   selector: 'app-log-list',
@@ -34,15 +30,16 @@ const temporaryListSize = 100;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LogListComponent implements OnInit {
-  logs: pst.Log[] = [];
+  logs = new BehaviorSubject<pst.Log[]>([]);
+
+  columnsToDisplay = ['icon', 'logID', 'block', 'type', 'details'];
 
   private network: string;
   private unsubscribeNewLogFn: null | (() => void);
   private destroyer: Subject<undefined> = new Subject();
 
   constructor(private ns: NetworkService,
-              private pa: PolkadaptService,
-              private cd: ChangeDetectorRef) {
+              private pa: PolkadaptService) {
   }
 
   ngOnInit(): void {
@@ -66,11 +63,11 @@ export class LogListComponent implements OnInit {
     try {
       this.unsubscribeNewLogFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewLog(
         (log: pst.Log) => {
-          if (!this.logs.some((l) => l.blockNumber === log.blockNumber && l.logIdx === log.logIdx)) {
-            this.logs.splice(0, 0, log);
-            this.logs.sort((a, b) => b.blockNumber - a.blockNumber || b.logIdx - a.logIdx);
-            this.logs.length = Math.min(this.logs.length, temporaryListSize);
-            this.cd.markForCheck();
+          const logs = [...this.logs.value]
+          if (!logs.some((l) => l.blockNumber === log.blockNumber && l.logIdx === log.logIdx)) {
+            logs.splice(0, 0, log);
+            logs.sort((a, b) => b.blockNumber - a.blockNumber || b.logIdx - a.logIdx);
+            this.logs.next(logs);
           }
         });
     } catch (e) {
@@ -91,19 +88,19 @@ export class LogListComponent implements OnInit {
   async getLogs(): Promise<void> {
     try {
       const response: pst.ListResponse<pst.Log> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getLogs(temporaryListSize);
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getLogs();
 
+      const logs = [...this.logs.value];
       response.objects
-      .filter((log) => {
-        return !this.logs.some((l) => l.blockNumber === log.blockNumber && l.logIdx === log.logIdx);
-      })
-      .forEach((log) => {
-        this.logs.push(log);
-      });
+        .filter((log) => {
+          return !logs.some((l) => l.blockNumber === log.blockNumber && l.logIdx === log.logIdx);
+        })
+        .forEach((log) => {
+          logs.push(log);
+        });
 
-      this.logs.sort((a, b) => b.blockNumber - a.blockNumber || b.logIdx - a.logIdx);
-      this.logs.length = Math.min(this.logs.length, temporaryListSize);
-      this.cd.markForCheck();
+      logs.sort((a, b) => b.blockNumber - a.blockNumber || b.logIdx - a.logIdx);
+      this.logs.next(logs);
     } catch (e) {
       console.error(e);
       // Ignore for now...

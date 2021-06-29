@@ -1,50 +1,80 @@
 <a routerLink="..">Back to dashboard</a>
 <h1>Events</h1>
 
-<div class="ps-grid-filters">
-  <select [formControl]="palletControl">
-    <option [ngValue]="''">All pallets</option>
-    <option *ngFor="let item of filters | keyvalue" [ngValue]="item.key.pallet">{{item.key.pallet}}</option>
-  </select>
-  <select [formControl]="eventNameControl">
-    <option [ngValue]="''">All events</option>
-    <ng-container *ngFor="let item of filters | keyvalue">
-      <ng-container *ngIf="item.key.pallet === palletControl.value">
-        <option *ngFor="let event of item.value" [ngValue]="event.eventName">{{event.eventName}}</option>
+<div>
+  <mat-form-field appearance="fill">
+    <mat-label>Pallet</mat-label>
+    <mat-select [formControl]="palletControl">
+      <mat-option [value]="''">All pallets</mat-option>
+      <mat-option *ngFor="let item of filters | keyvalue" [value]="item.key.pallet">
+        {{item.key.pallet}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Event</mat-label>
+    <mat-select [formControl]="eventNameControl">
+      <mat-option [value]="''">All events</mat-option>
+      <ng-container *ngFor="let item of filters | keyvalue">
+        <ng-container *ngIf="item.key.pallet === palletControl.value">
+          <mat-option *ngFor="let event of item.value" [value]="event.eventName">
+            {{event.eventName}}
+          </mat-option>
+        </ng-container>
       </ng-container>
-    </ng-container>
-  </select>
+    </mat-select>
+  </mat-form-field>
 </div>
 
-<div class="ps-grid ps-event-grid">
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-header-column">Event ID</div>
-  <div class="ps-grid-header-column">Block</div>
-  <div class="ps-grid-header-column">Referenced Transaction</div>
-  <div class="ps-grid-header-column">Pallet</div>
-  <div class="ps-grid-header-column">Events</div>
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let event of events; trackBy: track">
-    <div class="ps-grid-column">
-      <i class="fas fa-calendar-check"></i>
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="event.blockNumber + '-' + event.eventIdx">{{event.blockNumber}}-{{event.eventIdx}}</a>
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="'../block/' + event.blockNumber">{{event.blockNumber}}</a>
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="'../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a>
-    </div>
-    <div class="ps-grid-column">
-      {{event.eventModule}} <!-- todo event.eventPallet -->
-    </div>
-    <div class="ps-grid-column">
-      {{event.eventName}}
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="event.blockNumber + '-' + event.eventIdx">Details</a>
-    </div>
-  </div>
-</div>
+<ng-container *ngIf="(events | async) as dataSource">
+  <table mat-table [dataSource]="dataSource" [trackBy]="track">
+
+    <ng-container matColumnDef="icon">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef>
+        <i class="fas fa-calendar-check"></i>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="eventID">
+      <th mat-header-cell *matHeaderCellDef>Event ID</th>
+      <td mat-cell *matCellDef="let event">
+        <a [routerLink]="event.blockNumber + '-' + event.eventIdx">{{event.blockNumber}}-{{event.eventIdx}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="referencedTransaction">
+      <th mat-header-cell *matHeaderCellDef>Referenced Transaction</th>
+      <td mat-cell *matCellDef="let event">
+        <a [routerLink]="'../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}
+          -{{event.extrinsicIdx}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="pallet">
+      <th mat-header-cell *matHeaderCellDef>Pallet</th>
+      <td mat-cell *matCellDef="let event">
+        {{event.eventPallet || event.eventModule}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="events">
+      <th mat-header-cell *matHeaderCellDef>Events</th>
+      <td mat-cell *matCellDef="let event">
+        {{event.eventName}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="details">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let event">
+        <a [routerLink]="event.blockNumber + '-' + event.eventIdx">Details</a>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+
+  </table>
+</ng-container>

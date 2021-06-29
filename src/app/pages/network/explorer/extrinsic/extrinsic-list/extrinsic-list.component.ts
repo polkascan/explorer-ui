@@ -17,16 +17,13 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ListResponse } from '../../../../../../../polkadapt/projects/polkascan/src/lib/polkascan.types';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-
-
-const temporaryListSize = 100;
 
 
 @Component({
@@ -36,12 +33,14 @@ const temporaryListSize = 100;
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ExtrinsicListComponent implements OnInit, OnDestroy {
-  extrinsics: pst.Extrinsic[] = [];
+  extrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
 
   signedControl: FormControl = new FormControl(true);
   filtersFormGroup: FormGroup = new FormGroup({
     signed: this.signedControl,
   });
+
+  columnsToDisplay = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'signed', 'details'];
 
   private network: string;
   private unsubscribeNewExtrinsicFn: null | (() => void);
@@ -49,8 +48,7 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
   private onDestroyCalled = false;
 
   constructor(private ns: NetworkService,
-              private pa: PolkadaptService,
-              private cd: ChangeDetectorRef) {
+              private pa: PolkadaptService) {
   }
 
   ngOnInit(): void {
@@ -60,8 +58,7 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
       )
       .subscribe((values) => {
         this.unsubscribeNewExtrinsic();
-        this.extrinsics = [];
-        this.cd.markForCheck();
+        this.extrinsics.next([]);
 
         this.subscribeNewExtrinsic();
         this.getExtrinsics();
@@ -111,15 +108,15 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
           filters,
           (extrinsic: pst.Extrinsic) => {
             if (!this.onDestroyCalled) {
-              if (!this.extrinsics.some((e) =>
+              const extrinsics = [...this.extrinsics.value];
+              if (!extrinsics.some((e) =>
                 e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
               )) {
-                this.extrinsics.splice(0, 0, extrinsic);
-                this.extrinsics.sort((a, b) =>
+                extrinsics.splice(0, 0, extrinsic);
+                extrinsics.sort((a, b) =>
                   b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
                 );
-                this.extrinsics.length = Math.min(this.extrinsics.length, temporaryListSize);
-                this.cd.markForCheck();
+                this.extrinsics.next(extrinsics);
               }
             } else {
               // If still listening but component is already destroyed.
@@ -157,21 +154,21 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
       const response: ListResponse<pst.Extrinsic> =
         await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100);
       if (!this.onDestroyCalled) {
+        const extrinsics = [...this.extrinsics.value];
         response.objects
           .filter((extrinsic) => {
-            return !this.extrinsics.some((e) =>
+            return !extrinsics.some((e) =>
               e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
             );
           })
           .forEach((extrinsic) => {
-            this.extrinsics.push(extrinsic);
+            extrinsics.push(extrinsic);
           });
 
-        this.extrinsics.length = Math.min(this.extrinsics.length, temporaryListSize);
-        this.extrinsics.sort((a, b) =>
+        extrinsics.sort((a, b) =>
           b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
         );
-        this.cd.markForCheck();
+        this.extrinsics.next(extrinsics);
       }
     } catch (e) {
       console.error(e);

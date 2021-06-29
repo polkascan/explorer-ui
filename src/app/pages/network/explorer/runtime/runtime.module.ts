@@ -28,6 +28,7 @@ import { RuntimeEventDetailComponent } from './event/runtime-event-detail/runtim
 import { RuntimeStorageDetailComponent } from './storage/runtime-storage-detail/runtime-storage-detail.component';
 import { RuntimeConstantDetailComponent } from './constant/runtime-constant-detail/runtime-constant-detail.component';
 import { RouterModule } from '@angular/router';
+import { MatTableModule } from '@angular/material/table';
 
 
 @NgModule({
@@ -37,7 +38,8 @@ import { RouterModule } from '@angular/router';
   imports: [
     CommonModule,
     RuntimeRoutingModule,
-    RouterModule
+    RouterModule,
+    MatTableModule
   ]
 })
 export class RuntimePallet {

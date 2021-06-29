@@ -32,9 +32,12 @@ import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
   call = new BehaviorSubject<pst.RuntimeCall | null>(null);
   callArguments = new BehaviorSubject<pst.RuntimeCallArgument[]>([]);
+
+  columnsToDisplay = ['icon', 'name', 'type'];
+
+  private destroyer: Subject<undefined> = new Subject();
 
   constructor(
     private route: ActivatedRoute,

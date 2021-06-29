@@ -1,37 +1,60 @@
 <a routerLink="../..">Back to dashboard</a>
 <h1>Balance transfers</h1>
 
-<div class="ps-grid ps-transfer-grid">
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-header-column">Block</div>
-  <div class="ps-grid-header-column">From</div>
-  <div class="ps-grid-header-column">To</div>
-  <div class="ps-grid-header-column">Value</div>
-  <div class="ps-grid-header-column"></div>
-  <div class="ps-grid-row" *ngFor="let transfer of transfers; trackBy: track">
-    <div class="ps-grid-column">
-      <i class="fas fa-book"></i>
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="'../../block/' + transfer.blockNumber">{{transfer.blockNumber}}</a>
-    </div>
-    <div class="ps-grid-column">
-      <a *ngIf="transfer.fromMultiAddressAccountId" [routerLink]="'../../account/' + transfer.fromMultiAddressAccountId">
-        <identicon [value]="transfer.fromMultiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
-        {{ transfer.fromMultiAddressAccountId }}
-      </a>
-    </div>
-    <div class="ps-grid-column">
-      <a *ngIf="transfer.toMultiAddressAccountId" [routerLink]="'../../account/' + transfer.toMultiAddressAccountId">
-        <identicon [value]="transfer.toMultiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
-        {{ transfer.toMultiAddressAccountId }}
-      </a>
-    </div>
-    <div class="ps-grid-column">
-      {{transfer.value}}
-    </div>
-    <div class="ps-grid-column">
-      <a [routerLink]="transfer.blockNumber + '-' + transfer.eventIdx">Details</a>
-    </div>
-  </div>
-</div>
+<ng-container *ngIf="(transfers | async) as dataSource">
+  <table mat-table [dataSource]="dataSource" [trackBy]="track">
+
+    <ng-container matColumnDef="icon">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef>
+        <i class="fas fa-file-signature"></i>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="block">
+      <th mat-header-cell *matHeaderCellDef>Block</th>
+      <td mat-cell *matCellDef="let transfer">
+        <a [routerLink]="'../../block/' + transfer.blockNumber">{{transfer.blockNumber}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="from">
+      <th mat-header-cell *matHeaderCellDef>From</th>
+      <td mat-cell *matCellDef="let transfer">
+        <a *ngIf="transfer.fromMultiAddressAccountId"
+           [routerLink]="'../../account/' + transfer.fromMultiAddressAccountId">
+          <identicon [value]="transfer.fromMultiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
+          {{ transfer.fromMultiAddressAccountId }}
+        </a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="to">
+      <th mat-header-cell *matHeaderCellDef>To</th>
+      <td mat-cell *matCellDef="let transfer">
+        <a *ngIf="transfer.toMultiAddressAccountId" [routerLink]="'../../account/' + transfer.toMultiAddressAccountId">
+          <identicon [value]="transfer.toMultiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
+          {{ transfer.toMultiAddressAccountId }}
+        </a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="value">
+      <th mat-header-cell *matHeaderCellDef>Value</th>
+      <td mat-cell *matCellDef="let transfer">
+        {{transfer.value}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="details">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let transfer">
+        <a [routerLink]="transfer.blockNumber + '-' + transfer.eventIdx">Details</a>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+
+  </table>
+</ng-container>

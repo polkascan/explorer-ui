@@ -23,6 +23,7 @@ import { LogRoutingModule } from './log-routing.module';
 import { LogDetailComponent } from './log-detail/log-detail.component';
 import { LogListComponent } from './log-list/log-list.component';
 import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
+import { MatTableModule } from '@angular/material/table';
 
 
 @NgModule({
@@ -30,7 +31,8 @@ import { PolkadotAngularLibModule } from '../../../../../substrate-components-li
   imports: [
     CommonModule,
     LogRoutingModule,
-    PolkadotAngularLibModule
+    PolkadotAngularLibModule,
+    MatTableModule
   ]
 })
 export class LogModule { }

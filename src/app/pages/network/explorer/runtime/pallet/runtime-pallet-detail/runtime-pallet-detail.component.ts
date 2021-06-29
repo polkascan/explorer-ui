@@ -31,7 +31,6 @@ import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
   pallet = new BehaviorSubject<pst.RuntimePallet | null>(null);
   calls = new BehaviorSubject<pst.RuntimeCall[]>([]);
   events = new BehaviorSubject<pst.RuntimeEvent[]>([]);
@@ -39,6 +38,17 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
   constants = new BehaviorSubject<pst.RuntimeConstant[]>([]);
   types = new BehaviorSubject<pst.RuntimeType[]>([]);
   errors = new BehaviorSubject<pst.RuntimeErrorMessage[]>([]);
+
+  columnsToDisplay = {
+    calls: ['icon', 'name', 'lookup', 'arguments', 'details'],
+    events: ['icon', 'name', 'lookup', 'attributes', 'details'],
+    storages: ['icon', 'name', 'type', 'details'],
+    constants: ['icon', 'name', 'type', 'value', 'details'],
+    types: ['icon', 'name', 'decoderClass', 'corePrimitive', 'runtimePrimitive'],
+    errors: ['icon', 'name', 'index', 'documentation']
+  };
+
+  private destroyer: Subject<undefined> = new Subject();
 
   constructor(
     private route: ActivatedRoute,

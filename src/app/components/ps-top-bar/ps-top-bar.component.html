@@ -2,18 +2,33 @@
   <img class="ps-top-bar-brand-img" src="/assets/logo.png">
 </a>
 <div class="ps-top-bar-selectors">
+
   <div class="ps-top-bar-block-nr" *ngIf="vars.blockNumber|async as blockNumber">
-    {{blockNumber}}
+    #{{blockNumber}}
   </div>
+
+  <div class="ps-top-bar-block-nr" *ngIf="vars.price|async as price">
+    {{vars.currency | async}} {{price}}
+  </div>
+
   <div class="ps-top-bar-network-selector">
-    <select [formControl]="networkControl">
-      <option disabled="true" value="">Select a network</option>
-      <option *ngFor="let network of networks" [ngValue]="network">{{network}}</option>
-    </select>
+    <mat-form-field appearance="fill">
+      <mat-label>Network</mat-label>
+      <mat-select [formControl]="networkControl">
+        <mat-option [value]="''" disabled>Select a network</mat-option>
+        <mat-option *ngFor="let network of networks" [value]="network">
+          {{network}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
   </div>
+
   <div class="ps-top-bar-language-selector">
-    <select [formControl]="languageControl">
-      <option disabled="true" value="">English</option>
-    </select>
+    <mat-form-field appearance="fill">
+      <mat-label>Language</mat-label>
+      <mat-select [formControl]="languageControl">
+        <mat-option [value]="''" disabled>English</mat-option>
+      </mat-select>
+    </mat-form-field>
   </div>
 </div>
