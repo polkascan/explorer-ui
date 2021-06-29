@@ -62,3 +62,9 @@
 
   </table>
 </ng-container>
+
+<div *ngIf="loading">
+  <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+</div>
+
+<button [disabled]="loading > 0 || !nextPage" mat-stroked-button aria-label="Show more" (click)="getNextPage()">Show more</button>

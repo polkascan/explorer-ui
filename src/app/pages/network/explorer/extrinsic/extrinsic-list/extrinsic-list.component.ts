@@ -35,10 +35,14 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 export class ExtrinsicListComponent implements OnInit, OnDestroy {
   extrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
 
+  loading: number = 0;
+
   signedControl: FormControl = new FormControl(true);
   filtersFormGroup: FormGroup = new FormGroup({
     signed: this.signedControl,
   });
+
+  nextPage: string | null = null;
 
   columnsToDisplay = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'signed', 'details'];
 
@@ -48,7 +52,8 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
   private onDestroyCalled = false;
 
   constructor(private ns: NetworkService,
-              private pa: PolkadaptService) {
+              private pa: PolkadaptService,
+              private cd: ChangeDetectorRef) {
   }
 
   ngOnInit(): void {
@@ -138,11 +143,14 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
   }
 
 
-  async getExtrinsics(): Promise<void> {
+  async getExtrinsics(pageKey?: string): Promise<void> {
     if (this.onDestroyCalled) {
       // Component is already in process of destruction or destroyed.
       return;
     }
+
+    this.loading++;
+    this.cd.markForCheck();
 
     const filters: any = {};
     if (this.signedControl.value === true) {
@@ -152,7 +160,7 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
 
     try {
       const response: ListResponse<pst.Extrinsic> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100);
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100, pageKey);
       if (!this.onDestroyCalled) {
         const extrinsics = [...this.extrinsics.value];
         response.objects
@@ -165,14 +173,30 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
             extrinsics.push(extrinsic);
           });
 
+        this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
+        console.log(response);
+
         extrinsics.sort((a, b) =>
           b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
         );
         this.extrinsics.next(extrinsics);
+
+        this.loading--;
+        this.cd.markForCheck();
       }
     } catch (e) {
+      this.loading--;
+      this.cd.markForCheck();
+
       console.error(e);
       // Ignore for now...
+    }
+  }
+
+
+  async getNextPage(): Promise<void> {
+    if (this.nextPage) {
+      this.getExtrinsics(this.nextPage);
     }
   }
 
