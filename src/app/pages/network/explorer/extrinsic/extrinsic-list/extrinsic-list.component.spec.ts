@@ -17,7 +17,6 @@
  */
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { ExtrinsicListComponent } from './extrinsic-list.component';
 
 describe('ExtrinsicListComponent', () => {
