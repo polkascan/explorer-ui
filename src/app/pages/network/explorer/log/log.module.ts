@@ -24,6 +24,8 @@ import { LogDetailComponent } from './log-detail/log-detail.component';
 import { LogListComponent } from './log-list/log-list.component';
 import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
 import { MatTableModule } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 
 @NgModule({
@@ -32,7 +34,10 @@ import { MatTableModule } from '@angular/material/table';
     CommonModule,
     LogRoutingModule,
     PolkadotAngularLibModule,
-    MatTableModule
+    MatTableModule,
+    MatButtonModule,
+    MatProgressBarModule
   ]
 })
-export class LogModule { }
+export class LogModule {
+}

@@ -36,10 +36,8 @@ export class RuntimeListComponent implements OnInit, OnDestroy {
 
   columnsToDisplay = ['icon', 'name', 'version', 'pallets', 'events', 'calls', 'storage', 'constants', 'details'];
 
-  constructor(
-    private rs: RuntimeService,
-    private ns: NetworkService
-  ) {
+  constructor(private ns: NetworkService,
+              private rs: RuntimeService) {
   }
 
   ngOnInit(): void {

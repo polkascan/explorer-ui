@@ -26,6 +26,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
 import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 
 @NgModule({
@@ -36,7 +38,9 @@ import { MatSelectModule } from '@angular/material/select';
     InherentRoutingModule,
     PolkadotAngularLibModule,
     MatTableModule,
-    MatSelectModule
+    MatSelectModule,
+    MatButtonModule,
+    MatProgressBarModule
   ]
 })
 export class InherentModule {

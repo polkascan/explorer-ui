@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 import { NetworkService } from '../../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
-import { takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { ListComponentBase } from '../../../../../../components/list-base/list.component.base';
 
 
 @Component({
@@ -30,37 +30,36 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
   styleUrls: ['./balances-transfer-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class BalancesTransferListComponent implements OnInit {
+export class BalancesTransferListComponent extends ListComponentBase {
   transfers = new BehaviorSubject<pst.Transfer[]>([]);
 
+  nextPage: string | null = null;
   columnsToDisplay = ['icon', 'block', 'from', 'to', 'value', 'details'];
 
-  private network: string;
   private unsubscribeNewTransferFn: null | (() => void);
-  private destroyer: Subject<undefined> = new Subject();
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService) {
+    super(ns);
   }
 
-  ngOnInit(): void {
-    this.ns.currentNetwork
-      .pipe(
-        takeUntil(this.destroyer)
-      )
-      .subscribe((network: string) => {
-        this.network = network;
-        this.unsubscribeNewTransfer();
+  onNetworkChange(network: string): void {
+    this.unsubscribeNewTransfer();
 
-        if (network) {
-          this.subscribeNewTransfer();
-          this.getTransfers();
-        }
-      });
+    if (network) {
+      this.subscribeNewTransfer();
+      this.getTransfers();
+    }
   }
 
 
   async subscribeNewTransfer(): Promise<void> {
+    if (this.onDestroyCalled) {
+      // Component is already in process of destruction or destroyed.
+      this.unsubscribeNewTransfer();
+      return;
+    }
+
     try {
       this.unsubscribeNewTransferFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewTransfer(
         (transfer: pst.Transfer) => {
@@ -88,25 +87,43 @@ export class BalancesTransferListComponent implements OnInit {
   }
 
 
-  async getTransfers(): Promise<void> {
+  async getTransfers(pageKey?: string): Promise<void> {
+    if (this.onDestroyCalled) {
+      // Component is already in process of destruction or destroyed.
+      return;
+    }
+
+    this.loading++;
+
     try {
       const response: pst.ListResponse<pst.Transfer> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getTransfers();
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getTransfers(100, pageKey);
 
       const transfers = [...this.transfers.value]
       response.objects
-      .filter((transfer) => {
-        return !transfers.some((l) => l.blockNumber === transfer.blockNumber && l.eventIdx === transfer.eventIdx);
-      })
-      .forEach((transfer) => {
-        transfers.push(transfer);
-      });
+        .filter((transfer) => {
+          return !transfers.some((l) => l.blockNumber === transfer.blockNumber && l.eventIdx === transfer.eventIdx);
+        })
+        .forEach((transfer) => {
+          transfers.push(transfer);
+        });
+
+      this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
 
       transfers.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
       this.transfers.next(transfers);
+      this.loading--;
     } catch (e) {
+      this.loading--;
       console.error(e);
       // Ignore for now...
+    }
+  }
+
+
+  async getNextPage(): Promise<void> {
+    if (this.nextPage) {
+      this.getTransfers(this.nextPage);
     }
   }
 

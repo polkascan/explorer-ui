@@ -42,7 +42,6 @@ export class ExtrinsicListComponent extends ListComponentBase implements OnInit,
   });
 
   nextPage: string | null = null;
-
   columnsToDisplay = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'signed', 'details'];
 
   private unsubscribeNewExtrinsicFn: null | (() => void);
@@ -67,10 +66,10 @@ export class ExtrinsicListComponent extends ListComponentBase implements OnInit,
   }
 
 
-  onNetworkChange(): void {
+  onNetworkChange(network: string): void {
     this.unsubscribeNewExtrinsic();
 
-    if (this.network) {
+    if (network) {
       this.subscribeNewExtrinsic();
       this.getExtrinsics();
     }
@@ -167,12 +166,10 @@ export class ExtrinsicListComponent extends ListComponentBase implements OnInit,
           b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
         );
         this.extrinsics.next(extrinsics);
-
         this.loading--;
       }
     } catch (e) {
       this.loading--;
-
       console.error(e);
       // Ignore for now...
     }

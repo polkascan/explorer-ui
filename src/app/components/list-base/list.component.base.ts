@@ -19,7 +19,7 @@ export abstract class ListComponentBase implements OnDestroy {
   readonly destroyer: Subject<undefined> = new Subject();
   protected onDestroyCalled = false;
 
-  abstract onNetworkChange(): void;
+  abstract onNetworkChange(network: string): void;
 
   constructor(private _ns: NetworkService) {
     this._ns.currentNetwork
@@ -28,8 +28,10 @@ export abstract class ListComponentBase implements OnDestroy {
         takeUntil(this.destroyer)
       )
       .subscribe((network: string) => {
-        this.network = network;
-        typeof this.onNetworkChange === 'function' ? this.onNetworkChange() : null;
+        if (this.network !== network) {
+          this.network = network;
+          typeof this.onNetworkChange === 'function' ? this.onNetworkChange(network) : null;
+        }
       });
   }
 
