@@ -24,6 +24,7 @@ import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { ListComponentBase } from '../../../../../components/list-base/list.component.base';
 
 
 @Component({
@@ -32,7 +33,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
   styleUrls: ['./inherent-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class InherentListComponent implements OnInit, OnDestroy {
+export class InherentListComponent extends ListComponentBase implements OnInit, OnDestroy {
   inherents = new BehaviorSubject<pst.Extrinsic[]>([]);
   filters = new Map();
 
@@ -43,17 +44,16 @@ export class InherentListComponent implements OnInit, OnDestroy {
     callName: this.callNameControl
   });
 
+  nextPage: string | null = null;
   columnsToDisplay = ['icon', 'inherentID', 'block', 'pallet', 'call', 'success', 'details'];
 
-  private network: string;
   private unsubscribeNewInherentFn: null | (() => void);
-  private destroyer: Subject<undefined> = new Subject();
-  private onDestroyCalled = false;
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
               private rs: RuntimeService,
               private cd: ChangeDetectorRef) {
+    super(ns);
   }
 
   ngOnInit(): void {
@@ -77,51 +77,44 @@ export class InherentListComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.callNameControl.reset('', {emitEvent: false});
       });
+  }
 
-    this.ns.currentNetwork
-      .pipe(
-        debounceTime(100),
-        takeUntil(this.destroyer)
-      )
-      .subscribe((network: string) => {
-        this.filtersFormGroup.reset({
-          eventModule: '',
-          callName: ''
-        }, {emitEvent: false});
 
-        this.network = network;
-        this.unsubscribeNewInherent();
+  onNetworkChange(network: string): void {
+    this.filtersFormGroup.reset({
+      eventModule: '',
+      callName: ''
+    }, {emitEvent: false});
 
-        if (network) {
-          this.subscribeNewInherent();
-          this.getInherents();
+    this.unsubscribeNewInherent();
 
-          this.rs.getRuntime(network)
-            .pipe(
-              takeUntil(this.destroyer),
-              filter((r) => r !== null),
-              first()
-            )
-            .subscribe(async (runtime): Promise<void> => {
-              const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
-              const calls = await this.rs.getRuntimeCalls(network, (runtime as pst.Runtime).specVersion);
+    if (network) {
+      this.subscribeNewInherent();
+      this.getInherents();
 
-              if (pallets) {
-                pallets.forEach((pallet) => {
-                  this.filters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
-                });
-                this.cd.markForCheck();
-              }
+      this.rs.getRuntime(network)
+        .pipe(
+          takeUntil(this.destroyer),
+          filter((r) => r !== null),
+          first()
+        )
+        .subscribe(async (runtime): Promise<void> => {
+          const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
+          const calls = await this.rs.getRuntimeCalls(network, (runtime as pst.Runtime).specVersion);
+
+          if (pallets) {
+            pallets.forEach((pallet) => {
+              this.filters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
             });
-        }
-      });
+            this.cd.markForCheck();
+          }
+        });
+    }
   }
 
 
   ngOnDestroy(): void {
-    this.onDestroyCalled = true;
-    this.destroyer.next();
-    this.destroyer.complete();
+    super.ngOnDestroy();
     this.unsubscribeNewInherent();
   }
 
@@ -180,11 +173,13 @@ export class InherentListComponent implements OnInit, OnDestroy {
   }
 
 
-  async getInherents(): Promise<void> {
+  async getInherents(pageKey?: string): Promise<void> {
     if (this.onDestroyCalled) {
       // Component is already in process of destruction or destroyed.
       return;
     }
+
+    this.loading++;
 
     const filters: any = {
       signed: 0
@@ -199,7 +194,7 @@ export class InherentListComponent implements OnInit, OnDestroy {
 
     try {
       const response: pst.ListResponse<pst.Extrinsic> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100);
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100, pageKey);
       if (!this.onDestroyCalled) {
         const inherents = [...this.inherents.value]
         response.objects
@@ -212,14 +207,25 @@ export class InherentListComponent implements OnInit, OnDestroy {
             inherents.push(extrinsic);
           });
 
+        this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
+
         inherents.sort((a, b) =>
           b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
         );
         this.inherents.next(inherents);
+        this.loading--;
       }
     } catch (e) {
+      this.loading--;
       console.error(e);
       // Ignore for now...
+    }
+  }
+
+
+  async getNextPage(): Promise<void> {
+    if (this.nextPage) {
+      this.getInherents(this.nextPage);
     }
   }
 

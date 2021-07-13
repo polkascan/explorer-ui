@@ -16,14 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ListResponse } from '../../../../../../../polkadapt/projects/polkascan/src/lib/polkascan.types';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { ListComponentBase } from '../../../../../components/list-base/list.component.base';
 
 
 @Component({
@@ -32,10 +33,8 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
   styleUrls: ['./extrinsic-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ExtrinsicListComponent implements OnInit, OnDestroy {
+export class ExtrinsicListComponent extends ListComponentBase implements OnInit, OnDestroy {
   extrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
-
-  loading: number = 0;
 
   signedControl: FormControl = new FormControl(true);
   filtersFormGroup: FormGroup = new FormGroup({
@@ -43,17 +42,13 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
   });
 
   nextPage: string | null = null;
-
   columnsToDisplay = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'signed', 'details'];
 
-  private network: string;
   private unsubscribeNewExtrinsicFn: null | (() => void);
-  private destroyer: Subject<undefined> = new Subject();
-  private onDestroyCalled = false;
 
   constructor(private ns: NetworkService,
-              private pa: PolkadaptService,
-              private cd: ChangeDetectorRef) {
+              private pa: PolkadaptService) {
+    super(ns);
   }
 
   ngOnInit(): void {
@@ -68,28 +63,21 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
         this.subscribeNewExtrinsic();
         this.getExtrinsics();
       });
+  }
 
-    this.ns.currentNetwork
-      .pipe(
-        debounceTime(100),
-        takeUntil(this.destroyer)
-      )
-      .subscribe((network: string) => {
-        this.network = network;
-        this.unsubscribeNewExtrinsic();
 
-        if (network) {
-          this.subscribeNewExtrinsic();
-          this.getExtrinsics();
-        }
-      });
+  onNetworkChange(network: string): void {
+    this.unsubscribeNewExtrinsic();
+
+    if (network) {
+      this.subscribeNewExtrinsic();
+      this.getExtrinsics();
+    }
   }
 
 
   ngOnDestroy(): void {
-    this.onDestroyCalled = true;
-    this.destroyer.next();
-    this.destroyer.complete();
+    super.ngOnDestroy();
     this.unsubscribeNewExtrinsic();
   }
 
@@ -150,7 +138,6 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
     }
 
     this.loading++;
-    this.cd.markForCheck();
 
     const filters: any = {};
     if (this.signedControl.value === true) {
@@ -174,20 +161,15 @@ export class ExtrinsicListComponent implements OnInit, OnDestroy {
           });
 
         this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
-        console.log(response);
 
         extrinsics.sort((a, b) =>
           b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
         );
         this.extrinsics.next(extrinsics);
-
         this.loading--;
-        this.cd.markForCheck();
       }
     } catch (e) {
       this.loading--;
-      this.cd.markForCheck();
-
       console.error(e);
       // Ignore for now...
     }

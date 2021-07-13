@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, noop, Subject } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
@@ -104,7 +104,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
           })
         )
       )
-    ).subscribe();
+    ).subscribe(noop);
   }
 
   ngOnDestroy(): void {

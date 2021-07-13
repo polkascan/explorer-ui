@@ -24,6 +24,7 @@ import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { ListComponentBase } from '../../../../../components/list-base/list.component.base';
 
 
 @Component({
@@ -32,7 +33,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
   styleUrls: ['./transaction-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TransactionListComponent implements OnInit, OnDestroy {
+export class TransactionListComponent extends ListComponentBase implements OnInit, OnDestroy {
   transactions = new BehaviorSubject<pst.Extrinsic[]>([]);
   filters = new Map();
 
@@ -43,17 +44,16 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     callName: this.callNameControl
   });
 
+  nextPage: string | null = null;
   columnsToDisplay = ['icon', 'transactionID', 'from', 'block', 'pallet', 'call', 'success', 'details'];
 
-  private network: string;
   private unsubscribeNewTransactionFn: null | (() => void);
-  private destroyer: Subject<undefined> = new Subject();
-  private onDestroyCalled = false;
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
               private rs: RuntimeService,
               private cd: ChangeDetectorRef) {
+    super(ns);
   }
 
   ngOnInit(): void {
@@ -77,51 +77,44 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.callNameControl.reset('', {emitEvent: false});
       });
+  }
 
-    this.ns.currentNetwork
-      .pipe(
-        debounceTime(100),
-        takeUntil(this.destroyer)
-      )
-      .subscribe((network: string) => {
-        this.filtersFormGroup.reset({
-          eventModule: '',
-          callName: ''
-        }, {emitEvent: false});
 
-        this.network = network;
-        this.unsubscribeNewTransaction();
+  onNetworkChange(network: string): void {
+    this.filtersFormGroup.reset({
+      eventModule: '',
+      callName: ''
+    }, {emitEvent: false});
 
-        if (network) {
-          this.subscribeNewTransaction();
-          this.getTransactions();
+    this.unsubscribeNewTransaction();
 
-          this.rs.getRuntime(network)
-            .pipe(
-              takeUntil(this.destroyer),
-              filter((r) => r !== null),
-              first()
-            )
-            .subscribe(async (runtime): Promise<void> => {
-                const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
-                const calls = await this.rs.getRuntimeCalls(network, (runtime as pst.Runtime).specVersion);
+    if (network) {
+      this.subscribeNewTransaction();
+      this.getTransactions();
 
-                if (pallets) {
-                  pallets.forEach((pallet) => {
-                    this.filters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
-                  });
-                  this.cd.markForCheck();
-                }
+      this.rs.getRuntime(network)
+        .pipe(
+          takeUntil(this.destroyer),
+          filter((r) => r !== null),
+          first()
+        )
+        .subscribe(async (runtime): Promise<void> => {
+          const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
+          const calls = await this.rs.getRuntimeCalls(network, (runtime as pst.Runtime).specVersion);
+
+          if (pallets) {
+            pallets.forEach((pallet) => {
+              this.filters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
             });
-        }
-      });
+            this.cd.markForCheck();
+          }
+        });
+    }
   }
 
 
   ngOnDestroy(): void {
-    this.onDestroyCalled = true;
-    this.destroyer.next();
-    this.destroyer.complete();
+    super.ngOnDestroy();
     this.unsubscribeNewTransaction();
   }
 
@@ -180,11 +173,13 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   }
 
 
-  async getTransactions(): Promise<void> {
+  async getTransactions(pageKey?: string): Promise<void> {
     if (this.onDestroyCalled) {
       // Component is already in process of destruction or destroyed.
       return;
     }
+
+    this.loading++;
 
     const filters: any = {
       signed: 1
@@ -199,7 +194,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
     try {
       const response: pst.ListResponse<pst.Extrinsic> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100);
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100, pageKey);
       if (!this.onDestroyCalled) {
         const transactions = [...this.transactions.value];
         response.objects
@@ -212,14 +207,25 @@ export class TransactionListComponent implements OnInit, OnDestroy {
             transactions.push(extrinsic);
           });
 
+        this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
+
         transactions.sort((a, b) =>
           b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
         );
         this.transactions.next(transactions);
+        this.loading--;
       }
     } catch (e) {
+      this.loading--;
       console.error(e);
       // Ignore for now...
+    }
+  }
+
+
+  async getNextPage(): Promise<void> {
+    if (this.nextPage) {
+      this.getTransactions(this.nextPage);
     }
   }
 

@@ -78,3 +78,9 @@
 
   </table>
 </ng-container>
+
+<div *ngIf="loadingObservable | async">
+  <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+</div>
+
+<button [disabled]="(((loadingObservable | async) || 0) > 0) || !nextPage" mat-stroked-button aria-label="Show more" (click)="getNextPage()">Show more</button>

@@ -30,3 +30,11 @@ table {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+mat-progress-bar {
+  margin: 10px;
+}
+
+[mat-stroked-button] {
+  margin: 10px;
+}

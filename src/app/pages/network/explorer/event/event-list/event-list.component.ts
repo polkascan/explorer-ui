@@ -24,6 +24,7 @@ import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { ListComponentBase } from '../../../../../components/list-base/list.component.base';
 
 
 @Component({
@@ -32,7 +33,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
   styleUrls: ['./event-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EventListComponent implements OnInit, OnDestroy {
+export class EventListComponent extends ListComponentBase implements OnInit, OnDestroy {
   events = new BehaviorSubject<pst.Event[]>([]);
   filters = new Map();
 
@@ -43,17 +44,16 @@ export class EventListComponent implements OnInit, OnDestroy {
     eventName: this.eventNameControl
   });
 
+  nextPage: string | null = null;
   columnsToDisplay = ['icon', 'eventID', 'referencedTransaction', 'pallet', 'events', 'details'];
 
-  private network: string;
   private unsubscribeNewEventFn: null | (() => void);
-  private destroyer: Subject<undefined> = new Subject();
-  private onDestroyCalled = false;
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
               private rs: RuntimeService,
               private cd: ChangeDetectorRef) {
+    super(ns);
   }
 
   ngOnInit(): void {
@@ -77,50 +77,43 @@ export class EventListComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.eventNameControl.reset('', {emitEvent: false});
       });
+  }
 
-    this.ns.currentNetwork
-      .pipe(
-        takeUntil(this.destroyer)
-      )
-      .subscribe((network: string) => {
-        this.filtersFormGroup.reset({
-          eventModule: '',
-          eventName: ''
-        }, {emitEvent: false});
 
-        this.network = network;
-        this.unsubscribeNewEvent();
+  onNetworkChange(network: string): void {
+    this.filtersFormGroup.reset({
+      eventModule: '',
+      eventName: ''
+    }, {emitEvent: false});
+    this.unsubscribeNewEvent();
 
-        if (network) {
-          this.subscribeNewEvent();
-          this.getEvents();
+    if (network) {
+      this.subscribeNewEvent();
+      this.getEvents();
 
-          this.rs.getRuntime(network)
-          .pipe(
-            takeUntil(this.destroyer),
-            filter((r) => r !== null),
-            first()
-          )
-          .subscribe(async (runtime): Promise<void> => {
-            const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
-            const rEvents = await this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion);
+      this.rs.getRuntime(network)
+        .pipe(
+          takeUntil(this.destroyer),
+          filter((r) => r !== null),
+          first()
+        )
+        .subscribe(async (runtime): Promise<void> => {
+          const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
+          const rEvents = await this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion);
 
-            if (pallets) {
-              pallets.forEach((pallet) => {
-                this.filters.set(pallet, rEvents ? rEvents.filter((event) => pallet.pallet === event.pallet).sort() : []);
-              });
-              this.cd.markForCheck();
-            }
-          });
-        }
-      });
+          if (pallets) {
+            pallets.forEach((pallet) => {
+              this.filters.set(pallet, rEvents ? rEvents.filter((event) => pallet.pallet === event.pallet).sort() : []);
+            });
+            this.cd.markForCheck();
+          }
+        });
+    }
   }
 
 
   ngOnDestroy(): void {
-    this.onDestroyCalled = true;
-    this.destroyer.next();
-    this.destroyer.complete();
+    super.ngOnDestroy();
     this.unsubscribeNewEvent();
   }
 
@@ -171,11 +164,13 @@ export class EventListComponent implements OnInit, OnDestroy {
   }
 
 
-  async getEvents(): Promise<void> {
+  async getEvents(pageKey?: string): Promise<void> {
     if (this.onDestroyCalled) {
       // Component is already in process of destruction or destroyed.
       return;
     }
+
+    this.loading++;
 
     const filters: any = {};
     if (this.palletControl.value) {
@@ -187,7 +182,7 @@ export class EventListComponent implements OnInit, OnDestroy {
 
     try {
       const response: pst.ListResponse<pst.Event> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getEvents(filters);
+        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getEvents(filters, 100, pageKey);
       if (!this.onDestroyCalled) {
         const events = [...this.events.value];
         response.objects
@@ -198,12 +193,23 @@ export class EventListComponent implements OnInit, OnDestroy {
             events.push(event);
           });
 
+        this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
+
         events.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
         this.events.next(events);
+        this.loading--;
       }
     } catch (e) {
+      this.loading--;
       console.error(e);
       // Ignore for now...
+    }
+  }
+
+
+  async getNextPage(): Promise<void> {
+    if (this.nextPage) {
+      this.getEvents(this.nextPage);
     }
   }
 
