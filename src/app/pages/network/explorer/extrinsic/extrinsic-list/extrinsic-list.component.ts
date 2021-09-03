@@ -17,14 +17,12 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
-import { ListResponse } from '../../../../../../../polkadapt/projects/polkascan/src/lib/polkascan.types';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { ListComponentBase } from '../../../../../components/list-base/list.component.base';
+import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
 
 
 @Component({
@@ -33,18 +31,15 @@ import { ListComponentBase } from '../../../../../components/list-base/list.comp
   styleUrls: ['./extrinsic-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ExtrinsicListComponent extends ListComponentBase implements OnInit, OnDestroy {
-  extrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
+export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extrinsic> implements OnInit, OnDestroy {
+  listSize = 8;
 
   signedControl: FormControl = new FormControl(true);
   filtersFormGroup: FormGroup = new FormGroup({
     signed: this.signedControl,
   });
 
-  nextPage: string | null = null;
-  columnsToDisplay = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'signed', 'details'];
-
-  private unsubscribeNewExtrinsicFn: null | (() => void);
+  visibleColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'signed', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService) {
@@ -57,129 +52,47 @@ export class ExtrinsicListComponent extends ListComponentBase implements OnInit,
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
-        this.unsubscribeNewExtrinsic();
-        this.extrinsics.next([]);
-
-        this.subscribeNewExtrinsic();
-        this.getExtrinsics();
+        this.items = [];
+        this.subscribeNewItem();
+        this.getItems();
       });
   }
 
 
-  onNetworkChange(network: string): void {
-    this.unsubscribeNewExtrinsic();
-
-    if (network) {
-      this.subscribeNewExtrinsic();
-      this.getExtrinsics();
-    }
+  createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Extrinsic>> {
+    return this.pa.run(this.network).polkascan.chain.getExtrinsics(
+      this.filters,
+      this.listSize,
+      pageKey
+    );
   }
 
 
-  ngOnDestroy(): void {
-    super.ngOnDestroy();
-    this.unsubscribeNewExtrinsic();
+  createNewItemSubscription(handleItemFn: (item: pst.Extrinsic) => void): Promise<() => void> {
+    return this.pa.run(this.network).polkascan.chain.subscribeNewExtrinsic(
+      this.filters,
+      handleItemFn
+    );
   }
 
 
-  async subscribeNewExtrinsic(): Promise<void> {
-    if (this.onDestroyCalled) {
-      // Component is already in process of destruction or destroyed.
-      this.unsubscribeNewExtrinsic();
-      return;
-    }
+  sortCompareFn(a: pst.Extrinsic, b: pst.Extrinsic): number {
+    return b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx;
+  }
 
+
+  equalityCompareFn(a: pst.Extrinsic, b: pst.Extrinsic): boolean {
+    return a.blockNumber === b.blockNumber && a.extrinsicIdx === b.extrinsicIdx;
+  }
+
+
+  get filters(): any {
     const filters: any = {};
     if (this.signedControl.value === true) {
       // If true, singed only is being set. There is no need for a not signed check.
       filters.signed = 1;
     }
-
-    try {
-      this.unsubscribeNewExtrinsicFn =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewExtrinsic(
-          filters,
-          (extrinsic: pst.Extrinsic) => {
-            if (!this.onDestroyCalled) {
-              const extrinsics = [...this.extrinsics.value];
-              if (!extrinsics.some((e) =>
-                e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
-              )) {
-                extrinsics.splice(0, 0, extrinsic);
-                extrinsics.sort((a, b) =>
-                  b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
-                );
-                this.extrinsics.next(extrinsics);
-              }
-            } else {
-              // If still listening but component is already destroyed.
-              this.unsubscribeNewExtrinsic();
-            }
-          });
-    } catch (e) {
-      console.error(e);
-      // Ignore for now...
-    }
-  }
-
-
-  unsubscribeNewExtrinsic(): void {
-    if (this.unsubscribeNewExtrinsicFn) {
-      this.unsubscribeNewExtrinsicFn();
-      this.unsubscribeNewExtrinsicFn = null;
-    }
-  }
-
-
-  async getExtrinsics(pageKey?: string): Promise<void> {
-    if (this.onDestroyCalled) {
-      // Component is already in process of destruction or destroyed.
-      return;
-    }
-
-    this.loading++;
-
-    const filters: any = {};
-    if (this.signedControl.value === true) {
-      // If true, singed only is being set. There is no need for a not signed check.
-      filters.signed = 1;
-    }
-
-    try {
-      const response: ListResponse<pst.Extrinsic> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100, pageKey);
-      if (!this.onDestroyCalled) {
-        const extrinsics = [...this.extrinsics.value];
-        response.objects
-          .filter((extrinsic) => {
-            return !extrinsics.some((e) =>
-              e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
-            );
-          })
-          .forEach((extrinsic) => {
-            extrinsics.push(extrinsic);
-          });
-
-        this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
-
-        extrinsics.sort((a, b) =>
-          b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
-        );
-        this.extrinsics.next(extrinsics);
-        this.loading--;
-      }
-    } catch (e) {
-      this.loading--;
-      console.error(e);
-      // Ignore for now...
-    }
-  }
-
-
-  async getNextPage(): Promise<void> {
-    if (this.nextPage) {
-      this.getExtrinsics(this.nextPage);
-    }
+    return filters;
   }
 
 

@@ -35,7 +35,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
   event = new BehaviorSubject<pst.RuntimeEvent | null>(null);
   eventAttributes = new BehaviorSubject<pst.RuntimeEventAttribute[]>([]);
 
-  columnsToDisplay = ['icon', 'type'];
+  visibleColumns = ['icon', 'type'];
 
   private destroyer: Subject<undefined> = new Subject();
 

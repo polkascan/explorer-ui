@@ -35,7 +35,7 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
   runtime: Observable<pst.Runtime | null>;
   pallets = new BehaviorSubject<pst.RuntimePallet[]>([]);
 
-  columnsToDisplay = ['icon', 'name', 'events', 'calls', 'storage', 'constants', 'details']
+  visibleColumns = ['icon', 'name', 'events', 'calls', 'storage', 'constants', 'details']
 
   constructor(
     private route: ActivatedRoute,

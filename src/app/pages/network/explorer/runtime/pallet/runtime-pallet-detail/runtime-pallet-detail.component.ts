@@ -39,7 +39,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
   types = new BehaviorSubject<pst.RuntimeType[]>([]);
   errors = new BehaviorSubject<pst.RuntimeErrorMessage[]>([]);
 
-  columnsToDisplay = {
+  visibleColumns = {
     calls: ['icon', 'name', 'lookup', 'arguments', 'details'],
     events: ['icon', 'name', 'lookup', 'attributes', 'details'],
     storages: ['icon', 'name', 'type', 'details'],

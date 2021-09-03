@@ -6,7 +6,7 @@
     <mat-label>Pallet</mat-label>
     <mat-select [formControl]="palletControl">
       <mat-option [value]="''">All pallets</mat-option>
-      <mat-option *ngFor="let item of filters | keyvalue" [value]="item.key.pallet">
+      <mat-option *ngFor="let item of transactionFilters | keyvalue" [value]="item.key.pallet">
         {{item.key.pallet}}
       </mat-option>
     </mat-select>
@@ -16,7 +16,7 @@
     <mat-label>Call</mat-label>
     <mat-select [formControl]="callNameControl">
       <mat-option [value]="''">All calls</mat-option>
-      <ng-container *ngFor="let item of filters | keyvalue">
+      <ng-container *ngFor="let item of transactionFilters | keyvalue">
         <ng-container *ngIf="item.key.pallet === palletControl.value">
           <mat-option *ngFor="let call of item.value" [value]="call.callName">
             {{call.callName}}
@@ -27,7 +27,7 @@
   </mat-form-field>
 </div>
 
-<ng-container *ngIf="(transactions | async) as dataSource">
+<ng-container *ngIf="(itemsObservable | async) as dataSource">
   <table mat-table [dataSource]="dataSource" [trackBy]="track">
 
     <ng-container matColumnDef="icon">
@@ -89,8 +89,8 @@
       </td>
     </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
-    <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+    <tr mat-header-row *matHeaderRowDef="visibleColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
 
   </table>
 </ng-container>
@@ -99,4 +99,5 @@
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>
 </div>
 
-<button [disabled]="(((loadingObservable | async) || 0) > 0) || !nextPage" mat-stroked-button aria-label="Show more" (click)="getNextPage()">Show more</button>
+<button [disabled]="(((loadingObservable | async) || 0) > 0) || (!pagePrev && pageLive)" mat-stroked-button aria-label="Previous" (click)="getPrevPage()">Previous</button>
+<button [disabled]="(((loadingObservable | async) || 0) > 0) || !pageNext" mat-stroked-button aria-label="Next" (click)="getNextPage()">Next</button>

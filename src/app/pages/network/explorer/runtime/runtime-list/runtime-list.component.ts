@@ -34,7 +34,7 @@ export class RuntimeListComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
   runtimes = new BehaviorSubject<pst.Runtime[]>([]);
 
-  columnsToDisplay = ['icon', 'name', 'version', 'pallets', 'events', 'calls', 'storage', 'constants', 'details'];
+  visibleColumns = ['icon', 'name', 'version', 'pallets', 'events', 'calls', 'storage', 'constants', 'details'];
 
   constructor(private ns: NetworkService,
               private rs: RuntimeService) {

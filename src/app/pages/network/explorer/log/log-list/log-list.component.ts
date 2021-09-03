@@ -19,9 +19,8 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { BehaviorSubject } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { ListComponentBase } from '../../../../../components/list-base/list.component.base';
+import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
 
 @Component({
   selector: 'app-log-list',
@@ -29,13 +28,9 @@ import { ListComponentBase } from '../../../../../components/list-base/list.comp
   styleUrls: ['./log-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class LogListComponent extends ListComponentBase {
-  logs = new BehaviorSubject<pst.Log[]>([]);
-
-  nextPage: string | null = null;
-  columnsToDisplay = ['icon', 'logID', 'block', 'type', 'details'];
-
-  private unsubscribeNewLogFn: null | (() => void);
+export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
+  listSize = 100;
+  visibleColumns = ['icon', 'logID', 'block', 'type', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService) {
@@ -43,90 +38,32 @@ export class LogListComponent extends ListComponentBase {
   }
 
 
-  onNetworkChange(network: string) {
-    this.unsubscribeNewLog();
-
-    if (network) {
-      this.subscribeNewLog();
-      this.getLogs();
-    }
+  createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Log>> {
+    return this.pa.run(this.network).polkascan.chain.getLogs(
+      this.listSize,
+      pageKey
+    );
   }
 
 
-  async subscribeNewLog(): Promise<void> {
-    if (this.onDestroyCalled) {
-      // Component is already in process of destruction or destroyed.
-      this.unsubscribeNewLog();
-      return;
-    }
-
-    try {
-      this.unsubscribeNewLogFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewLog(
-        (log: pst.Log) => {
-          const logs = [...this.logs.value]
-          if (!logs.some((l) => l.blockNumber === log.blockNumber && l.logIdx === log.logIdx)) {
-            logs.splice(0, 0, log);
-            logs.sort((a, b) => b.blockNumber - a.blockNumber || b.logIdx - a.logIdx);
-            this.logs.next(logs);
-          }
-        });
-    } catch (e) {
-      console.error(e);
-      // Ignore for now...
-    }
+  createNewItemSubscription(handleItemFn: (item: pst.Log) => void): Promise<() => void> {
+    return this.pa.run(this.network).polkascan.chain.subscribeNewLog(
+      handleItemFn
+    );
   }
 
 
-  unsubscribeNewLog(): void {
-    if (this.unsubscribeNewLogFn) {
-      this.unsubscribeNewLogFn();
-      this.unsubscribeNewLogFn = null;
-    }
+  sortCompareFn(a: pst.Log, b: pst.Log): number {
+    return b.blockNumber - a.blockNumber || b.logIdx - a.logIdx;
   }
 
 
-  async getLogs(pageKey?: string): Promise<void> {
-    if (this.onDestroyCalled) {
-      // Component is already in process of destruction or destroyed.
-      return;
-    }
-
-    this.loading++;
-
-    try {
-      const response: pst.ListResponse<pst.Log> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getLogs(100, pageKey);
-
-      const logs = [...this.logs.value];
-      response.objects
-        .filter((log) => {
-          return !logs.some((l) => l.blockNumber === log.blockNumber && l.logIdx === log.logIdx);
-        })
-        .forEach((log) => {
-          logs.push(log);
-        });
-
-      this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
-
-      logs.sort((a, b) => b.blockNumber - a.blockNumber || b.logIdx - a.logIdx);
-      this.logs.next(logs);
-      this.loading--;
-    } catch (e) {
-      this.loading--;
-      console.error(e);
-      // Ignore for now...
-    }
+  equalityCompareFn(a: pst.Log, b: pst.Log): boolean {
+    return a.blockNumber === b.blockNumber && a.logIdx === b.logIdx;
   }
 
 
-  async getNextPage(): Promise<void> {
-    if (this.nextPage) {
-      this.getLogs(this.nextPage);
-    }
-  }
-
-
-  track(i: any, event: pst.Log): string {
+  trackFn(i: any, event: pst.Log): string {
     return `${event.blockNumber}-${event.logIdx}`;
   }
 }
