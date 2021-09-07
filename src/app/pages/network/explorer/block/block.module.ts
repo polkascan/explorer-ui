@@ -22,13 +22,17 @@ import { BlockListComponent } from './block-list/block-list.component';
 import { BlockDetailComponent } from './block-detail/block-detail.component';
 import { BlockRoutingModule } from './block-routing.module';
 import { MatTableModule } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @NgModule({
   declarations: [BlockListComponent, BlockDetailComponent],
   imports: [
     CommonModule,
     BlockRoutingModule,
-    MatTableModule
+    MatTableModule,
+    MatButtonModule,
+    MatProgressBarModule
   ]
 })
 export class BlockModule { }

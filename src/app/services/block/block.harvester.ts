@@ -205,28 +205,35 @@ export class BlockHarvester {
     // Helper function to efficiently load a list of latest finalized blocks.
     // First mark these cached blocks for load, so other block loading mechanisms don't kick in.
     untilNumber = untilNumber || this.finalizedNumber.value;
+    let loadBlocks = false;
     for (let nr = untilNumber; nr > untilNumber - pageSize; nr--) {
-      this.cache[nr].next(Object.assign(this.cache[nr].value, {status: 'loading'}));
+      if (this.cache[nr].value.status !== 'loaded') {
+        this.cache[nr].next(Object.assign(this.cache[nr].value, {status: 'loading'}));
+        loadBlocks = true;
+      }
     }
-    // Then, await the result from Polkascan and update our cached block data.
-    const data: pst.ListResponse<pst.Block> =
-      await this.polkadapt.run(this.network).polkascan.chain.getBlocksUntil(this.finalizedNumber.value, pageSize);
 
-    if (data.objects) {
-      for (const obj of data.objects) {
-        const blockNr: number = obj.number;
-        const cached: BehaviorSubject<Block> = this.cache[blockNr];
-        if (!cached.value.finalized || cached.value.status !== 'loaded') {
-          const block: Block = Object.assign({}, cached.value, obj, {
-            status: 'loaded',
-            finalized: true,
-            extrinsics: new Array(obj.countExtrinsics),
-            events: new Array(obj.countEvents)
-          });
-          cached.next(block);
-        }
-        if (blockNr > this.loadedNumber.value) {
-          this.loadedNumber.next(blockNr);
+    if (loadBlocks) {
+      // Then, await the result from Polkascan and update our cached block data.
+      const data: pst.ListResponse<pst.Block> =
+        await this.polkadapt.run(this.network).polkascan.chain.getBlocksUntil(untilNumber, pageSize);
+
+      if (data.objects) {
+        for (const obj of data.objects) {
+          const blockNr: number = obj.number;
+          const cached: BehaviorSubject<Block> = this.cache[blockNr];
+          if (!cached.value.finalized || cached.value.status !== 'loaded') {
+            const block: Block = Object.assign({}, cached.value, obj, {
+              status: 'loaded',
+              finalized: true,
+              extrinsics: new Array(obj.countExtrinsics),
+              events: new Array(obj.countEvents)
+            });
+            cached.next(block);
+          }
+          if (blockNr > this.loadedNumber.value) {
+            this.loadedNumber.next(blockNr);
+          }
         }
       }
     }
