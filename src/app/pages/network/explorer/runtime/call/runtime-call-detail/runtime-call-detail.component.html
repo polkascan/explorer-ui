@@ -27,8 +27,8 @@
         </td>
       </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
-      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+      <tr mat-header-row *matHeaderRowDef="visibleColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
 
     </table>
   </ng-container>

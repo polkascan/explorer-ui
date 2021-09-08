@@ -16,15 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { BehaviorSubject, Subject } from 'rxjs';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { ListComponentBase } from '../../../../../components/list-base/list.component.base';
+import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
 
 
 @Component({
@@ -33,9 +32,9 @@ import { ListComponentBase } from '../../../../../components/list-base/list.comp
   styleUrls: ['./transaction-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TransactionListComponent extends ListComponentBase implements OnInit, OnDestroy {
-  transactions = new BehaviorSubject<pst.Extrinsic[]>([]);
-  filters = new Map();
+export class TransactionListComponent extends PaginatedListComponentBase<pst.Extrinsic> implements OnInit {
+  listSize = 100;
+  transactionFilters = new Map();
 
   palletControl: FormControl = new FormControl('');
   callNameControl: FormControl = new FormControl('');
@@ -44,10 +43,7 @@ export class TransactionListComponent extends ListComponentBase implements OnIni
     callName: this.callNameControl
   });
 
-  nextPage: string | null = null;
-  columnsToDisplay = ['icon', 'transactionID', 'from', 'block', 'pallet', 'call', 'success', 'details'];
-
-  private unsubscribeNewTransactionFn: null | (() => void);
+  visibleColumns = ['icon', 'transactionID', 'from', 'block', 'pallet', 'call', 'success', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
@@ -63,11 +59,9 @@ export class TransactionListComponent extends ListComponentBase implements OnIni
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
-        this.unsubscribeNewTransaction();
-        this.transactions.next([]);
-
-        this.subscribeNewTransaction();
-        this.getTransactions();
+        this.items = [];
+        this.subscribeNewItem();
+        this.getItems();
       });
 
     this.palletControl.valueChanges
@@ -86,12 +80,11 @@ export class TransactionListComponent extends ListComponentBase implements OnIni
       callName: ''
     }, {emitEvent: false});
 
-    this.unsubscribeNewTransaction();
+    this.transactionFilters.clear();
 
-    if (network) {
-      this.subscribeNewTransaction();
-      this.getTransactions();
+    super.onNetworkChange(network);
 
+    if (network && !this.onDestroyCalled) {
       this.rs.getRuntime(network)
         .pipe(
           takeUntil(this.destroyer),
@@ -104,7 +97,7 @@ export class TransactionListComponent extends ListComponentBase implements OnIni
 
           if (pallets) {
             pallets.forEach((pallet) => {
-              this.filters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
+              this.transactionFilters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
             });
             this.cd.markForCheck();
           }
@@ -113,19 +106,34 @@ export class TransactionListComponent extends ListComponentBase implements OnIni
   }
 
 
-  ngOnDestroy(): void {
-    super.ngOnDestroy();
-    this.unsubscribeNewTransaction();
+  createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Extrinsic>> {
+    return this.pa.run(this.network).polkascan.chain.getExtrinsics(
+      this.filters,
+      this.listSize,
+      pageKey
+    );
   }
 
 
-  async subscribeNewTransaction(): Promise<void> {
-    if (this.onDestroyCalled) {
-      // Component is already in process of destruction or destroyed.
-      this.unsubscribeNewTransaction();
-      return;
-    }
+  createNewItemSubscription(handleItemFn: (item: pst.Extrinsic) => void): Promise<() => void> {
+    return this.pa.run(this.network).polkascan.chain.subscribeNewExtrinsic(
+      this.filters,
+      handleItemFn
+    );
+  }
 
+
+  sortCompareFn(a: pst.Extrinsic, b: pst.Extrinsic): number {
+    return b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx;
+  }
+
+
+  equalityCompareFn(a: pst.Extrinsic, b: pst.Extrinsic): boolean {
+    return a.blockNumber === b.blockNumber && a.extrinsicIdx === b.extrinsicIdx;
+  }
+
+
+  get filters(): any {
     const filters: any = {
       signed: 1
     };
@@ -137,96 +145,7 @@ export class TransactionListComponent extends ListComponentBase implements OnIni
       filters.callName = this.callNameControl.value;
     }
 
-    try {
-      this.unsubscribeNewTransactionFn =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewExtrinsic(
-          filters,
-          (extrinsic: pst.Extrinsic) => {
-            if (!this.onDestroyCalled) {
-              const transactions = [...this.transactions.value]
-              if (!transactions.some((e) =>
-                e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
-              )) {
-                transactions.splice(0, 0, extrinsic);
-                transactions.sort((a, b) =>
-                  b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
-                );
-                this.transactions.next(transactions);
-              }
-            } else {
-              // If still listening but component is already destroyed.
-              this.unsubscribeNewTransaction();
-            }
-          });
-    } catch (e) {
-      console.error(e);
-      // Ignore for now...
-    }
-  }
-
-
-  unsubscribeNewTransaction(): void {
-    if (this.unsubscribeNewTransactionFn) {
-      this.unsubscribeNewTransactionFn();
-      this.unsubscribeNewTransactionFn = null;
-    }
-  }
-
-
-  async getTransactions(pageKey?: string): Promise<void> {
-    if (this.onDestroyCalled) {
-      // Component is already in process of destruction or destroyed.
-      return;
-    }
-
-    this.loading++;
-
-    const filters: any = {
-      signed: 1
-    };
-
-    if (this.palletControl.value) {
-      filters.callModule = this.palletControl.value;
-    }
-    if (this.callNameControl.value) {
-      filters.callName = this.callNameControl.value;
-    }
-
-    try {
-      const response: pst.ListResponse<pst.Extrinsic> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100, pageKey);
-      if (!this.onDestroyCalled) {
-        const transactions = [...this.transactions.value];
-        response.objects
-          .filter((extrinsic: pst.Extrinsic) => {
-            return !transactions.some((e) =>
-              e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
-            );
-          })
-          .forEach((extrinsic: pst.Extrinsic) => {
-            transactions.push(extrinsic);
-          });
-
-        this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
-
-        transactions.sort((a, b) =>
-          b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
-        );
-        this.transactions.next(transactions);
-        this.loading--;
-      }
-    } catch (e) {
-      this.loading--;
-      console.error(e);
-      // Ignore for now...
-    }
-  }
-
-
-  async getNextPage(): Promise<void> {
-    if (this.nextPage) {
-      this.getTransactions(this.nextPage);
-    }
+    return filters;
   }
 
 

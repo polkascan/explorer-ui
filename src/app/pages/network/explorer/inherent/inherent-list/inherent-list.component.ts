@@ -16,15 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { BehaviorSubject, Subject } from 'rxjs';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { ListComponentBase } from '../../../../../components/list-base/list.component.base';
+import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
 
 
 @Component({
@@ -33,9 +32,9 @@ import { ListComponentBase } from '../../../../../components/list-base/list.comp
   styleUrls: ['./inherent-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class InherentListComponent extends ListComponentBase implements OnInit, OnDestroy {
-  inherents = new BehaviorSubject<pst.Extrinsic[]>([]);
-  filters = new Map();
+export class InherentListComponent extends PaginatedListComponentBase<pst.Extrinsic> implements OnInit {
+  listSize = 100;
+  inherentFilters = new Map();
 
   palletControl: FormControl = new FormControl('');
   callNameControl: FormControl = new FormControl('');
@@ -44,10 +43,7 @@ export class InherentListComponent extends ListComponentBase implements OnInit, 
     callName: this.callNameControl
   });
 
-  nextPage: string | null = null;
-  columnsToDisplay = ['icon', 'inherentID', 'block', 'pallet', 'call', 'success', 'details'];
-
-  private unsubscribeNewInherentFn: null | (() => void);
+  visibleColumns = ['icon', 'inherentID', 'block', 'pallet', 'call', 'success', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
@@ -63,11 +59,9 @@ export class InherentListComponent extends ListComponentBase implements OnInit, 
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
-        this.unsubscribeNewInherent();
-        this.inherents.next([]);
-
-        this.subscribeNewInherent();
-        this.getInherents();
+        this.items = [];
+        this.subscribeNewItem();
+        this.getItems();
       });
 
     this.palletControl.valueChanges
@@ -86,12 +80,11 @@ export class InherentListComponent extends ListComponentBase implements OnInit, 
       callName: ''
     }, {emitEvent: false});
 
-    this.unsubscribeNewInherent();
+    this.inherentFilters.clear();
+
+    super.onNetworkChange(network);
 
     if (network) {
-      this.subscribeNewInherent();
-      this.getInherents();
-
       this.rs.getRuntime(network)
         .pipe(
           takeUntil(this.destroyer),
@@ -104,7 +97,7 @@ export class InherentListComponent extends ListComponentBase implements OnInit, 
 
           if (pallets) {
             pallets.forEach((pallet) => {
-              this.filters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
+              this.inherentFilters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
             });
             this.cd.markForCheck();
           }
@@ -113,19 +106,34 @@ export class InherentListComponent extends ListComponentBase implements OnInit, 
   }
 
 
-  ngOnDestroy(): void {
-    super.ngOnDestroy();
-    this.unsubscribeNewInherent();
+  createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Extrinsic>> {
+    return this.pa.run(this.network).polkascan.chain.getExtrinsics(
+      this.filters,
+      this.listSize,
+      pageKey
+    );
   }
 
 
-  async subscribeNewInherent(): Promise<void> {
-    if (this.onDestroyCalled) {
-      // Component is already in process of destruction or destroyed.
-      this.unsubscribeNewInherent();
-      return;
-    }
+  createNewItemSubscription(handleItemFn: (item: pst.Extrinsic) => void): Promise<() => void> {
+    return this.pa.run(this.network).polkascan.chain.subscribeNewExtrinsic(
+      this.filters,
+      handleItemFn
+    )
+  }
 
+
+  sortCompareFn(a: pst.Extrinsic, b: pst.Extrinsic): number {
+    return b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx;
+  }
+
+
+  equalityCompareFn(a: pst.Extrinsic, b: pst.Extrinsic): boolean {
+    return a.blockNumber === b.blockNumber && a.extrinsicIdx === b.extrinsicIdx;
+  }
+
+
+  get filters(): any {
     const filters: any = {
       signed: 0
     };
@@ -137,96 +145,7 @@ export class InherentListComponent extends ListComponentBase implements OnInit, 
       filters.callName = this.callNameControl.value;
     }
 
-    try {
-      this.unsubscribeNewInherentFn =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewExtrinsic(
-          filters,
-          (extrinsic: pst.Extrinsic) => {
-            if (!this.onDestroyCalled) {
-              const inherents = [...this.inherents.value];
-              if (!inherents.some((e) =>
-                e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
-              )) {
-                inherents.splice(0, 0, extrinsic);
-                inherents.sort((a, b) =>
-                  b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
-                );
-                this.inherents.next(inherents);
-              }
-            } else {
-              // If still listening but component is already destroyed.
-              this.unsubscribeNewInherent();
-            }
-          });
-    } catch (e) {
-      console.error(e);
-      // Ignore for now...
-    }
-  }
-
-
-  unsubscribeNewInherent(): void {
-    if (this.unsubscribeNewInherentFn) {
-      this.unsubscribeNewInherentFn();
-      this.unsubscribeNewInherentFn = null;
-    }
-  }
-
-
-  async getInherents(pageKey?: string): Promise<void> {
-    if (this.onDestroyCalled) {
-      // Component is already in process of destruction or destroyed.
-      return;
-    }
-
-    this.loading++;
-
-    const filters: any = {
-      signed: 0
-    };
-
-    if (this.palletControl.value) {
-      filters.callModule = this.palletControl.value;
-    }
-    if (this.callNameControl.value) {
-      filters.callName = this.callNameControl.value;
-    }
-
-    try {
-      const response: pst.ListResponse<pst.Extrinsic> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getExtrinsics(filters, 100, pageKey);
-      if (!this.onDestroyCalled) {
-        const inherents = [...this.inherents.value]
-        response.objects
-          .filter((extrinsic: pst.Extrinsic) => {
-            return !inherents.some((e) =>
-              e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx
-            );
-          })
-          .forEach((extrinsic: pst.Extrinsic) => {
-            inherents.push(extrinsic);
-          });
-
-        this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
-
-        inherents.sort((a, b) =>
-          b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx
-        );
-        this.inherents.next(inherents);
-        this.loading--;
-      }
-    } catch (e) {
-      this.loading--;
-      console.error(e);
-      // Ignore for now...
-    }
-  }
-
-
-  async getNextPage(): Promise<void> {
-    if (this.nextPage) {
-      this.getInherents(this.nextPage);
-    }
+    return filters;
   }
 
 

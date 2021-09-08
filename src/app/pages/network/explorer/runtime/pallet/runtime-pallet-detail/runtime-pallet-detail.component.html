@@ -41,8 +41,8 @@
         </td>
       </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.calls; sticky: true"></tr>
-      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.calls"></tr>
+      <tr mat-header-row *matHeaderRowDef="visibleColumns.calls; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: visibleColumns.calls"></tr>
 
     </table>
   </ng-container>
@@ -87,8 +87,8 @@
         </td>
       </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.events; sticky: true"></tr>
-      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.events"></tr>
+      <tr mat-header-row *matHeaderRowDef="visibleColumns.events; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: visibleColumns.events"></tr>
 
     </table>
   </ng-container>
@@ -127,8 +127,8 @@
         </td>
       </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.storages; sticky: true"></tr>
-      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.storages"></tr>
+      <tr mat-header-row *matHeaderRowDef="visibleColumns.storages; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: visibleColumns.storages"></tr>
 
     </table>
   </ng-container>
@@ -174,8 +174,8 @@
         </td>
       </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.constants; sticky: true"></tr>
-      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.constants"></tr>
+      <tr mat-header-row *matHeaderRowDef="visibleColumns.constants; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: visibleColumns.constants"></tr>
 
     </table>
   </ng-container>
@@ -221,8 +221,8 @@
         </td>
       </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.types; sticky: true"></tr>
-      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.types"></tr>
+      <tr mat-header-row *matHeaderRowDef="visibleColumns.types; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: visibleColumns.types"></tr>
 
     </table>
   </ng-container>
@@ -261,8 +261,8 @@
         </td>
       </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="columnsToDisplay.errors; sticky: true"></tr>
-      <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay.errors"></tr>
+      <tr mat-header-row *matHeaderRowDef="visibleColumns.errors; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: visibleColumns.errors"></tr>
 
     </table>
   </ng-container>

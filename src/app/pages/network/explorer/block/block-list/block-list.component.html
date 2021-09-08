@@ -2,7 +2,7 @@
 <h1>Blocks</h1>
 
 <ng-container *ngIf="(blocks | async) as dataSource">
-  <table mat-table [dataSource]="dataSource" [trackBy]="trackByNumber">
+  <table mat-table [dataSource]="dataSource" [trackBy]="trackByNumberRpcBlock">
 
     <ng-container matColumnDef="icon">
       <th mat-header-cell *matHeaderCellDef></th>
@@ -65,8 +65,15 @@
       </td>
     </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="columnsToDisplay; sticky: true"></tr>
-    <tr mat-row *matRowDef="let myRowData; columns: columnsToDisplay"></tr>
+    <tr mat-header-row *matHeaderRowDef="visibleColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
 
   </table>
 </ng-container>
+
+<div *ngIf="loadingObservable | async">
+  <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+</div>
+
+<button mat-stroked-button aria-label="Previous" [disabled]="!!((loadingObservable | async) || customUntilBlockNumber === null)" (click)="getPrevPage()">Previous</button>
+<button mat-stroked-button aria-label="Next" [disabled]="!!((loadingObservable | async) || (customUntilBlockNumber && customUntilBlockNumber < listSize))" (click)="getNextPage()">Next</button>

@@ -16,15 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { ListComponentBase } from '../../../../../components/list-base/list.component.base';
+import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
 
 
 @Component({
@@ -33,9 +32,9 @@ import { ListComponentBase } from '../../../../../components/list-base/list.comp
   styleUrls: ['./event-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EventListComponent extends ListComponentBase implements OnInit, OnDestroy {
-  events = new BehaviorSubject<pst.Event[]>([]);
-  filters = new Map();
+export class EventListComponent extends PaginatedListComponentBase<pst.Event> implements OnInit {
+  listSize = 100;
+  eventFilters = new Map();
 
   palletControl: FormControl = new FormControl('');
   eventNameControl: FormControl = new FormControl('');
@@ -44,10 +43,7 @@ export class EventListComponent extends ListComponentBase implements OnInit, OnD
     eventName: this.eventNameControl
   });
 
-  nextPage: string | null = null;
-  columnsToDisplay = ['icon', 'eventID', 'referencedTransaction', 'pallet', 'events', 'details'];
-
-  private unsubscribeNewEventFn: null | (() => void);
+  visibleColumns = ['icon', 'eventID', 'referencedTransaction', 'pallet', 'events', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
@@ -63,11 +59,9 @@ export class EventListComponent extends ListComponentBase implements OnInit, OnD
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
-        this.unsubscribeNewEvent();
-        this.events.next([]);
-
-        this.subscribeNewEvent();
-        this.getEvents();
+        this.items = [];
+        this.subscribeNewItem();
+        this.getItems();
       });
 
     this.palletControl.valueChanges
@@ -85,12 +79,12 @@ export class EventListComponent extends ListComponentBase implements OnInit, OnD
       eventModule: '',
       eventName: ''
     }, {emitEvent: false});
-    this.unsubscribeNewEvent();
 
-    if (network) {
-      this.subscribeNewEvent();
-      this.getEvents();
+    this.eventFilters.clear();
 
+    super.onNetworkChange(network);
+
+    if (network && !this.onDestroyCalled) {
       this.rs.getRuntime(network)
         .pipe(
           takeUntil(this.destroyer),
@@ -103,7 +97,7 @@ export class EventListComponent extends ListComponentBase implements OnInit, OnD
 
           if (pallets) {
             pallets.forEach((pallet) => {
-              this.filters.set(pallet, rEvents ? rEvents.filter((event) => pallet.pallet === event.pallet).sort() : []);
+              this.eventFilters.set(pallet, rEvents ? rEvents.filter((event) => pallet.pallet === event.pallet).sort() : []);
             });
             this.cd.markForCheck();
           }
@@ -112,19 +106,34 @@ export class EventListComponent extends ListComponentBase implements OnInit, OnD
   }
 
 
-  ngOnDestroy(): void {
-    super.ngOnDestroy();
-    this.unsubscribeNewEvent();
+  createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Event>> {
+    return this.pa.run(this.network).polkascan.chain.getEvents(
+      this.filters,
+      this.listSize,
+      pageKey
+    );
   }
 
 
-  async subscribeNewEvent(): Promise<void> {
-    if (this.onDestroyCalled) {
-      // Component is already in process of destruction or destroyed.
-      this.unsubscribeNewEvent();
-      return;
-    }
+  createNewItemSubscription(handleItemFn: (item: pst.Event) => void): Promise<() => void> {
+    return this.pa.run(this.network).polkascan.chain.subscribeNewEvent(
+      this.filters,
+      handleItemFn
+    );
+  }
 
+
+  sortCompareFn(a: pst.Event, b: pst.Event): number {
+    return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
+  }
+
+
+  equalityCompareFn(a: pst.Event, b: pst.Event): boolean {
+    return a.blockNumber === b.blockNumber && a.eventIdx === b.eventIdx;
+  }
+
+
+  get filters(): any {
     const filters: any = {};
     if (this.palletControl.value) {
       filters.eventModule = this.palletControl.value;
@@ -132,85 +141,7 @@ export class EventListComponent extends ListComponentBase implements OnInit, OnD
     if (this.eventNameControl.value) {
       filters.eventName = this.eventNameControl.value;
     }
-
-    try {
-      this.unsubscribeNewEventFn = await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.subscribeNewEvent(
-        filters,
-        (event: pst.Event) => {
-          if (!this.onDestroyCalled) {
-            const events = [...this.events.value];
-            if (!events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx)) {
-              events.splice(0, 0, event);
-              events.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
-              this.events.next(events);
-            }
-          } else {
-            // If still listening but component is already destroyed.
-            this.unsubscribeNewEvent();
-          }
-        });
-    } catch (e) {
-      console.error(e);
-      // Ignore for now...
-    }
-  }
-
-
-  unsubscribeNewEvent(): void {
-    if (this.unsubscribeNewEventFn) {
-      this.unsubscribeNewEventFn();
-      this.unsubscribeNewEventFn = null;
-    }
-  }
-
-
-  async getEvents(pageKey?: string): Promise<void> {
-    if (this.onDestroyCalled) {
-      // Component is already in process of destruction or destroyed.
-      return;
-    }
-
-    this.loading++;
-
-    const filters: any = {};
-    if (this.palletControl.value) {
-      filters.eventModule = this.palletControl.value;
-    }
-    if (this.eventNameControl.value) {
-      filters.eventName = this.eventNameControl.value;
-    }
-
-    try {
-      const response: pst.ListResponse<pst.Event> =
-        await this.pa.run(this.ns.currentNetwork.value).polkascan.chain.getEvents(filters, 100, pageKey);
-      if (!this.onDestroyCalled) {
-        const events = [...this.events.value];
-        response.objects
-          .filter((event) => {
-            return !events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx);
-          })
-          .forEach((event) => {
-            events.push(event);
-          });
-
-        this.nextPage = response.pageInfo ? response.pageInfo.pageNext || null : null;
-
-        events.sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx);
-        this.events.next(events);
-        this.loading--;
-      }
-    } catch (e) {
-      this.loading--;
-      console.error(e);
-      // Ignore for now...
-    }
-  }
-
-
-  async getNextPage(): Promise<void> {
-    if (this.nextPage) {
-      this.getEvents(this.nextPage);
-    }
+    return filters;
   }
 
 

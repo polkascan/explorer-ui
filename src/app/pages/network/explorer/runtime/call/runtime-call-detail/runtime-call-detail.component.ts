@@ -35,7 +35,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
   call = new BehaviorSubject<pst.RuntimeCall | null>(null);
   callArguments = new BehaviorSubject<pst.RuntimeCallArgument[]>([]);
 
-  columnsToDisplay = ['icon', 'name', 'type'];
+  visibleColumns = ['icon', 'name', 'type'];
 
   private destroyer: Subject<undefined> = new Subject();
 

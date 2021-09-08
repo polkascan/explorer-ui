@@ -23,6 +23,7 @@ import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { distinctUntilChanged, filter, first, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { Block } from '../../../../../services/block/block.harvester';
+import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
 @Component({
   selector: 'app-block-list',
@@ -32,17 +33,21 @@ import { Block } from '../../../../../services/block/block.harvester';
   animations: [rowsAnimationByCounter]
 })
 export class BlockListComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
-  blockListSize = 100;
+  listSize = 100;
   latestBlockNumber = new BehaviorSubject<number>(0);
   blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
+  customUntilBlockNumber: number | null = null;
+  loadingObservable = new BehaviorSubject<number>(0);
 
-  columnsToDisplay = ['icon', 'number', 'age', 'blockHash', 'signedExtrinsics', 'moduleEvents', 'details'];
+  visibleColumns = ['icon', 'number', 'age', 'blockHash', 'signedExtrinsics', 'moduleEvents', 'details'];
+
+  private destroyer: Subject<undefined> = new Subject();
 
   constructor(
     private pa: PolkadaptService,
     private ns: NetworkService
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     // Watch for changes to network, latest block number and last block data.
@@ -67,7 +72,8 @@ export class BlockListComponent implements OnInit, OnDestroy {
         tap(() => {
           // We won't wait for the result, but the function will mark the blocks to load,
           // so other (lazy) block loading mechanics won't kick in.
-          this.ns.blockHarvester.loadBlocksUntil(null, this.blockListSize).then();
+          this.loadingObservable.next(this.loadingObservable.value + 1);
+          this.ns.blockHarvester.loadBlocksUntil(null, this.listSize).then().finally(() => this.loadingObservable.next(this.loadingObservable.value - 1));
         })
       )),
       // Watch for new loaded block numbers from the Substrate node.
@@ -85,7 +91,9 @@ export class BlockListComponent implements OnInit, OnDestroy {
       if (newBlockCount > 0) {
         this.latestBlockNumber.next(block.number);
         // Add new blocks to the beginning (while removing same amount at the end) of the Array.
-        this.spliceBlocks(Math.min(newBlockCount, this.blockListSize));
+        if (this.customUntilBlockNumber === null) {
+          this.spliceBlocks(Math.min(newBlockCount, this.listSize));
+        }
       }
     });
   }
@@ -108,7 +116,67 @@ export class BlockListComponent implements OnInit, OnDestroy {
     this.blocks.next(blocks);
   }
 
-  trackByNumber(index: number, item: BehaviorSubject<Block>): number {
+  trackByNumberRpcBlock(index: number, item: BehaviorSubject<Block>): number {
     return item.value.number;
+  }
+
+  getPrevPage(): void {
+    if (this.loadingObservable.value) {
+      return;
+    }
+
+    if (!this.latestBlockNumber.value) {
+      // Don't know what the current block number should be.
+      return;
+    }
+
+    const latest = this.latestBlockNumber.value;
+    let until: number = Math.max(this.listSize - 1,
+      ((this.customUntilBlockNumber === null ? latest : this.customUntilBlockNumber) || 0) + this.listSize
+    );
+
+    if (until >= latest) {
+      this.customUntilBlockNumber = null;
+      until = Math.min(until, latest);
+    } else {
+      this.customUntilBlockNumber = until;
+    }
+
+    this.loadingObservable.next(this.loadingObservable.value + 1);
+    this.ns.blockHarvester.loadBlocksUntil(until, this.listSize).then().finally(() => this.loadingObservable.next(this.loadingObservable.value - 1));
+
+    const blocks: BehaviorSubject<Block>[] = []
+    for (let nr = until; nr > until - this.listSize; nr--) {
+      const block: BehaviorSubject<Block> = this.ns.blockHarvester.blocks[nr];
+      blocks.push(block);
+    }
+    this.blocks.next(blocks);
+  }
+
+  getNextPage(): void {
+    if (this.loadingObservable.value) {
+      return;
+    }
+
+    if (!this.latestBlockNumber.value) {
+      // Don't know what the current block number should be.
+      return;
+    }
+
+    const until: number = Math.max(this.listSize - 1,
+      ((this.customUntilBlockNumber === null ? this.latestBlockNumber.value : this.customUntilBlockNumber) || 0) - this.listSize
+    );
+
+    this.customUntilBlockNumber = until;
+    this.loadingObservable.next(this.loadingObservable.value + 1);
+
+    this.ns.blockHarvester.loadBlocksUntil(until, this.listSize).then().finally(() => this.loadingObservable.next(this.loadingObservable.value - 1));
+
+    const blocks: BehaviorSubject<Block>[] = []
+    for (let nr = until; nr > until - this.listSize; nr--) {
+      const block: BehaviorSubject<Block> = this.ns.blockHarvester.blocks[nr];
+      blocks.push(block);
+    }
+    this.blocks.next(blocks);
   }
 }
