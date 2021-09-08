@@ -32,7 +32,7 @@ import { PaginatedListComponentBase } from '../../../../../components/list-base/
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extrinsic> implements OnInit, OnDestroy {
-  listSize = 8;
+  listSize = 100;
 
   signedControl: FormControl = new FormControl(true);
   filtersFormGroup: FormGroup = new FormGroup({
