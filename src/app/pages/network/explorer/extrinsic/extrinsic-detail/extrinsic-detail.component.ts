@@ -21,7 +21,7 @@ import { Subject } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
 
@@ -35,6 +35,8 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
   extrinsic: pst.Extrinsic;
   callArguments: any;
   events: pst.Event[];
+  tokenDecimals: number;
+  tokenSymbol: string;
 
   private destroyer: Subject<undefined> = new Subject();
   private onDestroyCalled = false;
@@ -53,6 +55,10 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       filter(network => !!network),
       // Only need to load once.
       first(),
+      tap(() => {
+        this.tokenDecimals = this.ns.tokenDecimals;
+        this.tokenSymbol = this.ns.tokenSymbol;
+      }),
       // Switch over to the route param from which we extract the extrinsic keys.
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),

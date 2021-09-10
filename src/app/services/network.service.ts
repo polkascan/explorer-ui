@@ -30,8 +30,10 @@ import { VariablesService } from './variables.service';
 export class NetworkService {
   private settingNetwork: string;
   private settingNonce = 0;
-  currentNetwork: BehaviorSubject<string> = new BehaviorSubject('');
-  blockHarvester: BlockHarvester;
+  currentNetwork = new BehaviorSubject<string>('');
+  blockHarvester: BlockHarvester
+  tokenSymbol: string;
+  tokenDecimals: number;
 
   constructor(private pa: PolkadaptService,
               private bs: BlockService,
@@ -74,9 +76,19 @@ export class NetworkService {
       }
 
       this.ps.initialize(network, this.vs.currency.value);
-      // TODO this.rs.init and destroy.
       this.rs.initialize(network);
+
+      try {
+        const props = (await this.pa.run(network).rpc.system.properties()).toHuman();
+        this.tokenSymbol = props.tokenSymbol && (props.tokenSymbol as string[])[0] || '';
+        this.tokenDecimals = props.tokenDecimals && (props.tokenDecimals as number[])[0] || 0;
+      } catch (e) {
+        console.error(e);
+        this.tokenSymbol = '';
+        this.tokenDecimals = 0;
+      }
     }
+
     this.currentNetwork.next(network);
   }
 

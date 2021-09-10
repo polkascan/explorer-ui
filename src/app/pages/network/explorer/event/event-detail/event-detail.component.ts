@@ -20,7 +20,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 
 type psEvent = {
@@ -43,6 +43,8 @@ type psEvent = {
 })
 export class EventDetailComponent implements OnInit, OnDestroy {
   event: psEvent;
+  tokenDecimals: number;
+  tokenSymbol: string;
 
   private destroyer: Subject<undefined> = new Subject();
   private onDestroyCalled = false;
@@ -61,6 +63,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       filter(network => !!network),
       // Only need to load once.
       first(),
+      tap(() => {
+        this.tokenDecimals = this.ns.tokenDecimals;
+        this.tokenSymbol = this.ns.tokenSymbol;
+      }),
       // Switch over to the route param from which we extract the extrinsic keys.
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
