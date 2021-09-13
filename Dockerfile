@@ -27,11 +27,15 @@ RUN cd projects/substrate-rpc && yarn
 COPY polkadapt/projects/polkascan/package.json projects/polkascan/package.json
 RUN cd projects/polkascan && yarn
 
+COPY polkadapt/projects/coingecko/package.json projects/coingecko/package.json
+RUN cd projects/coingecko && yarn
+
 # Copy the rest of the files and build all PolkADAPT libraries.
 
 COPY polkadapt .
 RUN yarn exec ng build -- --configuration production substrate-rpc
 RUN yarn exec ng build -- --configuration production polkascan
+RUN yarn exec ng build -- --configuration production coingecko
 
 # Install the application dependencies.
 
@@ -60,32 +64,23 @@ ENV NGINX_CONF=$NGINX_CONF
 
 # Runtime environment variables.
 
-ARG POLKADOT_SUBSTRATE_RPC_URL=wss://rpc.polkadot.io
-ENV POLKADOT_SUBSTRATE_RPC_URL=$POLKADOT_SUBSTRATE_RPC_URL
+ARG POLKADOT_SUBSTRATE_RPC_URL_ARRAY='["wss://rpc.polkadot.io", "wss://polkadot.api.onfinality.io/public-ws"]'
+ENV POLKADOT_SUBSTRATE_RPC_URL_ARRAY=$POLKADOT_SUBSTRATE_RPC_URL_ARRAY
 
-ARG POLKADOT_POLKASCAN_API_URL=https://explorer-35.polkascan.io/api/v2/polkadot/
-ENV POLKADOT_POLKASCAN_API_URL=$POLKADOT_POLKASCAN_API_URL
+ARG POLKADOT_POLKASCAN_WS_URL_ARRAY='["wss://explorer-35.polkascan.io/api/v2/polkadot/graphql-ws"]'
+ENV POLKADOT_POLKASCAN_WS_URL_ARRAY=$POLKADOT_POLKASCAN_WS_URL_ARRAY
 
-ARG POLKADOT_POLKASCAN_WS_URL=wss://explorer-35.polkascan.io/api/v2/polkadot/graphql-ws
-ENV POLKADOT_POLKASCAN_WS_URL=$POLKADOT_POLKASCAN_WS_URL
+ARG KUSAMA_SUBSTRATE_RPC_URL_ARRAY='["wss://kusama-rpc.polkadot.io", "wss://kusama.api.onfinality.io/public-ws"]'
+ENV KUSAMA_SUBSTRATE_RPC_URL_ARRAY=$KUSAMA_SUBSTRATE_RPC_URL_ARRAY
 
-ARG KUSAMA_SUBSTRATE_RPC_URL=wss://kusama-rpc.polkadot.io
-ENV KUSAMA_SUBSTRATE_RPC_URL=$KUSAMA_SUBSTRATE_RPC_URL
+ARG KUSAMA_POLKASCAN_WS_URL_ARRAY='["wss://explorer-35.polkascan.io/api/v2/kusama/graphql-ws"]'
+ENV KUSAMA_POLKASCAN_WS_URL_ARRAY=$KUSAMA_POLKASCAN_WS_URL_ARRAY
 
-ARG KUSAMA_POLKASCAN_API_URL=https://explorer-35.polkascan.io/api/v2/kusama/
-ENV KUSAMA_POLKASCAN_API_URL=$KUSAMA_POLKASCAN_API_URL
+ARG ROCOCO_SUBSTRATE_RPC_URL_ARRAY='["wss://rococo-rpc.polkadot.io", "wss://rococo.api.onfinality.io/public-ws"]'
+ENV ROCOCO_SUBSTRATE_RPC_URL_ARRAY=$ROCOCO_SUBSTRATE_RPC_URL_ARRAY
 
-ARG KUSAMA_POLKASCAN_WS_URL=wss://explorer-35.polkascan.io/api/v2/kusama/graphql-ws
-ENV KUSAMA_POLKASCAN_WS_URL=$KUSAMA_POLKASCAN_WS_URL
-
-ARG ROCOCO_SUBSTRATE_RPC_URL=wss://rococo-rpc.polkadot.io
-ENV ROCOCO_SUBSTRATE_RPC_URL=$ROCOCO_SUBSTRATE_RPC_URL
-
-ARG ROCOCO_POLKASCAN_API_URL=https://explorer-35.polkascan.io/api/v2/rococo/
-ENV ROCOCO_POLKASCAN_API_URL=$ROCOCO_POLKASCAN_API_URL
-
-ARG ROCOCO_POLKASCAN_WS_URL=wss://explorer-35.polkascan.io/api/v2/rococo/graphql-ws
-ENV ROCOCO_POLKASCAN_WS_URL=$ROCOCO_POLKASCAN_WS_URL
+ARG ROCOCO_POLKASCAN_WS_URL_ARRAY='["wss://explorer-35.polkascan.io/api/v2/rococo/graphql-ws"]'
+ENV ROCOCO_POLKASCAN_WS_URL_ARRAY=$ROCOCO_POLKASCAN_WS_URL_ARRAY
 
 
 # Remove default nginx configs.
