@@ -1,17 +1,14 @@
 {
   "polkadot": {
-    "substrateRpcUrl": "${POLKADOT_SUBSTRATE_RPC_URL}",
-    "polkascanApiUrl": "${POLKADOT_POLKASCAN_API_URL}",
-    "polkascanWsUrl": "${POLKADOT_POLKASCAN_WS_URL}"
+    "substrateRpcUrlArray": ${POLKADOT_SUBSTRATE_RPC_URL_ARRAY},
+    "polkascanWsUrlArray": ${POLKADOT_POLKASCAN_WS_URL_ARRAY}
   },
   "kusama": {
-    "substrateRpcUrl": "${KUSAMA_SUBSTRATE_RPC_URL}",
-    "polkascanApiUrl": "${KUSAMA_POLKASCAN_API_URL}",
-    "polkascanWsUrl": "${KUSAMA_POLKASCAN_WS_URL}"
+    "substrateRpcUrlArray": ${KUSAMA_SUBSTRATE_RPC_URL_ARRAY},
+    "polkascanWsUrlArray": ${KUSAMA_POLKASCAN_WS_URL_ARRAY}
   },
   "rococo": {
-    "substrateRpcUrl": "${ROCOCO_SUBSTRATE_RPC_URL}",
-    "polkascanApiUrl": "${ROCOCO_POLKASCAN_API_URL}",
-    "polkascanWsUrl": "${ROCOCO_POLKASCAN_WS_URL}"
+    "substrateRpcUrlArray": ${ROCOCO_SUBSTRATE_RPC_URL},
+    "polkascanWsUrlArray": ${ROCOCO_POLKASCAN_WS_URL}
   }
 }

@@ -21,4 +21,12 @@
 <div><a routerLink="runtime">View runtime history</a></div>
 <div><a routerLink="log">View logs</a></div>
 <div><a routerLink="balances/transfer">View transfers</a></div>
+<div>
+  Configured Substrate RPC URL: {{pa.substrateRpcUrl|async}}
+  <ng-container [ngSwitch]="pa.substrateRpcConnected|async">
+    <span *ngSwitchCase="true" style="color: green">(connected)</span>
+    <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
+  </ng-container>
+</div>
+<div><button (click)="switchSubstrateRpcHost()">Switch to next Substrate RPC host</button></div>
 <div><a routerLink="account/12xtAYsRUrmbniiWQqJtECiBQrMn8AypQcXhnQAc6RB6XkLW">Test account</a></div>

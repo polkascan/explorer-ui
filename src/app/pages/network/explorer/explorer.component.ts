@@ -23,6 +23,7 @@ import { NetworkService } from '../../../services/network.service';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { distinctUntilChanged, filter, first, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { Block } from '../../../services/block/block.harvester';
+import { AppConfig } from '../../../app-config';
 
 
 const blocksAnimation = trigger('blocksAnimation', [
@@ -61,8 +62,9 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
 
   constructor(
-    private pa: PolkadaptService,
-    private ns: NetworkService
+    public pa: PolkadaptService,
+    private ns: NetworkService,
+    private config: AppConfig
   ) {}
 
   ngOnInit(): void {
@@ -131,5 +133,12 @@ export class ExplorerComponent implements OnInit, OnDestroy {
 
   trackByNumber(index: number, item: BehaviorSubject<Block>): number {
     return item.value.number;
+  }
+
+  switchSubstrateRpcHost(): void {
+    const url: string = this.config.networks[this.ns.currentNetwork.value].substrateRpcUrlArray.filter(
+      u => u !== this.pa.substrateRpcUrl.value
+    )[0];
+    this.pa.setSubstrateRpcUrl(url);
   }
 }
