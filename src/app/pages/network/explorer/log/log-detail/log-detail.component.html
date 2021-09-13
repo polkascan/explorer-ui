@@ -4,6 +4,6 @@
   <div>Type: {{log.typeName}}</div>
   <div *ngIf="log.data">
     <div><b>Data</b></div>
-    <attribute-struct [attribute]="log.data" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="10" [tokenSymbol]="'DOT'"></attribute-struct>
+    <attribute-struct [attribute]="log.data" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></attribute-struct>
   </div>
 </ng-container>

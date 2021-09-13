@@ -22,7 +22,7 @@ import { Subject } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-log-detail',
@@ -33,6 +33,8 @@ import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
 export class LogDetailComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
   log: pst.Log;
+  tokenDecimals: number;
+  tokenSymbol: string;
 
   constructor(private route: ActivatedRoute,
               private cd: ChangeDetectorRef,
@@ -46,6 +48,10 @@ export class LogDetailComponent implements OnInit, OnDestroy {
       filter(network => !!network),
       // Only need to load once.
       first(),
+      tap(() => {
+        this.tokenDecimals = this.ns.tokenDecimals;
+        this.tokenSymbol = this.ns.tokenSymbol;
+      }),
       // Switch over to the route param from which we extract the extrinsic keys.
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),

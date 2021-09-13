@@ -11,7 +11,7 @@
 
   <h2>Call Arguments</h2>
   <ng-container *ngIf="callArguments">
-    <extrinsic-attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="10" [tokenSymbol]="'DOT'"></extrinsic-attributes>
+    <extrinsic-attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></extrinsic-attributes>
   </ng-container>
 
   <h2>Events</h2>
