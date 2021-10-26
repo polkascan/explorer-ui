@@ -26,7 +26,7 @@ import { BehaviorSubject } from 'rxjs';
 
 export type AugmentedApi = substrate.Api & polkascan.Api & coingecko.Api;
 
-type AdapterName = 'substrateRPC' | 'polkascanAPI' | 'coingeckoAPI';
+type AdapterName = 'substrateRpc' | 'polkascanApi' | 'coingeckoApi';
 
 @Injectable({providedIn: 'root'})
 export class PolkadaptService {
@@ -35,11 +35,22 @@ export class PolkadaptService {
   substrateRpcUrls = new BehaviorSubject<string[] | null>(null);
   substrateRpcUrl = new BehaviorSubject<string | null>(null);
   substrateRpcConnected = new BehaviorSubject(false);
+  substrateRpcWsErrorHandler: () => void;
+  substrateRpcWsConnectedHandler: () => void;
+  substrateRpcWsDisconnectedHandler: () => void;
+  polkascanWsUrls = new BehaviorSubject<string[] | null>(null)
+  polkascanWsUrl = new BehaviorSubject<string | null>(null)
+  polkascanWsConnected = new BehaviorSubject(false);
+  polkascanWsErrorHandler: () => void;
+  polkascanWsConnectedHandler: () => void;
+  polkascanWsDisconnectedHandler: () => void;
+  polkascanDataErrorHandler: (e: any) => void;
+  polkascanDataErrors = new BehaviorSubject<{url: string, error: any}[]>([]);
   private availableAdapters: {
     [network: string]: {
-      substrateRPC: substrate.Adapter,
-      polkascanAPI: polkascan.Adapter,
-      coingeckoAPI: coingecko.Adapter
+      substrateRpc: substrate.Adapter,
+      polkascanApi: polkascan.Adapter,
+      coingeckoApi: coingecko.Adapter
     }
   } = {};
   private badAdapterUrls: { [network: string]: { [K in AdapterName]: string[] } } = {};
@@ -54,21 +65,21 @@ export class PolkadaptService {
   setAvailableAdapters(): void {
     for (const network of Object.keys(this.config.networks)) {
       this.availableAdapters[network] = {
-        substrateRPC: new substrate.Adapter({
+        substrateRpc: new substrate.Adapter({
           chain: network
         }),
-        polkascanAPI: new polkascan.Adapter({
+        polkascanApi: new polkascan.Adapter({
           chain: network
         }),
-        coingeckoAPI: new coingecko.Adapter({
+        coingeckoApi: new coingecko.Adapter({
           chain: network,
           apiEndpoint: 'https://api.coingecko.com/api/v3/'
         })
       };
       this.badAdapterUrls[network] = {
-        substrateRPC: [],
-        polkascanAPI: [],
-        coingeckoAPI: []
+        substrateRpc: [],
+        polkascanApi: [],
+        coingeckoApi: []
       };
     }
   }
@@ -86,43 +97,78 @@ export class PolkadaptService {
     // skipping over the known bad ones.
 
     // Update the Substrate RPC url.
-    await this.configureSubstrateRpcUrl();
-    const substrateRpcAdapter = this.availableAdapters[network].substrateRPC;
-    substrateRpcAdapter.on('error', () => this.substrateRpcWsErrorHandler());
-    substrateRpcAdapter.on('connected', () => this.substrateRpcWsConnectedHandler());
-    substrateRpcAdapter.on('disconnected', () => this.substrateRpcWsDisconnectedHandler());
+    this.configureSubstrateRpcUrl();
+    const sAdapter = this.availableAdapters[network].substrateRpc;
+    this.substrateRpcWsErrorHandler = () => {
+      this.reconnectSubstrateRpc();
+    };
+    sAdapter.on('error', this.substrateRpcWsErrorHandler);
+    this.substrateRpcWsConnectedHandler = () => {
+      this.substrateRpcConnected.next(true);
+    };
+    sAdapter.on('connected', this.substrateRpcWsConnectedHandler);
+    this.substrateRpcWsDisconnectedHandler = () => {
+      this.substrateRpcConnected.next(false);
+    };
+    sAdapter.on('disconnected', this.substrateRpcWsDisconnectedHandler);
     this.substrateRpcUrls.next(this.config.networks[network].substrateRpcUrlArray);
 
     // Update the Polkascan API url.
-    const polkascanWsUrls = this.config.networks[network].polkascanWsUrlArray;
-    let polkascanWsUrl = window.localStorage.getItem('lastUsedPolkascanWsUrl');
-    if (!polkascanWsUrl || !polkascanWsUrls.includes(polkascanWsUrl)) {
-      const badPolkascanWsUrl = this.badAdapterUrls[network].polkascanAPI;
-      if (badPolkascanWsUrl.length === polkascanWsUrls.length) {
-        // All url's are marked bad, so let's just try all of them again.
-        badPolkascanWsUrl.length = 0;
-      }
-      polkascanWsUrl = polkascanWsUrls.filter(url => !badPolkascanWsUrl.includes(url))[0];
-      window.localStorage.setItem('lastUsedPolkascanWsUrl', polkascanWsUrl);
-    }
-    await this.availableAdapters[network].polkascanAPI.setWsUrl(polkascanWsUrl);
+    this.configurePolkascanWsUrl();
+    const pAdapter = this.availableAdapters[network].polkascanApi;
+    this.polkascanWsUrls.next(this.config.networks[network].polkascanWsUrlArray);
 
-    // Now that the adapters are set, register them in PolkADAPT.
+    // Now that the adapters are set, register them in PolkADAPT which will connect() them.
     this.polkadapt.register(...Object.values(this.availableAdapters[network]));
-    // Return a Promise that resolves when PolkADAPT has initialized all adapters.
+    // After polkascan adapter has connected, we can listen to the events on the socket.
+    if (pAdapter.socket) {
+      this.polkascanWsErrorHandler = () => {
+        console.error('Polkascan API web socket error, try reconnect');
+        this.reconnectPolkscanApi();
+      };
+      pAdapter.socket.on('socketError', this.polkascanWsErrorHandler);
+      this.polkascanDataErrorHandler = (e) => {
+        const error = {
+          url: this.polkascanWsUrl.value || '',
+          error: e
+        }
+        this.polkascanDataErrors.next(this.polkascanDataErrors.value.concat([error]));
+      };
+      pAdapter.socket.on('dataError', this.polkascanDataErrorHandler);
+      this.polkascanWsConnectedHandler = () => {
+        console.info('Polkascan API connected');
+        this.polkascanWsConnected.next(true);
+      };
+      pAdapter.socket.on('open', this.polkascanWsConnectedHandler);
+      this.polkascanWsDisconnectedHandler = () => {
+        console.info('Polkascan API disconnected');
+        this.polkascanWsConnected.next(false);
+      };
+      pAdapter.socket.on('close', this.polkascanWsDisconnectedHandler);
+    }
+    // Wait until PolkADAPT has initialized all adapters.
     await this.polkadapt.ready();
   }
 
   clearNetwork(): void {
     if (this.currentNetwork) {
       this.polkadapt.unregister();
-      const adapter = this.availableAdapters[this.currentNetwork].substrateRPC;
-      adapter.off('error', this.substrateRpcWsErrorHandler);
-      adapter.off('connected', this.substrateRpcWsConnectedHandler);
-      adapter.off('disconnected', this.substrateRpcWsDisconnectedHandler);
+      const sAdapter = this.availableAdapters[this.currentNetwork].substrateRpc;
+      sAdapter.off('error', this.substrateRpcWsErrorHandler);
+      sAdapter.off('connected', this.substrateRpcWsConnectedHandler);
+      sAdapter.off('disconnected', this.substrateRpcWsDisconnectedHandler);
+      const pAdapter = this.availableAdapters[this.currentNetwork].polkascanApi;
+      if (pAdapter.socket) {
+        pAdapter.socket.off('socketError', this.polkascanWsErrorHandler);
+        pAdapter.socket.off('dataError', this.polkascanDataErrorHandler);
+        pAdapter.socket.off('open', this.polkascanWsConnectedHandler);
+        pAdapter.socket.off('close', this.polkascanWsDisconnectedHandler);
+      }
       this.currentNetwork = '';
       this.substrateRpcUrls.next(null);
       this.substrateRpcUrl.next(null);
+      this.polkascanWsUrls.next(null);
+      this.polkascanWsUrl.next(null);
     }
   }
 
@@ -130,41 +176,65 @@ export class PolkadaptService {
     const network: string = this.currentNetwork;
     const substrateRpcUrls = this.config.networks[network].substrateRpcUrlArray;
     let substrateRpcUrl = window.localStorage.getItem('lastUsedSubstrateRpcUrl');
-    if (!substrateRpcUrl || !substrateRpcUrls.includes(substrateRpcUrl)) {
-      const badSubstrateRpcUrls = this.badAdapterUrls[network].substrateRPC;
-      if (badSubstrateRpcUrls.length === substrateRpcUrls.length) {
+    if (!substrateRpcUrl) {
+      const badSubstrateRpcUrls = this.badAdapterUrls[network].substrateRpc;
+      if (badSubstrateRpcUrls.length >= substrateRpcUrls.length) {
         // All url's are marked bad, so let's just try all of them again.
         badSubstrateRpcUrls.length = 0;
       }
       substrateRpcUrl = substrateRpcUrls.filter(url => !badSubstrateRpcUrls.includes(url))[0];
       window.localStorage.setItem('lastUsedSubstrateRpcUrl', substrateRpcUrl);
     }
-    this.availableAdapters[network].substrateRPC.setUrl(substrateRpcUrl);
+    this.availableAdapters[network].substrateRpc.setUrl(substrateRpcUrl);
     this.substrateRpcUrl.next(substrateRpcUrl);
   }
 
-  substrateRpcWsErrorHandler(): void {
-    console.log('errrrrrr');
+  reconnectSubstrateRpc(): void {
     if (this.substrateRpcUrl.value) {
-      this.badAdapterUrls[this.currentNetwork].substrateRPC.push(this.substrateRpcUrl.value);
+      this.badAdapterUrls[this.currentNetwork].substrateRpc.push(this.substrateRpcUrl.value);
       window.localStorage.removeItem('lastUsedSubstrateRpcUrl');
       this.configureSubstrateRpcUrl();
-      this.availableAdapters[this.currentNetwork].substrateRPC.connect().then();
+      this.availableAdapters[this.currentNetwork].substrateRpc.connect().then();
     }
-  }
-
-  substrateRpcWsConnectedHandler(): void {
-    this.substrateRpcConnected.next(true);
-  }
-
-  substrateRpcWsDisconnectedHandler(): void {
-    this.substrateRpcConnected.next(false);
   }
 
   async setSubstrateRpcUrl(url: string): Promise<void> {
     window.localStorage.setItem('lastUsedSubstrateRpcUrl', url);
-    this.availableAdapters[this.currentNetwork].substrateRPC.setUrl(url);
+    this.availableAdapters[this.currentNetwork].substrateRpc.setUrl(url);
     this.substrateRpcUrl.next(url);
-    await this.availableAdapters[this.currentNetwork].substrateRPC.connect();
+    await this.availableAdapters[this.currentNetwork].substrateRpc.connect();
+  }
+
+  configurePolkascanWsUrl(): void {
+    const network: string = this.currentNetwork;
+    const polkascanWsUrls = this.config.networks[network].polkascanWsUrlArray;
+    let polkascanWsUrl = window.localStorage.getItem('lastUsedPolkascanWsUrl');
+    if (!polkascanWsUrl) {
+      const badPolkascanWsUrls = this.badAdapterUrls[network].polkascanApi;
+      if (badPolkascanWsUrls.length >= polkascanWsUrls.length) {
+        // All url's are marked bad, so let's just try all of them again.
+        badPolkascanWsUrls.length = 0;
+      }
+      polkascanWsUrl = polkascanWsUrls.filter(url => !badPolkascanWsUrls.includes(url))[0];
+      window.localStorage.setItem('lastUsedPolkascanWsUrl', polkascanWsUrl);
+    }
+    this.availableAdapters[network].polkascanApi.setWsUrl(polkascanWsUrl);
+    this.polkascanWsUrl.next(polkascanWsUrl);
+  }
+
+  reconnectPolkscanApi(): void {
+    if (this.polkascanWsUrl.value) {
+      this.badAdapterUrls[this.currentNetwork].polkascanApi.push(this.polkascanWsUrl.value);
+      window.localStorage.removeItem('lastUsedPolkascanWsUrl');
+      this.configurePolkascanWsUrl();
+      this.availableAdapters[this.currentNetwork].polkascanApi.connect();
+    }
+  }
+
+  async setPolkascanWsUrl(url: string): Promise<void> {
+    window.localStorage.setItem('lastUsedPolkascanWsUrl', url);
+    this.availableAdapters[this.currentNetwork].polkascanApi.setWsUrl(url);
+    this.polkascanWsUrl.next(url);
+    this.availableAdapters[this.currentNetwork].polkascanApi.connect();
   }
 }

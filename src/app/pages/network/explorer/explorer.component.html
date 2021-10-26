@@ -22,11 +22,52 @@
 <div><a routerLink="log">View logs</a></div>
 <div><a routerLink="balances/transfer">View transfers</a></div>
 <div>
-  Configured Substrate RPC URL: {{pa.substrateRpcUrl|async}}
-  <ng-container [ngSwitch]="pa.substrateRpcConnected|async">
-    <span *ngSwitchCase="true" style="color: green">(connected)</span>
-    <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
-  </ng-container>
+  <form [formGroup]="substrateRpcUrlForm" (ngSubmit)="submitSubstrateRpcUrl()">
+    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+      <mat-label>{{ns.currentNetwork|async}} node URL</mat-label>
+      <input type="text"
+             placeholder="Enter URL"
+             aria-label="URL"
+             matInput
+             formControlName="url"
+             [matAutocomplete]="substrateUrlOptionsAuto">
+      <mat-autocomplete #substrateUrlOptionsAuto="matAutocomplete" (optionSelected)="submitSubstrateRpcUrl()">
+        <mat-option *ngFor="let option of pa.substrateRpcUrls|async" [value]="option">
+          {{option}}
+        </mat-option>
+      </mat-autocomplete>
+      <span class="mat-select-arrow" style="position: absolute; right: 0; top: 10px;"></span>
+    </mat-form-field>
+    <button mat-stroked-button color="primary" type="submit" style="margin-right: 10px;">Connect</button>
+    <ng-container [ngSwitch]="pa.substrateRpcConnected|async">
+      <span *ngSwitchCase="true" style="color: green">(connected)</span>
+      <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
+    </ng-container>
+  </form>
 </div>
-<div><button (click)="switchSubstrateRpcHost()">Switch to next Substrate RPC host</button></div>
+<div>
+  <form [formGroup]="polkascanWsUrlForm" (ngSubmit)="submitPolkascanWsUrl()">
+    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+      <mat-label>{{ns.currentNetwork|async}} Polkascan URL</mat-label>
+      <input type="text"
+             placeholder="Enter URL"
+             aria-label="URL"
+             matInput
+             formControlName="url"
+             [matAutocomplete]="polkascanWsUrlOptionsAuto">
+      <mat-autocomplete #polkascanWsUrlOptionsAuto="matAutocomplete" (optionSelected)="submitPolkascanWsUrl()">
+        <mat-option *ngFor="let option of pa.polkascanWsUrls|async" [value]="option">
+          {{option}}
+        </mat-option>
+      </mat-autocomplete>
+      <span class="mat-select-arrow" style="position: absolute; right: 0; top: 10px;"></span>
+    </mat-form-field>
+    <button mat-stroked-button color="primary" type="submit" style="margin-right: 10px;">Connect</button>
+    <ng-container [ngSwitch]="pa.polkascanWsConnected|async">
+      <span *ngSwitchCase="true" style="color: green">(connected)</span>
+      <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
+    </ng-container>
+    <span style="margin-left: 10px; color: red;" *ngIf="(pa.polkascanDataErrors|async)?.length as dataErrorCount">{{ dataErrorCount }} errors</span>
+  </form>
+</div>
 <div><a routerLink="account/12xtAYsRUrmbniiWQqJtECiBQrMn8AypQcXhnQAc6RB6XkLW">Test account</a></div>

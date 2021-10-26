@@ -20,13 +20,25 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ExplorerComponent } from './explorer.component';
 import { ExplorerRoutingModule } from './explorer-routing.module';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatOptionModule } from '@angular/material/core';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
 
 
 @NgModule({
   declarations: [ExplorerComponent],
   imports: [
     CommonModule,
-    ExplorerRoutingModule
+    ReactiveFormsModule,
+    ExplorerRoutingModule,
+    MatFormFieldModule,
+    MatAutocompleteModule,
+    MatOptionModule,
+    MatInputModule,
+    MatButtonModule
   ]
 })
 export class ExplorerModule {

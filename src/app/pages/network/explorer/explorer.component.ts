@@ -24,6 +24,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 import { distinctUntilChanged, filter, first, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { Block } from '../../../services/block/block.harvester';
 import { AppConfig } from '../../../app-config';
+import { FormControl, FormGroup } from '@angular/forms';
 
 
 const blocksAnimation = trigger('blocksAnimation', [
@@ -60,10 +61,16 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   blockListSize = 10;
   latestBlockNumber = new BehaviorSubject<number>(0);
   blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
+  substrateRpcUrlForm = new FormGroup({
+    url: new FormControl('')
+  });
+  polkascanWsUrlForm = new FormGroup({
+    url: new FormControl('')
+  });
 
   constructor(
     public pa: PolkadaptService,
-    private ns: NetworkService,
+    public ns: NetworkService,
     private config: AppConfig
   ) {}
 
@@ -111,6 +118,14 @@ export class ExplorerComponent implements OnInit, OnDestroy {
         this.spliceBlocks(Math.min(newBlockCount, this.blockListSize));
       }
     });
+
+    this.pa.substrateRpcUrl.pipe(takeUntil(this.destroyer)).subscribe(url => {
+      this.substrateRpcUrlForm.setValue({url});
+    });
+
+    this.pa.polkascanWsUrl.pipe(takeUntil(this.destroyer)).subscribe(url => {
+      this.polkascanWsUrlForm.setValue({url});
+    });
   }
 
   ngOnDestroy(): void {
@@ -135,10 +150,11 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     return item.value.number;
   }
 
-  switchSubstrateRpcHost(): void {
-    const url: string = this.config.networks[this.ns.currentNetwork.value].substrateRpcUrlArray.filter(
-      u => u !== this.pa.substrateRpcUrl.value
-    )[0];
-    this.pa.setSubstrateRpcUrl(url);
+  async submitSubstrateRpcUrl(): Promise<void> {
+    await this.pa.setSubstrateRpcUrl(this.substrateRpcUrlForm.value.url);
+  }
+
+  async submitPolkascanWsUrl(): Promise<void> {
+    await this.pa.setPolkascanWsUrl(this.polkascanWsUrlForm.value.url);
   }
 }
