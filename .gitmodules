@@ -1,4 +1,4 @@
 [submodule "polkadapt"]
 	path = polkadapt
 	url = https://github.com/polkascan/polkadapt
-	branch = multi-endpoint
+	branch = develop
