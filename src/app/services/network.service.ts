@@ -60,7 +60,7 @@ export class NetworkService {
       await this.pa.setNetwork(network);
     } catch (e) {
       this.currentNetwork.next('');
-      console.error('[NetworkService] Could not switch network.', e); // TODO Temporary alert.
+      console.error('[NetworkService] Could not switch network.');
     }
     if (network !== this.settingNetwork || this.settingNonce !== nonce) {
       // If network or nonce has changed intermittently (before the 'await' above is resolved), we'll just ignore the

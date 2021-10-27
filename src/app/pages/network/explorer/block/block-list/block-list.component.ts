@@ -18,10 +18,10 @@
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { rowsAnimationByCounter } from '../../../../../animations';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, of, Subject } from 'rxjs';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { distinctUntilChanged, filter, first, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, filter, first, switchMap, takeUntil, tap, timeout } from 'rxjs/operators';
 import { Block } from '../../../../../services/block/block.harvester';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
@@ -65,6 +65,7 @@ export class BlockListComponent implements OnInit, OnDestroy {
       }),
       // Wait for the first most recent finalized block to arrive from Polkascan.
       switchMap(() => this.ns.blockHarvester.finalizedNumber.pipe(
+        timeout(2000),
         takeUntil(this.destroyer),
         filter(nr => nr > 0),
         first(),
@@ -74,7 +75,8 @@ export class BlockListComponent implements OnInit, OnDestroy {
           // so other (lazy) block loading mechanics won't kick in.
           this.loadingObservable.next(this.loadingObservable.value + 1);
           this.ns.blockHarvester.loadBlocksUntil(null, this.listSize).then().finally(() => this.loadingObservable.next(this.loadingObservable.value - 1));
-        })
+        }),
+        catchError(error => of(-1))
       )),
       // Watch for new loaded block numbers from the Substrate node.
       switchMap(() => this.ns.blockHarvester.loadedNumber.pipe(

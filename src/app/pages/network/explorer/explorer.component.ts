@@ -20,8 +20,8 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/
 import { animate, group, query, stagger, style, transition, trigger } from '@angular/animations';
 import { PolkadaptService } from '../../../services/polkadapt.service';
 import { NetworkService } from '../../../services/network.service';
-import { BehaviorSubject, Subject } from 'rxjs';
-import { distinctUntilChanged, filter, first, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { BehaviorSubject, of, Subject } from 'rxjs';
+import { catchError, distinctUntilChanged, filter, first, switchMap, takeUntil, tap, timeout } from 'rxjs/operators';
 import { Block } from '../../../services/block/block.harvester';
 import { AppConfig } from '../../../app-config';
 import { FormControl, FormGroup } from '@angular/forms';
@@ -90,6 +90,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       }),
       // Wait for the first most recent finalized block to arrive from Polkascan.
       switchMap(() => this.ns.blockHarvester.finalizedNumber.pipe(
+        timeout(2000),
         takeUntil(this.destroyer),
         filter(nr => nr > 0),
         first(),
@@ -98,7 +99,8 @@ export class ExplorerComponent implements OnInit, OnDestroy {
           // We won't wait for the result, but the function will mark the blocks to load,
           // so other (lazy) block loading mechanics won't kick in.
           this.ns.blockHarvester.loadBlocksUntil(null, this.blockListSize).then();
-        })
+        }),
+        catchError(error => of(-1))
       )),
       // Watch for new loaded block numbers from the Substrate node.
       switchMap(() => this.ns.blockHarvester.loadedNumber.pipe(

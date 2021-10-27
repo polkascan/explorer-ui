@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { BehaviorSubject, combineLatest } from 'rxjs';
+import { BehaviorSubject, combineLatest, of } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt } from '@polkadapt/core';
 import { Header } from '@polkadot/types/interfaces';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { filter, first } from 'rxjs/operators';
+import { filter, first, timeoutWith } from 'rxjs/operators';
 
 export type Block = Partial<pst.Block> & {
   status: 'new' | 'loading' | 'loaded',
@@ -50,24 +50,24 @@ export class BlockHarvester {
     const cacheTarget: BlockCache = {};
     this.cache = new Proxy(cacheTarget, {
       get: (cache, nr: string) => {
-          let cached = cache[nr];
-          if (!cached) {
-            cached = cache[nr] = new BehaviorSubject<Block>({
-              status: 'new', number: parseInt(nr, 10), finalized: false, extrinsics: [], events: []
-            });
-          }
-          return cached;
+        let cached = cache[nr];
+        if (!cached) {
+          cached = cache[nr] = new BehaviorSubject<Block>({
+            status: 'new', number: parseInt(nr, 10), finalized: false, extrinsics: [], events: []
+          });
         }
+        return cached;
+      }
     });
     this.blocks = new Proxy(this.cache, {
-        get: (cache, prop: string) => {
-          const nr = parseInt(prop, 10);
-          const cached = cache[nr];
-          if (cached.value.status === 'new') {
-            this.loadBlock(cached.value.number).then();
-          }
-          return cached;
+      get: (cache, prop: string) => {
+        const nr = parseInt(prop, 10);
+        const cached = cache[nr];
+        if (cached.value.status === 'new') {
+          this.loadBlock(cached.value.number).then();
         }
+        return cached;
+      }
     });
 
     this.subscribeNewBlocks().then();
@@ -129,11 +129,9 @@ export class BlockHarvester {
   private async loadBlock(nr: number): Promise<void> {
     const cached = this.cache[nr];
     // We need to know what the latest numbers are.
-    combineLatest(
-      this.headNumber.pipe(filter(headNumber => headNumber > 0)),
-      this.finalizedNumber.pipe(filter(finalizedNumber => finalizedNumber > 0)),
-    ).pipe(first()).subscribe(async combined => {
-      const [headNumber, finalizedNumber] = combined;
+    const headNumber = this.headNumber.value;
+    const finalizedNumber = this.finalizedNumber.value;
+    if (headNumber || finalizedNumber) {
       let block = Object.assign({}, cached.value);
       if (block.number > headNumber || block.status !== 'new') {
         return;
@@ -171,11 +169,10 @@ export class BlockHarvester {
           cached.next(block);
         }
       }
-
       if (nr > this.loadedNumber.value) {
         this.loadedNumber.next(nr);
       }
-    });
+    }
   }
 
   private unsubscribeHeads(): void {
