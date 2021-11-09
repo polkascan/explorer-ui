@@ -20,7 +20,10 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NetworkService } from '../../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { PaginatedListComponentBase } from '../../../../../../components/list-base/paginated-list-component-base.directive';
+import {
+  PaginatedListComponentBase
+} from '../../../../../../components/list-base/paginated-list-component-base.directive';
+import { Router } from '@angular/router';
 
 
 @Component({
@@ -34,12 +37,14 @@ export class BalancesTransferListComponent extends PaginatedListComponentBase<ps
   visibleColumns = ['icon', 'block', 'from', 'to', 'value', 'details'];
 
   constructor(private ns: NetworkService,
-              private pa: PolkadaptService) {
+              private pa: PolkadaptService,
+              private router: Router) {
     super(ns);
   }
 
   createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Transfer>> {
     return this.pa.run(this.network).polkascan.chain.getTransfers(
+      {},
       this.listSize,
       pageKey
     );
@@ -65,5 +70,10 @@ export class BalancesTransferListComponent extends PaginatedListComponentBase<ps
 
   track(i: any, transfer: pst.Transfer): string {
     return `${transfer.blockNumber}-${transfer.eventIdx}`;
+  }
+
+
+  routeToAccount(address: string) {
+    this.router.navigate([`../../account/${address}`]);
   }
 }

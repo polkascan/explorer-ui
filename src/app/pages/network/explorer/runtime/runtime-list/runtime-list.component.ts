@@ -54,7 +54,7 @@ export class RuntimeListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next();
+    this.destroyer.next(undefined);
     this.destroyer.complete();
   }
 

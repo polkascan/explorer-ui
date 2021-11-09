@@ -16,29 +16,59 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output, SimpleChanges,
+  ViewEncapsulation
+} from '@angular/core';
 import { IconTheme } from '../../identicon/identicon.types';
+import { Prefix } from '@polkadot/util-crypto/address/types';
+import { encodeAddress } from '@polkadot/util-crypto';
+import { HexString } from '@polkadot/util/types';
+import { isHex, isU8a } from '@polkadot/util';
 
 @Component({
   selector: 'attribute-address',
   template: `
-    <ng-container *ngIf="attribute">
-      <a (click)="clicked.next(attribute.value)">
-        <identicon [value]="attribute.value" [theme]="iconTheme" [size]="iconSize"></identicon>
-        {{ attribute.value }}
+    <ng-container *ngIf="encoded">
+      <a (click)="clicked.next(encoded)">
+        <identicon [value]="encoded" [theme]="iconTheme" [size]="iconSize" [prefix]="ss58Prefix"></identicon>
+        {{ encoded }}
       </a>
     </ng-container>
   `,
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AttributeAddressComponent {
-  @Input() attribute: { type: string, value: string };
+export class AttributeAddressComponent implements OnChanges {
+  @Input() attribute: { type: string, value: HexString | Uint8Array | string };
   @Input() iconTheme: IconTheme;
   @Input() iconSize: number;
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
+  @Input() ss58Prefix: Prefix;
   @Output() clicked = new EventEmitter();
+
+  encoded: string;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['attribute']) {
+      const value = changes['attribute'].currentValue && changes['attribute'].currentValue.value;
+      let address = '';
+
+      if (value) {
+        address = isU8a(value) || isHex(value)
+          ? encodeAddress(value, this.ss58Prefix)
+          : (value || '');
+      }
+
+      this.encoded = address;
+    }
+  }
 
   constructor() {
   }

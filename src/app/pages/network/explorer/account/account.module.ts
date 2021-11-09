@@ -32,6 +32,8 @@ import { AccountIdentitiesListComponent } from './identities/account-identities-
 import { AccountDetailComponent } from './account-detail/account-detail.component';
 import { AccountIndexDetailComponent } from './indices/account-index-detail/account-index-detail.component';
 import { AccountIndexListComponent } from './indices/account-index-list/account-index-list.component';
+import { PolkascanCommonModule } from '../../../../../common-components/polkascan-common.module';
+import { MatTableModule } from '@angular/material/table';
 
 
 @NgModule({
@@ -40,7 +42,9 @@ import { AccountIndexListComponent } from './indices/account-index-list/account-
     AccountIdentitiesListComponent, AccountDetailComponent, AccountIndexDetailComponent, AccountIndexListComponent],
   imports: [
     CommonModule,
-    AccountRoutingModule
+    AccountRoutingModule,
+    PolkascanCommonModule,
+    MatTableModule,
   ]
 })
 export class AccountModule {

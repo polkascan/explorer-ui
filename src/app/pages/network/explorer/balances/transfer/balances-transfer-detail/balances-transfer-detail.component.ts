@@ -19,7 +19,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { Subject } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../../services/network.service';
 import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
@@ -34,10 +34,13 @@ export class BalancesTransferDetailComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
   transfer: pst.Transfer;
 
+  networkProperties = this.ns.currentNetworkProperties;
+
   constructor(private route: ActivatedRoute,
               private cd: ChangeDetectorRef,
               private pa: PolkadaptService,
-              private ns: NetworkService) { }
+              private ns: NetworkService,
+              private router: Router) { }
 
   ngOnInit(): void {
     this.ns.currentNetwork.pipe(
@@ -49,7 +52,7 @@ export class BalancesTransferDetailComponent implements OnInit, OnDestroy {
       // Switch over to the route param from which we extract the extrinsic keys.
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => params.id.split('-').map((v: string) => parseInt(v, 10)))
+        map(params => params['id'].split('-').map((v: string) => parseInt(v, 10)))
       ))
     ).subscribe(async ([blockNr, eventIdx]) => {
       this.transfer = await this.pa.run().polkascan.chain.getTransfer(blockNr, eventIdx);
@@ -58,7 +61,12 @@ export class BalancesTransferDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next();
+    this.destroyer.next(undefined);
     this.destroyer.complete();
   }
+
+  routeToAccount(address: string) {
+    this.router.navigate([`../../account/${address}`]);
+  }
+
 }

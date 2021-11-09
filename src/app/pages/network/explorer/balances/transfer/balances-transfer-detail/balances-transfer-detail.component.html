@@ -1,19 +1,17 @@
-<ng-container *ngIf="transfer">
-  <div>Block <a [routerLink]="'../../../block/' + transfer.blockNumber">#{{transfer.blockNumber}}</a></div>
-  <div>Event Index: {{transfer.eventIdx}}</div>
-  <div>
-    From:
-    <a *ngIf="transfer.fromMultiAddressAccountId" [routerLink]="'../../../account/' + transfer.fromMultiAddressAccountId">
-      <identicon [value]="transfer.fromMultiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
-      {{ transfer.fromMultiAddressAccountId }}
-    </a>
-  </div>
-  <div>
-    To:
-    <a *ngIf="transfer.toMultiAddressAccountId" [routerLink]="'../../../account/' + transfer.toMultiAddressAccountId">
-      <identicon [value]="transfer.toMultiAddressAccountId" [theme]="'polkadot'" [size]="16"></identicon>
-      {{ transfer.toMultiAddressAccountId }}
-    </a>
-  </div>
-  <div>Value: {{transfer.value}}</div>
+<ng-container *ngIf="$any(transfer) as transfer">
+  <ng-container *ngIf="(networkProperties | async) as props">
+    <div>Block <a [routerLink]="'../../../block/' + transfer.blockNumber">#{{transfer.blockNumber}}</a></div>
+    <div>Event Index: {{transfer.eventIdx}}</div>
+    <div *ngIf="transfer.fromMultiAddressAccountId as accountId">
+      From:
+      <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Prefix"
+                  (clicked)="routeToAccount($event)"></account-id>
+    </div>
+    <div *ngIf="transfer.toMultiAddressAccountId as accountId">
+      To:
+      <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Prefix"
+                  (clicked)="routeToAccount($event)"></account-id>
+    </div>
+    <div>Value: {{transfer.value}}</div>
+  </ng-container>
 </ng-container>

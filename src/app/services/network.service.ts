@@ -26,14 +26,20 @@ import { PricingService } from './pricing.service';
 import { VariablesService } from './variables.service';
 
 
+export interface NetworkProperties {
+  ss58Prefix: number;
+  tokenSymbol: string;
+  tokenDecimals: number;
+}
+
+
 @Injectable({providedIn: 'root'})
 export class NetworkService {
   private settingNetwork: string;
   private settingNonce = 0;
   currentNetwork = new BehaviorSubject<string>('');
+  currentNetworkProperties = new BehaviorSubject<NetworkProperties | undefined>(undefined);
   blockHarvester: BlockHarvester
-  tokenSymbol: string;
-  tokenDecimals: number;
 
   constructor(private pa: PolkadaptService,
               private bs: BlockService,
@@ -50,6 +56,9 @@ export class NetworkService {
 
     const nonce: number = this.settingNonce = this.settingNonce + 1;
     this.settingNetwork = network;
+    if (this.currentNetworkProperties.value) {
+      this.currentNetworkProperties.next(undefined);
+    }
 
     if (this.blockHarvester) {
       // Pause the harvester of the previous network.
@@ -79,13 +88,18 @@ export class NetworkService {
       this.rs.initialize(network);
 
       try {
-        const props = (await this.pa.run(network).rpc.system.properties()).toHuman();
-        this.tokenSymbol = props.tokenSymbol && (props.tokenSymbol as string[])[0] || '';
-        this.tokenDecimals = props.tokenDecimals && (props.tokenDecimals as number[])[0] || 0;
+        const props = await this.pa.run(network).rpc.system.properties();
+
+        this.currentNetworkProperties.next({
+          ss58Prefix: props.ss58Format.toJSON() as number,
+          tokenSymbol: (props.tokenSymbol.toJSON() as string[])[0] || '',
+          tokenDecimals: (props.tokenDecimals.toJSON() as number[])[0] || 0
+        })
       } catch (e) {
         console.error(e);
-        this.tokenSymbol = '';
-        this.tokenDecimals = 0;
+        if (this.currentNetworkProperties.value) {
+          this.currentNetworkProperties.next(undefined);
+        }
       }
     }
 
@@ -97,5 +111,17 @@ export class NetworkService {
     this.pa.clearNetwork();
     this.currentNetwork.next('');
     this.settingNetwork = '';
+  }
+
+  get ss58Prefix(): number | undefined {
+    return this.currentNetworkProperties.value && this.currentNetworkProperties.value.ss58Prefix;
+  }
+
+  get tokenSymbol(): string | undefined {
+    return this.currentNetworkProperties.value && this.currentNetworkProperties.value.tokenSymbol;
+  }
+
+  get tokenDecimals(): number | undefined {
+    return this.currentNetworkProperties.value && this.currentNetworkProperties.value.tokenDecimals;
   }
 }

@@ -18,29 +18,33 @@
 
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { IdenticonComponent } from './components/identicon/identicon.component';
+import { IdenticonComponent } from './identicon/identicon.component';
 import {
   ChildAttributesComponent,
   EventAttributesComponent,
   ExtrinsicAttributesComponent
-} from './components/attributes/attributes.component';
-import { AttributeAccountIndexComponent } from './components/attributes/attributes/attribute-account-index.component';
-import { AttributeAddressComponent } from './components/attributes/attributes/attribute-address.component';
-import { AttributeBalanceComponent } from './components/attributes/attributes/attribute-balance.component';
-import { AttributeBlockComponent } from './components/attributes/attributes/attribute-block.component';
-import { AttributeBooleanComponent } from './components/attributes/attributes/attribute-boolean.component';
-import { AttributeBytesComponent } from './components/attributes/attributes/attribute-bytes.component';
-import { AttributeDateComponent } from './components/attributes/attributes/attribute-date.component';
-import { AttributeDownloadableComponent } from './components/attributes/attributes/attribute-downloadable.component';
-import { AttributeEthereumAddressComponent } from './components/attributes/attributes/attribute-ethereum-address.component';
-import { AttributeProposalComponent } from './components/attributes/attributes/attribute-proposal.component';
-import { AttributeReferendumComponent } from './components/attributes/attributes/attribute-referendum.component';
-import { AttributeSessionComponent } from './components/attributes/attributes/attribute-session.component';
-import { AttributeStructComponent } from './components/attributes/attributes/attribute-struct.component';
+} from './attributes/attributes.component';
+import { AttributeAccountIndexComponent } from './attributes/attributes/attribute-account-index.component';
+import { AttributeAddressComponent } from './attributes/attributes/attribute-address.component';
+import { AttributeBalanceComponent } from './attributes/attributes/attribute-balance.component';
+import { AttributeBlockComponent } from './attributes/attributes/attribute-block.component';
+import { AttributeBooleanComponent } from './attributes/attributes/attribute-boolean.component';
+import { AttributeBytesComponent } from './attributes/attributes/attribute-bytes.component';
+import { AttributeDateComponent } from './attributes/attributes/attribute-date.component';
+import { AttributeDownloadableComponent } from './attributes/attributes/attribute-downloadable.component';
+import { AttributeEthereumAddressComponent } from './attributes/attributes/attribute-ethereum-address.component';
+import { AttributeProposalComponent } from './attributes/attributes/attribute-proposal.component';
+import { AttributeReferendumComponent } from './attributes/attributes/attribute-referendum.component';
+import { AttributeSessionComponent } from './attributes/attributes/attribute-session.component';
+import { AttributeStructComponent } from './attributes/attributes/attribute-struct.component';
+import { AccountIdCommonComponent } from './account-id/account-id.common.component';
+import { BalanceCommonComponent } from './balance/balance.common.component';
 
 @NgModule({
   declarations: [
     IdenticonComponent,
+    AccountIdCommonComponent,
+    BalanceCommonComponent,
     ChildAttributesComponent,
     EventAttributesComponent,
     ExtrinsicAttributesComponent,
@@ -63,6 +67,8 @@ import { AttributeStructComponent } from './components/attributes/attributes/att
   ],
   exports: [
     IdenticonComponent,
+    AccountIdCommonComponent,
+    BalanceCommonComponent,
     EventAttributesComponent,
     ExtrinsicAttributesComponent,
     AttributeAccountIndexComponent,
@@ -80,5 +86,5 @@ import { AttributeStructComponent } from './components/attributes/attributes/att
     AttributeStructComponent
   ]
 })
-export class PolkadotAngularLibModule {
+export class PolkascanCommonModule {
 }

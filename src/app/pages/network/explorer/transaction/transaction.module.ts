@@ -22,7 +22,7 @@ import { CommonModule } from '@angular/common';
 import { TransactionRoutingModule } from './transaction-routing.module';
 import { TransactionListComponent } from './transaction-list/transaction-list.component';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
-import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
+import { PolkascanCommonModule } from '../../../../../common-components/polkascan-common.module';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
@@ -39,7 +39,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     CommonModule,
     ReactiveFormsModule,
     TransactionRoutingModule,
-    PolkadotAngularLibModule,
+    PolkascanCommonModule,
     MatTableModule,
     MatSelectModule,
     MatButtonModule,

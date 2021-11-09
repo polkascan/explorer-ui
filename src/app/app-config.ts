@@ -37,7 +37,7 @@ export class AppConfig {
       .get<NetworkConfig>('assets/config.json')
       .toPromise()
       .then(config => {
-        this.networks = config;
+        this.networks = config || {};
       });
   }
 }

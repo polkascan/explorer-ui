@@ -55,7 +55,7 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
       // Switch to the route param, from which we get the block number.
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => parseInt(params.id, 10))
+        map(params => parseInt(params['id'], 10))
       )),
       switchMap((blockNr) => combineLatest(
         // Update block when block data changes.
@@ -90,7 +90,7 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next();
+    this.destroyer.next(undefined);
     this.destroyer.complete();
   }
 }

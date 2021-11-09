@@ -16,7 +16,145 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { NetworkService } from '../../../../../services/network.service';
+import { PolkadaptService } from '../../../../../services/polkadapt.service';
+import {
+  distinctUntilChanged,
+  filter,
+  finalize,
+  first,
+  map, share,
+  shareReplay,
+  switchMap,
+  takeUntil,
+  tap
+} from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, Observable, of, Subject, Subscriber } from 'rxjs';
+import {
+  DeriveAccountFlags,
+  DeriveAccountInfo,
+  DeriveAccountRegistration,
+  DeriveBalancesAll,
+  DeriveStakingAccount
+} from '@polkadot/api-derive/types';
+import { BN, BN_ZERO, u8aToHex, u8aToString } from '@polkadot/util';
+import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { AccountData, AccountId, AccountIndex } from '@polkadot/types/interfaces';
+import { FrameSystemAccountInfo } from '@polkadot/types/lookup';
+import { Codec } from '@polkadot/types/types';
+import { decodeAddress } from '@polkadot/util-crypto';
+import { AccountInfo } from '@polkadot/types/interfaces/system/types';
+
+
+interface AccountBalance {
+  total: BN;
+  locked: BN;
+  transferrable: BN;
+  bonded: BN;
+  redeemable: BN;
+  unbonding: BN;
+}
+
+// From account.txs PolkadotJS apps Page-accounts
+function calcUnbonding(stakingInfo?: DeriveStakingAccount) {
+  if (!stakingInfo?.unlocking) {
+    return BN_ZERO;
+  }
+
+  const filtered = stakingInfo.unlocking
+    .filter(({remainingEras, value}) => value.gt(BN_ZERO) && remainingEras.gt(BN_ZERO))
+    .map((unlock) => unlock.value);
+  const total = filtered.reduce((total, value) => total.iadd(value), new BN(0));
+
+  return total;
+}
+
+
+// From address-info.txs PolkadotJS apps Page-accounts
+function calcBonded(stakingInfo?: DeriveStakingAccount, bonded?: boolean | BN[]): [BN, BN[]] {
+  let other: BN[] = [];
+  let own = BN_ZERO;
+
+  if (Array.isArray(bonded)) {
+    other = bonded
+      .filter((_, index) => index !== 0)
+      .filter((value) => value.gt(BN_ZERO));
+
+    own = bonded[0];
+  } else if (stakingInfo && stakingInfo.stakingLedger && stakingInfo.stakingLedger.active && stakingInfo.accountId.eq(stakingInfo.stashId)) {
+    own = stakingInfo.stakingLedger.active.unwrap();
+  }
+
+  return [own, other];
+}
+
+
+function asObservable(fn: (...args: any[]) => Promise<() => void>, ...args: any[]) {
+  let unsubscribeFn: (() => void) | null = null;
+  let finalized = false;
+  let subscr: Subscriber<any>;
+
+  const observable: Observable<any> = new Observable((subscriber) => {
+    subscr = subscriber;
+    let callback: ((...args: any[]) => any) | null = null;
+
+    if (args) {
+      // Convert callback to emitter function.
+      args.forEach((arg, index) => {
+        if (!callback && typeof arg === 'function') {
+          callback = arg;
+          args[index] = (value: any) => {
+            if (!finalized) {
+              arg(value);
+              subscriber.next(value);
+            }
+          }
+        }
+      });
+    }
+
+    if (!callback) {
+      args.push((value: any) => {
+        subscriber.next(value);
+      })
+    }
+
+    fn(...args).then(
+      (unsub) => {
+        unsubscribeFn = () => {
+          unsub();
+        }
+
+        if (finalized) {
+          // The observable is already completed, stop the listener immediately.
+          if (typeof unsubscribeFn === 'function') {
+            unsubscribeFn();
+            unsubscribeFn = null;
+          }
+        }
+      },
+      (e) => {
+        subscriber.error(e);
+        subscriber.complete();
+      });
+  });
+
+  return observable.pipe(
+    shareReplay(1),
+    finalize(() => {
+      subscr.complete();
+
+      finalized = true;
+      if (typeof unsubscribeFn === 'function') {
+        unsubscribeFn();
+        unsubscribeFn = null;
+      }
+    })
+  );
+}
+
 
 @Component({
   selector: 'app-account-detail',
@@ -24,11 +162,320 @@ import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
   styleUrls: ['./account-detail.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AccountDetailComponent implements OnInit {
+export class AccountDetailComponent implements OnInit, OnDestroy {
+  id: Observable<string>;
+  account: Observable<AccountInfo>;
+  subs: Observable<any>;
+  identity: Observable<any>;
+  indices: Observable<number>;
+  accountIndex: Observable<AccountIndex | undefined>;
+  accountId: Observable<AccountId | undefined>;
+  accountNonce: Observable<number | undefined>
+  superOf: Observable<Codec | undefined>;
+  subsOf: Observable<any>;
+  subsNames: Observable<string[]>;
+  parent: Observable<any>;
+  parentIdentity: Observable<any>;
+  parentSubsOf: Observable<any>;
+  derivedAccountInfo: Observable<DeriveAccountInfo>;
+  derivedAccountFlags: Observable<DeriveAccountFlags>;
+  derivedBalancesAll: Observable<DeriveBalancesAll>;
+  stakingInfo: Observable<DeriveStakingAccount>;
+  accountBalances: Observable<Partial<AccountBalance>>;
 
-  constructor() { }
+  networkProperties = this.ns.currentNetworkProperties;
+
+  fromBalanceTransfers = new BehaviorSubject<pst.Transfer[]>([]);
+  toBalanceTransfers = new BehaviorSubject<pst.Transfer[]>([]);
+  signedExtrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
+
+  fromBalanceTransferColumns = ['icon', 'block', 'to', 'value', 'details']
+  toBalanceTransferColumns = ['icon', 'block', 'from', 'to', 'value', 'details']
+  signedExtrinsicsColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'details'];
+
+  private unsubscribeFns: Map<string, (() => void)> = new Map();
+  private destroyer: Subject<undefined> = new Subject();
+
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private ns: NetworkService,
+    private pa: PolkadaptService,
+    private cd: ChangeDetectorRef
+  ) {
+  }
 
   ngOnInit(): void {
+    // Wait for network to be set.
+    const idObservable = this.id = this.ns.currentNetwork.pipe(
+      takeUntil(this.destroyer),
+      // Only continue if a network is set.
+      filter(network => !!network),
+      // We don't have to wait for further changes to network, so terminate after first.
+      first(),
+      // Switch to the route param, from which we get the block number.
+      switchMap(() => this.route.params.pipe(
+        takeUntil(this.destroyer)
+      )),
+      map(params => params['id']),
+      filter(id => !!id),
+      distinctUntilChanged()
+    );
+
+    // Remove all active subscriptions when id changes.
+    idObservable.subscribe((id) => {
+      // Try to create the hex for accountId manually.
+      this.unsubscribeFns.forEach((unsub) => unsub());
+      this.unsubscribeFns.clear();
+
+      try {
+        const accountIdHex = u8aToHex(decodeAddress(id));
+        this.fetchAndSubscribeFromTransfers(accountIdHex);
+        this.fetchAndSubscribeToTransfers(accountIdHex);
+        this.fetchAndSubscribeExtrinsics(accountIdHex);
+      } catch (e) {
+        // TODO We ignore all errors for now...
+      }
+    });
+
+    this.account = idObservable.pipe(
+      switchMap((id) => asObservable(this.pa.run().query.system.account, id).pipe(takeUntil(this.destroyer))),
+      takeUntil(this.destroyer),
+      map((account) => account ? account : undefined)
+    );
+
+    const idAndIndexObservable = idObservable.pipe(
+      switchMap((id) => asObservable(this.pa.run().derive.accounts.idAndIndex, id)),
+      takeUntil(this.destroyer),
+      shareReplay(1)
+    );
+
+    this.accountId = idAndIndexObservable.pipe(
+      map((val) => val && val[0] ? val[0] : undefined)
+    );
+
+    this.accountIndex = idAndIndexObservable.pipe(
+      map((val) => val && val[1] ? val[1] : undefined)
+    );
+
+    this.accountNonce = this.account.pipe(
+      takeUntil(this.destroyer),
+      map((account: AccountInfo) => account.nonce ? account.nonce.toNumber() : undefined)
+    );
+
+    this.indices = this.accountIndex.pipe(
+      switchMap((accountIndex) => accountIndex ? asObservable(this.pa.run().query.indices.accounts, accountIndex.toNumber()) : of(undefined)),
+      takeUntil(this.destroyer)
+    )
+
+    this.superOf = idObservable.pipe(
+      switchMap((id) => asObservable(this.pa.run().query.identity.superOf, id)),
+      takeUntil(this.destroyer)
+    );
+
+    this.identity = idObservable.pipe(
+      switchMap((id) => asObservable(this.pa.run().query.identity.identityOf, id)),
+      takeUntil(this.destroyer)
+    );
+
+    this.subsOf = idObservable.pipe(
+      switchMap((id) => asObservable(this.pa.run().query.identity.subsOf, id)),
+      takeUntil(this.destroyer),
+      shareReplay(1)
+    );
+
+    this.derivedAccountInfo = idObservable.pipe(
+      switchMap((id) => asObservable(this.pa.run().derive.accounts.info, id)),
+      takeUntil(this.destroyer)
+    );
+
+    this.derivedAccountFlags = idObservable.pipe(
+      switchMap((id) => asObservable(this.pa.run().derive.accounts.flags, id)),
+      takeUntil(this.destroyer)
+    );
+
+    this.derivedBalancesAll = idObservable.pipe(
+      switchMap((id) => asObservable(this.pa.run().derive.balances.all, id)),
+      takeUntil(this.destroyer)
+    );
+
+    this.stakingInfo = idObservable.pipe(
+      switchMap((id) => asObservable(this.pa.run().derive.staking.account, id)),
+      takeUntil(this.destroyer)
+    );
+
+    this.accountBalances = combineLatest(
+      this.derivedBalancesAll,
+      this.stakingInfo
+    ).pipe(
+      takeUntil(this.destroyer),
+      map(([derivedBalancesAll, stakingInfo]) => {
+        const balances: any = {};
+        if (derivedBalancesAll) {
+            balances.locked = derivedBalancesAll.lockedBalance;
+            balances.total = derivedBalancesAll.freeBalance.add(derivedBalancesAll.reservedBalance);
+            balances.transferrable = derivedBalancesAll.availableBalance;
+            balances.free = derivedBalancesAll.freeBalance;
+            balances.reserved = derivedBalancesAll.reservedBalance;
+        }
+        if (stakingInfo) {
+            balances.bonded = stakingInfo?.stakingLedger.active.unwrap() ?? BN_ZERO;
+            balances.redeemable = stakingInfo?.redeemable ?? BN_ZERO;
+            balances.unbonding = calcUnbonding(stakingInfo);
+        }
+        return balances
+      }),
+      shareReplay(1)
+    );
+
+    this.parent = this.superOf.pipe(
+      switchMap((val: any) => {
+        return val && val.value && val.value[0] ? asObservable(this.pa.run().query.system.account, val.value[0]) : of(undefined)
+      }),
+      takeUntil(this.destroyer)
+    )
+
+    this.parentIdentity = this.superOf.pipe(
+      switchMap((val: any) => val && val.value && val.value[0] ? asObservable(this.pa.run().query.identity.identityOf, val.value[0]) : of(undefined)),
+      takeUntil(this.destroyer)
+    )
+
+    this.parentSubsOf = this.superOf.pipe(
+      switchMap((val: any) => val && val.value && val.value[0] ? asObservable(this.pa.run().query.identity.subsOf, val.value[0]) : of(undefined)),
+      takeUntil(this.destroyer),
+      shareReplay(1)
+    )
+
+    this.subsNames = combineLatest(
+      this.subsOf.pipe(
+        map((subsOf: any) => subsOf && subsOf[1] || [])
+      ),
+      this.parentSubsOf.pipe(
+        map((parentSubsOf: any) => parentSubsOf && parentSubsOf[1] || [])
+      )
+    ).pipe(
+      takeUntil(this.destroyer),
+      switchMap(([subsOf, parentSubsOf]) => {
+        const subs = subsOf && subsOf.length ? subsOf : parentSubsOf && parentSubsOf.length ? parentSubsOf : [];
+        const observables: Observable<any>[] = subs.map((sub: any) => asObservable(this.pa.run().query.identity.superOf, sub).pipe(takeUntil(this.destroyer)))
+        if (observables.length > 0) {
+          return combineLatest(observables);
+        } else {
+          return of([]);
+        }
+      }),
+      map((subsSuperOf: any[]) => {
+        return subsSuperOf.map((subSuperOf: any) => {
+          if (subSuperOf && subSuperOf.value && subSuperOf.value[1]) {
+            const value = subSuperOf.value[1];
+            return value.isRaw
+              ? u8aToString(value.asRaw.toU8a(true))
+              : value.isNone
+                ? undefined
+                : value.toHex();
+          } else {
+            return '';
+          }
+        });
+      })
+    );
+
+    this.subs = combineLatest(
+      this.subsOf.pipe(
+        map((subsOf: any) => subsOf && subsOf[1] || [])
+      ),
+      this.parentSubsOf.pipe(
+        map((parentSubsOf: any) => parentSubsOf && parentSubsOf[1] || [])
+      ),
+      this.subsNames
+    ).pipe(
+      takeUntil(this.destroyer),
+      map(([subsOf, parentSubsOf, subsNames]) => {
+        const subs = subsOf.length ? subsOf : parentSubsOf.length ? parentSubsOf : [];
+        const map = new Map();
+        subs.forEach((sub: any, i: number) => {
+          map.set(sub, subsNames[i]);
+        })
+        return map;
+      }),
+      shareReplay(1)
+    )
+  }
+
+
+  async fetchAndSubscribeExtrinsics(idHex: string): Promise<void> {
+    const extrinsics = await this.pa.run().polkascan.chain.getExtrinsics(
+      {
+        signed: 1,
+        multiAddressAccountId: idHex
+      }, 10);
+    this.signedExtrinsics.next(extrinsics.objects);
+    const signedExtrinsicsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewExtrinsic(
+      {
+        signed: 1,
+        multiAddressAccountId: idHex
+      },
+      () => {
+        //todo
+      });
+
+    this.unsubscribeFns.set('signedExtrinsicsUnsubscribeFn', signedExtrinsicsUnsubscribeFn);
+  }
+
+
+  async fetchAndSubscribeFromTransfers(idHex: string): Promise<void> {
+    const fromTransfers = await this.pa.run().polkascan.chain.getTransfers(
+      {
+        fromMultiAddressAccountId: idHex
+      }, 10);
+    this.fromBalanceTransfers.next(fromTransfers.objects);
+    const fromBalanceTransfersUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewTransfer(
+      {
+        fromMultiAddressAccountId: idHex
+      },
+      () => {
+        // todo
+      });
+
+    this.unsubscribeFns.set('fromBalanceTransfersUnsubscribeFn', fromBalanceTransfersUnsubscribeFn);
+  }
+
+
+  async fetchAndSubscribeToTransfers(idHex: string): Promise<void> {
+    const toTransfers = await this.pa.run().polkascan.chain.getTransfers({
+      toMultiAddressAccountId: idHex
+    }, 10);
+    this.toBalanceTransfers.next(toTransfers.objects);
+    const toBalanceTransfersUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewTransfer(
+      {
+        toMultiAddressAccountId: idHex
+      },
+      () => {
+        // todo
+      });
+
+    this.unsubscribeFns.set('toBalanceTransfersUnsubscribeFn', toBalanceTransfersUnsubscribeFn);
+  }
+
+
+  ngOnDestroy(): void {
+    this.unsubscribeFns.forEach((unsub) => unsub());
+    this.unsubscribeFns.clear();
+    this.destroyer.next(undefined);
+    this.destroyer.complete();
+  }
+
+
+  routeToAccount(address: string) {
+    this.router.navigate([`../../account/${address}`]);
+  }
+
+  signedExtrinsicTrackBy(i: any, extrinsic: pst.Extrinsic): string {
+    return `${extrinsic.blockNumber}-${extrinsic.extrinsicIdx}`;
+  }
+
+  balanceTransfersTrackBy(i: any, transfer: pst.Transfer): string {
+    return `${transfer.blockNumber}-${transfer.eventIdx}`;
   }
 
 }

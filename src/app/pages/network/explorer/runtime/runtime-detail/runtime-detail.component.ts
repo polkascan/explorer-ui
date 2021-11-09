@@ -50,7 +50,7 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
       first(),
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, parseInt(params.specVersion, 10)])
+        map(params => [network, parseInt(params['specVersion'], 10)])
       )),
       switchMap(([network, specVersion]) =>
         this.rs.getRuntime(network as string, specVersion as number).pipe(
@@ -67,7 +67,7 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next();
+    this.destroyer.next(undefined);
     this.destroyer.complete();
   }
 

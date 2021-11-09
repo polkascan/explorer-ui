@@ -43,8 +43,7 @@ type psEvent = {
 })
 export class EventDetailComponent implements OnInit, OnDestroy {
   event: psEvent;
-  tokenDecimals: number;
-  tokenSymbol: string;
+  networkProperties = this.ns.currentNetworkProperties;
 
   private destroyer: Subject<undefined> = new Subject();
   private onDestroyCalled = false;
@@ -63,14 +62,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       filter(network => !!network),
       // Only need to load once.
       first(),
-      tap(() => {
-        this.tokenDecimals = this.ns.tokenDecimals;
-        this.tokenSymbol = this.ns.tokenSymbol;
-      }),
       // Switch over to the route param from which we extract the extrinsic keys.
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => params.id.split('-').map((v: string) => parseInt(v, 10)))
+        map(params => params['id'].split('-').map((v: string) => parseInt(v, 10)))
       ))
     ).subscribe(async ([blockNr, eventIdx]) => {
       const event = await this.pa.run().polkascan.chain.getEvent(blockNr, eventIdx);
@@ -83,7 +78,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.onDestroyCalled = true;
-    this.destroyer.next();
+    this.destroyer.next(undefined);
     this.destroyer.complete();
   }
 }

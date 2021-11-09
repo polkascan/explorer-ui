@@ -18,7 +18,8 @@ export abstract class PaginatedListComponentBase<T> implements OnDestroy {
 
   abstract equalityCompareFn(a: T, b: T): boolean;
 
-  protected network: string;
+  network: string;
+  networkProperties = this._ns.currentNetworkProperties;
 
   pageKey: string | undefined;
   pagePrev: string | null = null;
@@ -223,7 +224,7 @@ export abstract class PaginatedListComponentBase<T> implements OnDestroy {
 
   ngOnDestroy(): void {
     this.onDestroyCalled = true;
-    this.destroyer.next();
+    this.destroyer.next(undefined);
     this.destroyer.complete();
     this.unsubscribeNewItem();
   }

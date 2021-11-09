@@ -37,7 +37,7 @@ import { BeachballIdenticon } from './icons/beachball-identicon';
 import { EthereumIdenticon } from './icons/ethereum-identicon';
 import { isHex, isU8a, u8aToHex } from '@polkadot/util';
 import { decodeAddress, encodeAddress, ethereumEncode } from '@polkadot/util-crypto';
-import type { Prefix } from '@polkadot/util-crypto/address/types';
+import { Prefix } from '@polkadot/util-crypto/address/types';
 
 const identicons = {
   beachball: BeachballIdenticon,
@@ -61,8 +61,8 @@ const defaultSize = 64;
 })
 export class IdenticonComponent implements AfterViewInit, OnChanges {
   @Input() value: string;
-  @Input() size: number;
-  @Input() theme: IconTheme;
+  @Input() size?: number;
+  @Input() theme?: IconTheme;
   @Input() style?: string;
   @Input() isHighlight?: boolean;
   @Input() isAlternative?: boolean;
@@ -85,7 +85,7 @@ export class IdenticonComponent implements AfterViewInit, OnChanges {
       && change.currentValue !== change.previousValue);
 
     if (changed) {
-      if (changes.value && changes.value.previousValue !== changes.value.currentValue) {
+      if (changes['value'] && changes['value'].previousValue !== changes['value'].currentValue) {
         this.parseValue(this.value);
       }
 
@@ -136,7 +136,7 @@ export class IdenticonComponent implements AfterViewInit, OnChanges {
     if (this.host) {
       const identicon = !this.address
         ? identicons.empty
-        : this.customIdenticon || identicons[this.theme] || fallbackIdenticon;
+        : this.customIdenticon || (this.theme ? identicons[this.theme] : undefined) || fallbackIdenticon;
 
       const identiconElement = new identicon({
         address: this.address,

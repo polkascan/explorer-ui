@@ -27,6 +27,7 @@ import {
   ViewEncapsulation
 } from '@angular/core';
 import { IconTheme } from '../identicon/identicon.types';
+import { Prefix } from '@polkadot/util-crypto/address/types';
 
 
 @Component({
@@ -38,6 +39,7 @@ class AttributesBaseComponent implements OnChanges {
   @Input() iconSize: number;
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
+  @Input() ss58Prefix: Prefix;
   @Output() clicked = new EventEmitter();
 
   parsedAttributes: any[] = [];
@@ -46,20 +48,20 @@ class AttributesBaseComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes.attributes) {
+    if (changes['attributes']) {
       let attrs = [];
-      if (changes.attributes.currentValue) {
-        if (typeof changes.attributes.currentValue === 'string') {
+      if (changes['attributes'].currentValue) {
+        if (typeof changes['attributes'].currentValue === 'string') {
           try {
-            const parsed = JSON.parse(changes.attributes.currentValue);
+            const parsed = JSON.parse(changes['attributes'].currentValue);
             if (Array.isArray(parsed)) {
               attrs = parsed;
             }
           } catch (e) {
             // Do nothing
           }
-        } else if (Array.isArray(changes.attributes.currentValue)) {
-          attrs = changes.attributes.currentValue;
+        } else if (Array.isArray(changes['attributes'].currentValue)) {
+          attrs = changes['attributes'].currentValue;
         }
       }
 

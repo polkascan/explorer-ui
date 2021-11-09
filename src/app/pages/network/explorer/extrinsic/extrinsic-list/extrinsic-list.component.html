@@ -18,7 +18,7 @@
     <ng-container matColumnDef="extrinsicID">
       <th mat-header-cell *matHeaderCellDef>Extrinsic ID</th>
       <td mat-cell *matCellDef="let extrinsic">
-        <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber}}-{{extrinsic.extrinsicIdx}}</a>
+        <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
       </td>
     </ng-container>
 

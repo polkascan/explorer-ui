@@ -33,8 +33,7 @@ import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 export class LogDetailComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
   log: pst.Log;
-  tokenDecimals: number;
-  tokenSymbol: string;
+  networkProperties = this.ns.currentNetworkProperties;
 
   constructor(private route: ActivatedRoute,
               private cd: ChangeDetectorRef,
@@ -48,14 +47,10 @@ export class LogDetailComponent implements OnInit, OnDestroy {
       filter(network => !!network),
       // Only need to load once.
       first(),
-      tap(() => {
-        this.tokenDecimals = this.ns.tokenDecimals;
-        this.tokenSymbol = this.ns.tokenSymbol;
-      }),
       // Switch over to the route param from which we extract the extrinsic keys.
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => params.id.split('-').map((v: string) => parseInt(v, 10)))
+        map(params => params['id'].split('-').map((v: string) => parseInt(v, 10)))
       ))
     ).subscribe(async ([blockNr, logIdx]) => {
       this.log =
@@ -65,7 +60,7 @@ export class LogDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next();
+    this.destroyer.next(undefined);
     this.destroyer.complete();
   }
 }

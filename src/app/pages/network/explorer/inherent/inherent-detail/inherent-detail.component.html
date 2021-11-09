@@ -1,34 +1,41 @@
 <ng-container *ngIf="inherent">
-  <div>Block <a [routerLink]="'../../block/' + inherent.blockNumber">#{{inherent.blockNumber}}</a></div>
-  <div>Timestamp: {{inherent.blockDatetime | date: 'medium'}}</div>
-  <div>Inherent Index: {{inherent.extrinsicIdx}}</div>
-  <div>Pallet: {{inherent.callModule}}</div>
-  <div>Call: {{inherent.callName}}</div>
+  <ng-container *ngIf="(networkProperties | async) as props">
+    <div>Block <a [routerLink]="'../../block/' + inherent.blockNumber">#{{inherent.blockNumber}}</a></div>
+    <div>Timestamp: {{inherent.blockDatetime | date: 'medium'}}</div>
+    <div>Inherent Index: {{inherent.extrinsicIdx}}</div>
+    <div>Pallet: {{inherent.callModule}}</div>
+    <div>Call: {{inherent.callName}}</div>
 
-  <h2>Call Arguments</h2>
-  <ng-container *ngIf="callArguments">
-    <extrinsic-attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></extrinsic-attributes>
-  </ng-container>
+    <h2>Call Arguments</h2>
+    <ng-container *ngIf="callArguments">
+      <extrinsic-attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24"
+                            [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                            [ss58Prefix]="props.ss58Prefix">
 
-  <h2>Tiggered Events</h2>
-  <table *ngIf="events">
-    <thead>
+      </extrinsic-attributes>
+    </ng-container>
+
+    <h2>Tiggered Events</h2>
+    <table *ngIf="events">
+      <thead>
       <tr>
         <th>Event ID</th>
         <th>Pallet</th>
         <th>Event</th>
         <th></th>
       </tr>
-    </thead>
-    <tbody>
+      </thead>
+      <tbody>
       <ng-container *ngFor="let event of events">
         <tr>
-          <td><a [routerLink]="'../../event/' + inherent.blockNumber + '-' + event.eventIdx">{{inherent.blockNumber}}-{{event.eventIdx}}</a></td>
+          <td><a [routerLink]="'../../event/' + inherent.blockNumber + '-' + event.eventIdx">
+            {{inherent.blockNumber + '-' + event.eventIdx}}</a></td>
           <td>{{event.eventModule}}</td>
           <td>{{event.eventName}}</td>
           <td><a [routerLink]="'../../event/' + inherent.blockNumber + '-' + event.eventIdx">Details</a></td>
         </tr>
       </ng-container>
-    </tbody>
-  </table>
+      </tbody>
+    </table>
+  </ng-container>
 </ng-container>

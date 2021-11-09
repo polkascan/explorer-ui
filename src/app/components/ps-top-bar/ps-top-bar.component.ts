@@ -82,7 +82,7 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next();
+    this.destroyer.next(undefined);
   }
 }
 

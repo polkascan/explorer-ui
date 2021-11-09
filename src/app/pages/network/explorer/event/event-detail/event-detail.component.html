@@ -1,14 +1,22 @@
 <ng-container *ngIf="event">
-  <h1>Event: #{{event.blockNumber}}-{{event.eventIdx}}</h1>
-  <div>Block: <a [routerLink]="'../../block/' + event.blockNumber">{{event.blockNumber}}</a></div>
-<!--  <div>Referenced Transaction: <a [routerLink]="'../../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a></div>-->
-  <div>Extrinsic: <a [routerLink]="'../../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a></div>
-  <div>Event Index: {{event.eventIdx}}</div>
-  <div>Module: {{event.eventModule}}</div>
-  <div>Event name: {{event.eventName}}</div>
+  <ng-container *ngIf="(networkProperties | async) as props">
+    <h1>Event: #{{event.blockNumber}}-{{event.eventIdx}}</h1>
+    <div>Block: <a [routerLink]="'../../block/' + event.blockNumber">{{event.blockNumber}}</a></div>
+    <!--  <div>Referenced Transaction: <a [routerLink]="'../../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a></div>-->
+    <div>Extrinsic:
+      <a [routerLink]="'../../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">
+        {{event.blockNumber + '-' + event.extrinsicIdx}}
+      </a>
+    </div>
+    <div>Event Index: {{event.eventIdx}}</div>
+    <div>Module: {{event.eventModule}}</div>
+    <div>Event name: {{event.eventName}}</div>
 
-  <div *ngIf="event.attributes">
-    <div><b>Attributes</b></div>
-    <event-attributes [attributes]="event.attributes" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></event-attributes>
-  </div>
+    <div *ngIf="event.attributes">
+      <div><b>Attributes</b></div>
+      <event-attributes [attributes]="event.attributes" [iconTheme]="'polkadot'" [iconSize]="24"
+                        [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                        [ss58Prefix]="props.ss58Prefix"></event-attributes>
+    </div>
+  </ng-container>
 </ng-container>

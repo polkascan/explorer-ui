@@ -18,10 +18,10 @@
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { Subject } from 'rxjs';
+import { ReplaySubject, Subject } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { NetworkService } from '../../../../../services/network.service';
+import { NetworkProperties, NetworkService } from '../../../../../services/network.service';
 import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
@@ -34,8 +34,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   transaction: pst.Extrinsic;
   callArguments: any;
   events: pst.Event[];
-  tokenDecimals: number;
-  tokenSymbol: string;
+  networkProperties = this.ns.currentNetworkProperties;
 
   private destroyer: Subject<undefined> = new Subject();
   private onDestroyCalled = false;
@@ -54,14 +53,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       filter(network => !!network),
       // Only need to load once.
       first(),
-      tap(() => {
-        this.tokenDecimals = this.ns.tokenDecimals;
-        this.tokenSymbol = this.ns.tokenSymbol;
-      }),
       // Switch over to the route param from which we extract the extrinsic keys.
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => params.id.split('-').map((v: string) => parseInt(v, 10)))
+        map(params => params['id'].split('-').map((v: string) => parseInt(v, 10)))
       ))
     ).subscribe(async ([blockNr, extrinsicIdx]) => {
       try {
@@ -89,7 +84,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.onDestroyCalled = true;
-    this.destroyer.next();
+    this.destroyer.next(undefined);
     this.destroyer.complete();
   }
 }

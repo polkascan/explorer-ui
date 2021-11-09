@@ -23,7 +23,7 @@ import { ExtrinsicRoutingModule } from './extrinsic-routing.module';
 import { ExtrinsicListComponent } from './extrinsic-list/extrinsic-list.component';
 import { ExtrinsicDetailComponent } from './extrinsic-detail/extrinsic-detail.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
+import { PolkascanCommonModule } from '../../../../../common-components/polkascan-common.module';
 import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';
@@ -36,7 +36,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     CommonModule,
     ReactiveFormsModule,
     ExtrinsicRoutingModule,
-    PolkadotAngularLibModule,
+    PolkascanCommonModule,
     MatTableModule,
     MatCheckboxModule,
     MatButtonModule,

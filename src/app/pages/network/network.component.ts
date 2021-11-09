@@ -42,7 +42,7 @@ export class NetworkComponent implements OnInit, OnDestroy {
     this.route.params
       .pipe(
         takeUntil(this.destroyer),
-        map((p) => p.network),
+        map((p) => p['network']),
         distinctUntilChanged()
       )
       .subscribe((network: string) => {
@@ -71,7 +71,7 @@ export class NetworkComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next();
+    this.destroyer.next(undefined);
     this.destroyer.complete();
     this.ns.destroy();
     this.vars.network.next('none');

@@ -23,7 +23,7 @@ import { InherentRoutingModule } from './inherent-routing.module';
 import { InherentListComponent } from './inherent-list/inherent-list.component';
 import { InherentDetailComponent } from './inherent-detail/inherent-detail.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { PolkadotAngularLibModule } from '../../../../../substrate-components-lib/polkadot-angular-lib.module';
+import { PolkascanCommonModule } from '../../../../../common-components/polkascan-common.module';
 import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
@@ -36,7 +36,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     CommonModule,
     ReactiveFormsModule,
     InherentRoutingModule,
-    PolkadotAngularLibModule,
+    PolkascanCommonModule,
     MatTableModule,
     MatSelectModule,
     MatButtonModule,

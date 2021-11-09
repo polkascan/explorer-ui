@@ -2,15 +2,19 @@
   <ng-container [ngSwitch]="attribute.type">
 
     <attribute-address *ngSwitchCase="'Address'" [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize"
+                       [ss58Prefix]="ss58Prefix"
                        (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-address>
     <attribute-address *ngSwitchCase="'AuthorityId'" [attribute]="attribute" [iconTheme]="iconTheme"
                        [iconSize]="iconSize"
+                       [ss58Prefix]="ss58Prefix"
                        (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-address>
     <attribute-address *ngSwitchCase="'<Lookup as StaticLookup>::Source'" [attribute]="attribute"
                        [iconTheme]="iconTheme" [iconSize]="iconSize"
+                       [ss58Prefix]="ss58Prefix"
                        (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-address>
     <attribute-address *ngSwitchCase="'AccountId'" [attribute]="attribute" [iconTheme]="iconTheme"
                        [iconSize]="iconSize"
+                       [ss58Prefix]="ss58Prefix"
                        (clicked)="clicked.next({ type: attribute.type, value: $event })"></attribute-address>
 
     <attribute-proposal *ngSwitchCase="'PropIndex'" [attribute]="attribute"

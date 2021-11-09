@@ -19,17 +19,15 @@
 import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, ViewEncapsulation } from '@angular/core';
 
 @Component({
-  selector: 'attribute-balance',
+  selector: 'balance',
   template: `
-    <ng-container *ngIf="attribute">
-      {{ tokenSymbol }} {{ convertedValue | number: '1.0-15' }}
-    </ng-container>
+    {{ tokenSymbol }} {{ convertedValue }}
   `,
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AttributeBalanceComponent implements OnChanges {
-  @Input() attribute: { type: string, value: number };
+export class BalanceCommonComponent implements OnChanges {
+  @Input() value: number;
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
 
@@ -40,15 +38,15 @@ export class AttributeBalanceComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes.tokenDecimals) {
+    if (changes['tokenDecimals']) {
       this.decimals = Math.max(0, this.tokenDecimals) || 0;
     }
 
-    if (changes.tokenDecimals || changes.attribute || changes.decimals) {
+    if (changes['tokenDecimals'] || changes['value']) {
       let converted: number | null;
 
       try {
-        converted = Math.max(0, this.attribute.value) / Math.pow(10, this.decimals);
+        converted = Math.max(0, this.value) / Math.pow(10, this.decimals);
       } catch (e) {
         converted = null;
       }

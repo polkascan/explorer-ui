@@ -40,7 +40,7 @@
     <ng-container matColumnDef="inherentID">
       <th mat-header-cell *matHeaderCellDef>Inherent ID</th>
       <td mat-cell *matCellDef="let inherent">
-        <a [routerLink]="inherent.blockNumber + '-' + inherent.extrinsicIdx">{{inherent.blockNumber}}-{{inherent.extrinsicIdx}}</a>
+        <a [routerLink]="inherent.blockNumber + '-' + inherent.extrinsicIdx">{{inherent.blockNumber + '-' + inherent.extrinsicIdx}}</a>
       </td>
     </ng-container>
 

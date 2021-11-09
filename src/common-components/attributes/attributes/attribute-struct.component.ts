@@ -75,8 +75,8 @@ export class AttributeStructComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes.attribute) {
-      let attribute = changes.attribute.currentValue;
+    if (changes['attribute']) {
+      let attribute = changes['attribute'].currentValue;
 
       try {
         // Check if attribute is a JSON string, if so parse it.

@@ -49,7 +49,7 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, params.specVersion, params.pallet, params.constantName])
+        map(params => [network, params['specVersion'], params['pallet'], params['constantName']])
       )),
       switchMap(([network, specVersion, pallet, constantName]) =>
         this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(
@@ -70,7 +70,7 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next();
+    this.destroyer.next(undefined);
     this.destroyer.complete();
   }
 }

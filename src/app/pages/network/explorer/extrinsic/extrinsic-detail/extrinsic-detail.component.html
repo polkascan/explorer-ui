@@ -1,38 +1,44 @@
 <ng-container *ngIf="extrinsic">
-  <div>Block <a [routerLink]="'../../block/' + extrinsic.blockNumber">#{{extrinsic.blockNumber}}</a></div>
-  <div>Timestamp: {{extrinsic.blockDatetime | date: 'medium'}}</div>
-  <div>Extrinsic Index: {{extrinsic.extrinsicIdx}}</div>
-  <div>Extrinsic hash: {{extrinsic.hash}}</div>
-  <div>Pallet: {{extrinsic.callModule}}</div>
-  <div>Call: {{extrinsic.callName}}</div>
-  <div>Address: {{extrinsic.blockHash}}</div>
-  <div>Nonce: {{extrinsic.nonce}}</div>
-  <div>Signature: {{extrinsic.signature}}</div>
+  <ng-container *ngIf="(networkProperties | async) as props">
+    <div>Block <a [routerLink]="'../../block/' + extrinsic.blockNumber">#{{extrinsic.blockNumber}}</a></div>
+    <div>Timestamp: {{extrinsic.blockDatetime | date: 'medium'}}</div>
+    <div>Extrinsic Index: {{extrinsic.extrinsicIdx}}</div>
+    <div>Extrinsic hash: {{extrinsic.hash}}</div>
+    <div>Pallet: {{extrinsic.callModule}}</div>
+    <div>Call: {{extrinsic.callName}}</div>
+    <div>Address: {{extrinsic.blockHash}}</div>
+    <div>Nonce: {{extrinsic.nonce}}</div>
+    <div>Signature: {{extrinsic.signature}}</div>
 
-  <h2>Call Arguments</h2>
-  <ng-container *ngIf="callArguments">
-    <extrinsic-attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></extrinsic-attributes>
-  </ng-container>
+    <h2>Call Arguments</h2>
+    <ng-container *ngIf="callArguments">
+      <extrinsic-attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24"
+                            [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                            [ss58Prefix]="props.ss58Prefix">
+      </extrinsic-attributes>
+    </ng-container>
 
-  <h2>Events</h2>
-  <table *ngIf="events">
-    <thead>
+    <h2>Events</h2>
+    <table *ngIf="events">
+      <thead>
       <tr>
         <th>Event ID</th>
         <th>Pallet</th>
         <th>Event</th>
         <th></th>
       </tr>
-    </thead>
-    <tbody>
+      </thead>
+      <tbody>
       <ng-container *ngFor="let event of events">
         <tr>
-          <td><a [routerLink]="'../../event/' + extrinsic.blockNumber + '-' + event.eventIdx">{{event.eventIdx}}</a></td>
+          <td><a [routerLink]="'../../event/' + extrinsic.blockNumber + '-' + event.eventIdx">{{event.eventIdx}}</a>
+          </td>
           <td>{{event.eventModule}}</td>
           <td>{{event.eventName}}</td>
           <td><a [routerLink]="'../../event/' + extrinsic.blockNumber + '-' + event.eventIdx">Details</a></td>
         </tr>
       </ng-container>
-    </tbody>
-  </table>
+      </tbody>
+    </table>
+  </ng-container>
 </ng-container>
