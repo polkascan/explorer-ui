@@ -114,14 +114,14 @@ export class NetworkService {
   }
 
   get ss58Prefix(): number | undefined {
-    return this.currentNetworkProperties.value && this.currentNetworkProperties.value.ss58Prefix;
+    return this.currentNetworkProperties.value?.ss58Prefix;
   }
 
   get tokenSymbol(): string | undefined {
-    return this.currentNetworkProperties.value && this.currentNetworkProperties.value.tokenSymbol;
+    return this.currentNetworkProperties.value?.tokenSymbol;
   }
 
   get tokenDecimals(): number | undefined {
-    return this.currentNetworkProperties.value && this.currentNetworkProperties.value.tokenDecimals;
+    return this.currentNetworkProperties.value?.tokenDecimals;
   }
 }

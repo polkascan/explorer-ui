@@ -182,7 +182,7 @@ export class PolkadaptService {
   configureSubstrateRpcUrl(): void {
     const network: string = this.currentNetwork;
     const substrateRpcUrls = this.config.networks[network].substrateRpcUrlArray;
-    let substrateRpcUrl = window.localStorage.getItem('lastUsedSubstrateRpcUrl');
+    let substrateRpcUrl = window.localStorage.getItem(`lastUsedSubstrateRpcUrl-${network}`);
     if (!substrateRpcUrl) {
       const badSubstrateRpcUrls = this.badAdapterUrls[network].substrateRpc;
       if (badSubstrateRpcUrls.length >= substrateRpcUrls.length) {
@@ -190,7 +190,7 @@ export class PolkadaptService {
         badSubstrateRpcUrls.length = 0;
       }
       substrateRpcUrl = substrateRpcUrls.filter(url => !badSubstrateRpcUrls.includes(url))[0];
-      window.localStorage.setItem('lastUsedSubstrateRpcUrl', substrateRpcUrl);
+      window.localStorage.setItem(`lastUsedSubstrateRpcUrl-${network}`, substrateRpcUrl);
     }
     this.availableAdapters[network].substrateRpc.setUrl(substrateRpcUrl);
     this.substrateRpcUrl.next(substrateRpcUrl);
@@ -200,7 +200,7 @@ export class PolkadaptService {
     if (this.substrateRpcUrl.value) {
       const badSubstrateRpcUrls = this.badAdapterUrls[this.currentNetwork].substrateRpc;
       badSubstrateRpcUrls.push(this.substrateRpcUrl.value);
-      window.localStorage.removeItem('lastUsedSubstrateRpcUrl');
+      window.localStorage.removeItem(`lastUsedSubstrateRpcUrl-${this.currentNetwork}`);
       if (badSubstrateRpcUrls.length < this.config.networks[this.currentNetwork].substrateRpcUrlArray.length) {
         this.configureSubstrateRpcUrl();
         if (this.polkascanRegistered.value) {
@@ -217,7 +217,7 @@ export class PolkadaptService {
   }
 
   async setSubstrateRpcUrl(url: string): Promise<void> {
-    window.localStorage.setItem('lastUsedSubstrateRpcUrl', url);
+    window.localStorage.setItem(`lastUsedSubstrateRpcUrl-${this.currentNetwork}`, url);
     this.availableAdapters[this.currentNetwork].substrateRpc.setUrl(url);
     this.substrateRpcUrl.next(url);
     if (this.substrateRpcRegistered.value) {
@@ -233,7 +233,7 @@ export class PolkadaptService {
   configurePolkascanWsUrl(): void {
     const network: string = this.currentNetwork;
     const polkascanWsUrls = this.config.networks[network].polkascanWsUrlArray;
-    let polkascanWsUrl = window.localStorage.getItem('lastUsedPolkascanWsUrl');
+    let polkascanWsUrl = window.localStorage.getItem(`lastUsedPolkascanWsUrl-${network}`);
     if (!polkascanWsUrl) {
       const badPolkascanWsUrls = this.badAdapterUrls[network].polkascanApi;
       if (badPolkascanWsUrls.length >= polkascanWsUrls.length) {
@@ -241,7 +241,7 @@ export class PolkadaptService {
         badPolkascanWsUrls.length = 0;
       }
       polkascanWsUrl = polkascanWsUrls.filter(url => !badPolkascanWsUrls.includes(url))[0];
-      window.localStorage.setItem('lastUsedPolkascanWsUrl', polkascanWsUrl);
+      window.localStorage.setItem(`lastUsedPolkascanWsUrl-${network}`, polkascanWsUrl);
     }
     this.availableAdapters[network].polkascanApi.setWsUrl(polkascanWsUrl);
     this.polkascanWsUrl.next(polkascanWsUrl);
@@ -251,7 +251,7 @@ export class PolkadaptService {
     if (this.polkascanWsUrl.value) {
       const badPolkascanWsUrls = this.badAdapterUrls[this.currentNetwork].polkascanApi;
       badPolkascanWsUrls.push(this.polkascanWsUrl.value);
-      window.localStorage.removeItem('lastUsedPolkascanWsUrl');
+      window.localStorage.removeItem(`lastUsedPolkascanWsUrl-${this.currentNetwork}`);
       if (badPolkascanWsUrls.length < this.config.networks[this.currentNetwork].polkascanWsUrlArray.length) {
         this.configurePolkascanWsUrl();
         if (this.polkascanRegistered.value) {
@@ -268,7 +268,7 @@ export class PolkadaptService {
   }
 
   async setPolkascanWsUrl(url: string): Promise<void> {
-    window.localStorage.setItem('lastUsedPolkascanWsUrl', url);
+    window.localStorage.setItem(`lastUsedPolkascanWsUrl-${this.currentNetwork}`, url);
     this.availableAdapters[this.currentNetwork].polkascanApi.setWsUrl(url);
     this.polkascanWsUrl.next(url);
     if (this.polkascanRegistered.value) {

@@ -24,7 +24,9 @@ import { BehaviorSubject, of, Subject } from 'rxjs';
 import { catchError, distinctUntilChanged, filter, first, switchMap, takeUntil, tap, timeout } from 'rxjs/operators';
 import { Block } from '../../../services/block/block.harvester';
 import { AppConfig } from '../../../app-config';
-import { FormControl, FormGroup } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ValidationErrors } from '@angular/forms';
+import { validateAddress } from '@polkadot/util-crypto'
+import { ActivatedRoute, Router } from '@angular/router';
 
 
 const blocksAnimation = trigger('blocksAnimation', [
@@ -61,6 +63,9 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   blockListSize = 10;
   latestBlockNumber = new BehaviorSubject<number>(0);
   blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
+  searchForm = new FormGroup({
+    search: new FormControl('', [this.searchValidator()])
+  })
   substrateRpcUrlForm = new FormGroup({
     url: new FormControl('')
   });
@@ -71,7 +76,9 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   constructor(
     public pa: PolkadaptService,
     public ns: NetworkService,
-    private config: AppConfig
+    private config: AppConfig,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -87,6 +94,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       tap(() => {
         this.latestBlockNumber.next(0);
         this.blocks.next([]);
+        this.searchForm.controls['search'].setValue('');
       }),
       // Wait for the first most recent finalized block to arrive from Polkascan.
       switchMap(() => this.ns.blockHarvester.finalizedNumber.pipe(
@@ -150,6 +158,59 @@ export class ExplorerComponent implements OnInit, OnDestroy {
 
   trackByNumber(index: number, item: BehaviorSubject<Block>): number {
     return item.value.number;
+  }
+
+  searchValidator() {
+    const ns = this.ns;
+    return (control: AbstractControl): ValidationErrors | null => {
+      const value = control.value.trim();
+      if (value === ''  // Nothing
+        || value.startsWith('0x')  // Extrinsic ID
+        || /^\d+-\d+$/.test(value)  // Extrinsic block-index format
+        || /^\d+$/.test(value)) {  // Block number
+        return null;
+      } else {
+        let validAddress: boolean;
+        try {
+          validAddress = validateAddress(value);
+        } catch (e) {
+          validAddress = false;
+        }
+        if (validAddress) {
+          // Check if address belongs to this network/chain.
+          try {
+            validateAddress(value, false, ns.ss58Prefix);
+            return null;
+          } catch (e) {
+            return {wrongNetwork: {value}};
+          }
+        }
+      }
+      return {wrongFormat: {value}};
+    }
+  }
+
+  submitSearch() {
+    if (this.searchForm.valid) {
+      const value = this.searchForm.value.search.trim();
+      if (value) {
+        if (value.startsWith('0x') || /^\d+-\d+$/.test(value)) {
+          this.router.navigate(['extrinsic', value], {relativeTo: this.route});
+        } else if (/^\d+$/.test(value)) {
+          this.router.navigate(['block', value], {relativeTo: this.route});
+        } else {
+          let validAddress: boolean;
+          try {
+            validAddress = validateAddress(value, false, this.ns.ss58Prefix)
+          } catch (e) {
+            validAddress = false;
+          }
+          if (validAddress) {
+            this.router.navigate(['account', value], {relativeTo: this.route});
+          }
+        }
+      }
+    }
   }
 
   async submitSubstrateRpcUrl(): Promise<void> {
