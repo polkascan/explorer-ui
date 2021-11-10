@@ -20,13 +20,18 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NetworkComponent } from './network.component';
 import { NetworkRoutingModule } from './network-routing.module';
+import { ExplorerMenuComponent } from '../../components/explorer-menu/explorer-menu.component';
 
 
 @NgModule({
-  declarations: [NetworkComponent],
+  declarations: [
+    NetworkComponent,
+    ExplorerMenuComponent
+  ],
   imports: [
     CommonModule,
-    NetworkRoutingModule
+    NetworkRoutingModule,
   ]
 })
-export class NetworkModule { }
+export class NetworkModule {
+}

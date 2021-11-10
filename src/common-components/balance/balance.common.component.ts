@@ -21,7 +21,9 @@ import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, Vi
 @Component({
   selector: 'balance',
   template: `
-    {{ tokenSymbol }} {{ convertedValue }}
+    <ng-container *ngIf="convertedValue !== null">
+        {{ tokenSymbol }} {{ convertedValue }}
+    </ng-container>
   `,
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -31,7 +33,7 @@ export class BalanceCommonComponent implements OnChanges {
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
 
-  convertedValue: number | null;
+  convertedValue: number | null = null;
   private decimals: number;
 
   constructor() {
@@ -47,9 +49,13 @@ export class BalanceCommonComponent implements OnChanges {
 
       try {
         converted = Math.max(0, this.value) / Math.pow(10, this.decimals);
+        if (isNaN(converted)) {
+          converted = null;
+        }
       } catch (e) {
         converted = null;
       }
+
 
       this.convertedValue = converted;
     }

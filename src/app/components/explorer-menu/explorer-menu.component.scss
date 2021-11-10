@@ -1,0 +1,46 @@
+.explorer-menu__container {
+  z-index: 1000;
+  position: relative;
+  height: 4.25rem;
+  padding: 0 2rem;
+}
+
+.explorer-menu__container:hover {
+ .explorer-menu__drop-down-container {
+   max-height: none;
+ }
+}
+
+.explorer-menu__drop-down-container {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  max-height: 4.25rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  background: #fff;
+  border-bottom: solid 1px #aaaaaa;
+
+  &:after {
+    content: " ";
+  }
+}
+
+.explorer-menu__group {
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+}
+
+.explorer-menu__item {
+  height: 4.25rem;
+  line-height: 4.25rem;
+}
+
+.explorer-menu__sub-item {
+  min-height: 3rem;
+}

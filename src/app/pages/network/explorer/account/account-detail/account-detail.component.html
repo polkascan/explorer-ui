@@ -109,26 +109,9 @@
         </ng-container>
 
 
-        <h2>Flags</h2>
-        <div *ngIf="(derivedAccountFlags | async) as daf">
-          <div *ngIf="daf.isCouncil">
-            Is coucil member
-          </div>
-          <div *ngIf="daf.isSociety">
-            Is society member
-          </div>
-          <div *ngIf="daf.isSudo">
-            Is sudo member
-          </div>
-          <div *ngIf="daf.isTechCommittee">
-            Is Technical Committee member
-          </div>
-        </div>
-
-        <div>
+        <div *ngIf="((subs | async) | keyvalue) as subsMap">
           <h2>Accounts</h2>
 
-          <ng-container *ngIf="((subs | async) | keyvalue) as subsMap">
             <div *ngIf="dai?.identity?.parent">
               Parent:
               <identicon [value]="$any(dai.identity.parent)" [theme]="'polkadot'" [size]="16"
@@ -143,8 +126,6 @@
               <a [routerLink]="'../' + $any(sub.key).toHuman()">{{ $any(sub.key).toHuman() }}</a>
               <ng-container *ngIf="sub.value">- {{sub.value}}</ng-container>
             </div>
-
-          </ng-container>
         </div>
 
 

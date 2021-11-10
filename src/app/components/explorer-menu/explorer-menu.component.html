@@ -1,0 +1,30 @@
+<nav class="explorer-menu__container" #menuContainer>
+  <div class="explorer-menu__drop-down-container">
+    <div class="explorer-menu__group">
+      <div class="explorer-menu__item"><a routerLink="explorer">Dashboard</a></div>
+    </div>
+    <div class="explorer-menu__group">
+      <div class="explorer-menu__item">Chain <i class="fas fa-chevron-down"></i></div>
+      <div class="explorer-menu__sub-items">
+        <div class="explorer-menu__sub-item"><a routerLink="explorer/block">Blocks</a></div>
+        <div class="explorer-menu__sub-item"><a routerLink="explorer/transaction">Transactions</a></div>
+        <div class="explorer-menu__sub-item"><a routerLink="explorer/inherent">Inherents</a></div>
+        <div class="explorer-menu__sub-item"><a routerLink="explorer/extrinsic">Extrinsics</a></div>
+        <div class="explorer-menu__sub-item"><a routerLink="explorer/event">Events</a></div>
+        <div class="explorer-menu__sub-item"><a routerLink="explorer/log">Logs</a></div>
+      </div>
+    </div>
+    <div class="explorer-menu__group">
+      <div class="explorer-menu__item">Accounts <i class="fas fa-chevron-down"></i></div>
+      <div class="explorer-menu__sub-items">
+        <div class="explorer-menu__sub-item"><a routerLink="explorer/balances/transfer">Transfers</a></div>
+      </div>
+    </div>
+    <div class="explorer-menu__group">
+      <div class="explorer-menu__item">Runtime <i class="fas fa-chevron-down"></i></div>
+      <div class="explorer-menu__sub-items">
+        <div class="explorer-menu__sub-item"><a routerLink="explorer/runtime">Upgrade history</a></div>
+      </div>
+    </div>
+  </div>
+</nav>
