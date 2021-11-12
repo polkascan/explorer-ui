@@ -36,7 +36,7 @@ const blocksAnimation = trigger('blocksAnimation', [
         style({opacity: 0, width: 0, transform: 'scale(0.5)', 'transform-origin': 'left center'}),
         stagger('60ms',
           animate('400ms cubic-bezier(0.25, 0.25, 0.2, 1.3)',
-            style({opacity: 1, width: '120px', transform: 'scale(1)'})
+            style({opacity: 1, width: '10%', transform: 'scale(1)'})
           )
         )
       ],

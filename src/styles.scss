@@ -52,8 +52,10 @@ $polkascan-ui-theme: mat.define-light-theme((
 
 
 :root {
-  --ps-top-bar-bg-color: #000;
-  --ps-top-bar-text-color: #fff;
+  --ps-top-bar-bg-color: #350659;
+  --ps-top-bar-text-color: #FFF;
+  --ps-top-bar-logo-text-color: #FFF;
+  --ps-top-bar-logo-dot-color: #FF6482;
   --ps-grid-column-padding: 10px;
 }
 

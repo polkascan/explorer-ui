@@ -28,7 +28,7 @@
 .block-outer {
   box-sizing: border-box;
   flex: 0 0 auto;
-  width: 120px;
+  width: 10%;
 }
 
 .block-inner {
@@ -37,13 +37,10 @@
   display: flex;
   align-content: flex-start;
   flex-flow: row wrap;
-  width: 100px;
+  margin-right: 10px;
   min-height: 100px;
   max-height: 100px;
   overflow: hidden;
-  padding: 10px;
-  background: #020024;
-  background-origin: padding-box;
   text-decoration: none;
   font-size: 0.8rem;
   transition: max-height 400ms, background-color 400ms;
@@ -66,21 +63,21 @@
 
   .transaction,
   .event {
-    margin: 0 4px 4px 0;
+    margin: 0 3px 3px 0;
     flex: 0 0 6px;
     height: 6px;
     border-radius: 50%;
   }
 
   .transaction {
-    background: #ff1493;
+    background: #cf25ff;
   }
 
   .event {
-    background: lightgreen;
+    background: #ff6482;
   }
 }
 
 .search {
-  width: 50vw;
+  width: 100%;
 }

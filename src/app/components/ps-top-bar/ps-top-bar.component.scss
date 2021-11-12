@@ -18,29 +18,43 @@
 
 ps-top-bar {
   display: flex;
-  height: 4.25rem;
-  padding: 0 2rem;
-  align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   background: var(--ps-top-bar-bg-color);
   color: var(--ps-top-bar-text-color);
 }
 
+.ps-top-bar-container {
+  display: flex;
+  height: 50px;
+  width: 100%;
+  max-width: 1000px;
+  box-sizing: border-box;
+  padding: 0 20px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .ps-top-bar-brand {
-  height: 60%;
+  display: block;
+  margin-right: auto;
+}
+
+.ps-top-bar-brand path:first-child {
+  fill: var(--ps-top-bar-logo-text-color);
+}
+.ps-top-bar-brand path:last-child {
+  fill: var(--ps-top-bar-logo-dot-color);
+}
+
+.ps-top-bar-brand svg {
+  width: 93px;
+  height: 40px;
   order: 0;
 }
 
 .ps-top-bar-brand-img {
   height: 100%;
   object-fit: contain;
-}
-
-.ps-top-bar-selectors {
-  order: 1;
-
-  display: flex;
-  align-items: baseline;
 }
 
 .ps-top-bar-block-nr {
