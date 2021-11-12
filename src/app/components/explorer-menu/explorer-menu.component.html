@@ -1,30 +1,26 @@
-<nav class="explorer-menu__container" #menuContainer>
-  <div class="explorer-menu__drop-down-container">
-    <div class="explorer-menu__group">
-      <div class="explorer-menu__item"><a routerLink="explorer">Dashboard</a></div>
-    </div>
-    <div class="explorer-menu__group">
-      <div class="explorer-menu__item">Chain <i class="fas fa-chevron-down"></i></div>
-      <div class="explorer-menu__sub-items">
-        <div class="explorer-menu__sub-item"><a routerLink="explorer/block">Blocks</a></div>
-        <div class="explorer-menu__sub-item"><a routerLink="explorer/transaction">Transactions</a></div>
-        <div class="explorer-menu__sub-item"><a routerLink="explorer/inherent">Inherents</a></div>
-        <div class="explorer-menu__sub-item"><a routerLink="explorer/extrinsic">Extrinsics</a></div>
-        <div class="explorer-menu__sub-item"><a routerLink="explorer/event">Events</a></div>
-        <div class="explorer-menu__sub-item"><a routerLink="explorer/log">Logs</a></div>
-      </div>
-    </div>
-    <div class="explorer-menu__group">
-      <div class="explorer-menu__item">Accounts <i class="fas fa-chevron-down"></i></div>
-      <div class="explorer-menu__sub-items">
-        <div class="explorer-menu__sub-item"><a routerLink="explorer/balances/transfer">Transfers</a></div>
-      </div>
-    </div>
-    <div class="explorer-menu__group">
-      <div class="explorer-menu__item">Runtime <i class="fas fa-chevron-down"></i></div>
-      <div class="explorer-menu__sub-items">
-        <div class="explorer-menu__sub-item"><a routerLink="explorer/runtime">Upgrade history</a></div>
-      </div>
-    </div>
-  </div>
+<nav *ngIf="(network | async) as name" class="explorer-menu__container">
+
+  <div class="explorer-menu__network-name"><i>{{ name }}</i></div>
+
+  <button mat-flat-button routerLink="explorer">Dashboard</button>
+
+  <button mat-button [matMenuTriggerFor]="menuChain">Chain <i class="fas fa-chevron-down"></i></button>
+  <mat-menu #menuChain="matMenu">
+    <button mat-menu-item routerLink="explorer/block">Blocks</button>
+    <button mat-menu-item routerLink="explorer/transaction">Transactions</button>
+    <button mat-menu-item routerLink="explorer/inherent">Inherents</button>
+    <button mat-menu-item routerLink="explorer/extrinsic">Extrinsics</button>
+    <button mat-menu-item routerLink="explorer/event">Events</button>
+    <button mat-menu-item routerLink="explorer/log">Logs</button>
+  </mat-menu>
+
+  <button mat-button [matMenuTriggerFor]="menuAccounts">Accounts <i class="fas fa-chevron-down"></i></button>
+  <mat-menu #menuAccounts="matMenu">
+    <button mat-menu-item routerLink="explorer/balances/transfer">Transfers</button>
+  </mat-menu>
+
+  <button mat-button [matMenuTriggerFor]="menuRuntime">Runtime <i class="fas fa-chevron-down"></i></button>
+  <mat-menu #menuRuntime="matMenu">
+    <button mat-menu-item routerLink="explorer/runtime">Upgrade history</button>
+  </mat-menu>
 </nav>

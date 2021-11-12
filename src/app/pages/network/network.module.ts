@@ -21,6 +21,8 @@ import { CommonModule } from '@angular/common';
 import { NetworkComponent } from './network.component';
 import { NetworkRoutingModule } from './network-routing.module';
 import { ExplorerMenuComponent } from '../../components/explorer-menu/explorer-menu.component';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatButtonModule } from '@angular/material/button';
 
 
 @NgModule({
@@ -31,6 +33,8 @@ import { ExplorerMenuComponent } from '../../components/explorer-menu/explorer-m
   imports: [
     CommonModule,
     NetworkRoutingModule,
+    MatMenuModule,
+    MatButtonModule
   ]
 })
 export class NetworkModule {
