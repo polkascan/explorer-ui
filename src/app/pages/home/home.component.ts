@@ -21,12 +21,12 @@ import { AppConfig } from '../../app-config';
 
 
 @Component({
-  templateUrl: 'temp-home.component.html',
-  styleUrls: ['temp-home.component.scss'],
+  templateUrl: 'home.component.html',
+  styleUrls: ['home.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None
 })
-export class TempHomeComponent implements OnInit {
+export class HomeComponent implements OnInit {
   networks: string[];
 
   constructor(private config: AppConfig) {

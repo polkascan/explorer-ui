@@ -23,18 +23,24 @@ import { NetworkRoutingModule } from './network-routing.module';
 import { ExplorerMenuComponent } from '../../components/explorer-menu/explorer-menu.component';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatButtonModule } from '@angular/material/button';
+import { PsTopBarComponent } from '../../components/ps-top-bar/ps-top-bar.component';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatSelectModule } from '@angular/material/select';
 
 
 @NgModule({
   declarations: [
     NetworkComponent,
-    ExplorerMenuComponent
+    ExplorerMenuComponent,
+    PsTopBarComponent,
   ],
   imports: [
     CommonModule,
     NetworkRoutingModule,
     MatMenuModule,
-    MatButtonModule
+    MatButtonModule,
+    ReactiveFormsModule,
+    MatSelectModule
   ]
 })
 export class NetworkModule {

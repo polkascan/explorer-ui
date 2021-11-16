@@ -1,0 +1,142 @@
+/*!
+ * Polkascan Explorer UI
+ * Copyright (C) 2018-2021 Polkascan Foundation (NL)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+.home {
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+@keyframes sunrise-logo {
+  from {
+    transform: translate(-20%, 100%);
+  }
+  to {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes sunrise-circle {
+  from {
+    fill: #cf25ff;
+  }
+  to {
+    fill: #fa7878;
+  }
+}
+
+@keyframes sunrise-circle-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sunrise-polka {
+  from {
+    fill: transparent;
+  }
+  to {
+    fill: white;
+  }
+}
+
+@keyframes sunrise-sky {
+  from {
+    background-position: top;
+  }
+  to {
+    background-position: bottom;
+  }
+}
+
+.home-header {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  height: 150px;
+  background: radial-gradient(at 30% 150%, #cf25ff, #350659 50%, #000) bottom;
+  background-size: 100% 400px;
+  text-indent: -9999px;
+  overflow: hidden;
+  animation: sunrise-sky 1s ease-out;
+
+  svg {
+    content: ' ';
+    position: absolute;
+    bottom: 30px;
+    left: 30%;
+    width: 189px;
+    animation: sunrise-logo 1s ease-out;
+  }
+
+  circle {
+    opacity: 0;
+    animation: sunrise-circle 1s ease-out backwards, sunrise-circle-out 200ms 1.3s ease-out backwards;
+  }
+
+  path:nth-of-type(1) {
+    animation: sunrise-polka 200ms 1s linear backwards;
+  }
+
+  path:nth-of-type(2) {
+    fill: #fa7878;
+  }
+
+}
+
+.home-buttons {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-between;
+  padding: 24px 0;
+}
+.home {
+  .home-button {
+    display: block;
+    flex: 0 0 auto;
+    width: 150px;
+    padding-top: 186px;
+    background-size: 148px auto;
+    background-repeat: no-repeat;
+    background-position: 50% 20px;
+    color: #000;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .home-button--polkadot {
+    background-image: url('../../../assets/polkadot.svg');
+  }
+
+  .home-button--kusama {
+    background-image: url(data:image/gif;base64,R0lGODlhgACAAOMPAAAAAP///0ADIkcyPWddYtcMcp2Ym5R0hcjFx+zq68+TsvGv0uZlp9g0ifrS5jczMyH+EUNyZWF0ZWQgd2l0aCBHSU1QACH5BAEDAA8ALAAAAACAAIAAAAT+EMhJq7046827/2AojmRpnmiqrmzrvnAsz3Rt33iu73zv/8CgcEgsGo/IpHLJbDqf0Kh0Sq1ar9isdsvter/gsHhMLpvP6LR6zW673/C4fE6vKwmIPOIgsIfwAYGCCQR+HQMIgoqCBoYaBAmLkgEIA44WkJOTCZaXEgeaoYSeBqGmnIaIppoJBp1Ar0EDBpGriwl8E30+A7G8tLaSjRW7PcW8CLXBisNEvjuzysuCCEcEBs06wNOShXSZ3JLVc6rhkwdzB9Lmg89r5ezicdvx3W+A9ZPjbNH5mtlpwPmThEoNvIHy1KhDyMqdmIMMFwEkQy/ion1l8FlMaKbiRkbmZwR+HOSNDMSRrY6NuYbNI8IEld4l+xjToMuBCEqi6bcx57ub/nCtEQA0qMMxRUUlgJlnnSB0aRZOg2mAwKtZiQi+OApEqi2qDgcQYJk1EEYWvYocKGsKQdU/is6y0PlDIyu3XDcoS/DibRC7BN2qHAFKEF0ueJyadcWiLILBWk62ylvC8RdwS1sddiF1IpYD2A70ggwDnFxPGwbU8om6g123rTUgcmsAtAHBsXPr3s27d40BAgRQdiGgQHDhx30rX868ufPn0KNLn069uvXr2LNr3869u/fv4MOLH0++vPnz6NPviAAAOw==);
+  }
+
+  .home-button--acala {
+    background-image: url('../../../assets/acala.svg');
+  }
+
+  .home-button--rococo {
+    background-image: url('../../../assets/rococo.svg');
+  }
+}

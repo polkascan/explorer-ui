@@ -34,7 +34,7 @@ export class NetworkComponent implements OnInit, OnDestroy {
 
   constructor(private route: ActivatedRoute,
               private ns: NetworkService,
-              private vars: VariablesService) {
+              public vars: VariablesService) {
   }
 
   ngOnInit(): void {

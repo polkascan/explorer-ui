@@ -19,7 +19,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { PageNotFoundComponent } from './pages/page-not-found/page-not-found.component';
-import { TempHomeComponent } from './components/temp-home/temp-home.component';
+import { HomeComponent } from './pages/home/home.component';
 
 const routes: Routes = [
   {
@@ -34,7 +34,7 @@ const routes: Routes = [
     path: 'legal',
     loadChildren: () => import('./pages/legal/legal.module').then(m => m.LegalModule)
   },
-  {path: '', component: TempHomeComponent, pathMatch: 'full'},
+  {path: '', component: HomeComponent, pathMatch: 'full'},
   {path: '**', component: PageNotFoundComponent}
 ];
 
