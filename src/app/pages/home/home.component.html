@@ -10,7 +10,7 @@
     </svg>
   </h1>
 
-  <div class="home-buttons page-container">
+  <div class="home-buttons width-container">
     <mat-card *ngFor="let network of networks" [routerLink]="'/n/' + network" tabindex="0"
        matRipple
        class="home-button home-button--{{ network }}">

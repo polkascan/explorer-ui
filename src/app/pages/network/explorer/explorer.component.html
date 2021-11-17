@@ -1,98 +1,43 @@
-<form [formGroup]="searchForm" (ngSubmit)="submitSearch()">
-  <mat-form-field class="search" appearance="outline">
-    <mat-label>Search for account, transaction or block</mat-label>
-    <input matInput formControlName="search" placeholder="Account address, transaction hash or block number">
-    <button mat-icon-button matSuffix type="submit" [attr.aria-label]="'Search'">
-      <mat-icon>search</mat-icon>
-    </button>
-    <mat-error *ngIf="searchForm.controls['search'].hasError('wrongNetwork')">
-      This address does not belong to the {{ns.currentNetwork|async}} network. Do you need to switch to another network?
-    </mat-error>
-    <mat-error *ngIf="searchForm.controls['search'].hasError('wrongFormat')">
-      Please enter a valid account address, transaction hash or block number.
-    </mat-error>
-  </mat-form-field>
-</form>
+<ng-container *ngIf="ns.currentNetwork|async">
 
-<div class="last-block" *ngIf="((latestBlockNumber|async) || 0) > 0">
-  {{latestBlockNumber|async}}
-</div>
+  <form [formGroup]="searchForm" (ngSubmit)="submitSearch()">
+    <mat-form-field class="search" appearance="outline">
+      <mat-label>Search for account, transaction or block</mat-label>
+      <input matInput formControlName="search" placeholder="Account address, transaction hash or block number">
+      <button mat-icon-button matSuffix type="submit" [attr.aria-label]="'Search'">
+        <mat-icon>search</mat-icon>
+      </button>
+      <mat-error *ngIf="searchForm.controls['search'].hasError('wrongNetwork')">
+        This address does not belong to the {{ns.currentNetwork|async}} network. Do you need to switch to another network?
+      </mat-error>
+      <mat-error *ngIf="searchForm.controls['search'].hasError('wrongFormat')">
+        Please enter a valid account address, transaction hash or block number.
+      </mat-error>
+    </mat-form-field>
+  </form>
 
-<div class="blocks" [@blocksAnimation]="latestBlockNumber|async">
-  <div class="block-outer" *ngFor="let block$ of blocks|async; trackBy: trackByNumber">
-    <ng-container *ngIf="block$|async as block">
-      <a class="block-inner" [class.finalized]="block.finalized" [routerLink]="'block/' + block.number" [@blockContentAnimation]="block.extrinsics.length">
-        <!-- TODO fees and weight visualization -->
-        <span class="number">{{block.number}}</span>
-        <span class="transaction" *ngFor="let i of block.extrinsics"></span>
-        <span class="event" *ngFor="let i of block.events"></span>
-      </a>
-    </ng-container>
+  <div class="last-block" *ngIf="((latestBlockNumber|async) || 0) > 0">
+    {{latestBlockNumber|async}}
   </div>
-</div>
 
-<div>
-  <form [formGroup]="substrateRpcUrlForm" (ngSubmit)="submitSubstrateRpcUrl()">
-    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
-      <mat-label>{{ns.currentNetwork|async}} node URL</mat-label>
-      <input type="text"
-             placeholder="Enter URL"
-             aria-label="URL"
-             matInput
-             formControlName="url"
-             [matAutocomplete]="substrateUrlOptionsAuto">
-      <mat-autocomplete #substrateUrlOptionsAuto="matAutocomplete" (optionSelected)="submitSubstrateRpcUrl()">
-        <mat-option *ngFor="let option of pa.substrateRpcUrls|async" [value]="option">
-          {{option}}
-        </mat-option>
-      </mat-autocomplete>
-      <span class="mat-select-arrow" style="position: absolute; right: 0; top: 10px;"></span>
-    </mat-form-field>
-    <button mat-stroked-button color="primary" type="submit" style="margin-right: 10px;">Connect</button>
-    <ng-container [ngSwitch]="pa.substrateRpcRegistered|async">
-      <ng-container *ngSwitchCase="true">
-        <ng-container [ngSwitch]="pa.substrateRpcConnected|async">
-          <span *ngSwitchCase="true" style="color: green">(connected)</span>
-          <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
-        </ng-container>
+  <div class="blocks" [@blocksAnimation]="latestBlockNumber|async">
+    <div class="block-outer" *ngFor="let block$ of blocks|async; trackBy: trackByNumber">
+      <ng-container *ngIf="block$|async as block">
+        <a class="block-inner" [class.finalized]="block.finalized" [routerLink]="'block/' + block.number" [@blockContentAnimation]="block.extrinsics.length">
+          <span class="number">
+            {{block.number.toString().slice(0, -2)}}<strong>{{block.number.toString().slice(-2)}}</strong>
+          </span>
+          <span class="transaction" *ngFor="let i of block.extrinsics"></span>
+          <span class="event" *ngFor="let i of block.events"></span>
+        </a>
       </ng-container>
-      <ng-container *ngSwitchCase="false">
-        <span style="color: red;">(connection error)</span>
-      </ng-container>
-    </ng-container>
-  </form>
-</div>
+    </div>
+  </div>
 
-<div>
-  <form [formGroup]="polkascanWsUrlForm" (ngSubmit)="submitPolkascanWsUrl()">
-    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
-      <mat-label>{{ns.currentNetwork|async}} Polkascan URL</mat-label>
-      <input type="text"
-             placeholder="Enter URL"
-             aria-label="URL"
-             matInput
-             formControlName="url"
-             [matAutocomplete]="polkascanWsUrlOptionsAuto">
-      <mat-autocomplete #polkascanWsUrlOptionsAuto="matAutocomplete" (optionSelected)="submitPolkascanWsUrl()">
-        <mat-option *ngFor="let option of pa.polkascanWsUrls|async" [value]="option">
-          {{option}}
-        </mat-option>
-      </mat-autocomplete>
-      <span class="mat-select-arrow" style="position: absolute; right: 0; top: 10px;"></span>
-    </mat-form-field>
-    <button mat-stroked-button color="primary" type="submit" style="margin-right: 10px;">Connect</button>
-    <ng-container [ngSwitch]="pa.polkascanRegistered|async">
-      <ng-container *ngSwitchCase="true">
-        <ng-container [ngSwitch]="pa.polkascanWsConnected|async">
-          <span *ngSwitchCase="true" style="color: green">(connected)</span>
-          <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
-        </ng-container>
-      </ng-container>
-      <ng-container *ngSwitchCase="false">
-        <span style="color: red;">(connection error)</span>
-      </ng-container>
-    </ng-container>
+</ng-container>
 
-    <span style="margin-left: 10px; color: red;" *ngIf="(pa.polkascanDataErrors|async)?.length as dataErrorCount">{{ dataErrorCount }} errors</span>
-  </form>
-</div>
+<p *ngIf="!(ns.currentNetwork|async) && ((pa.substrateRpcRegistered|async) && !(pa.substrateRpcConnected|async) || (pa.polkascanRegistered|async) && !(pa.polkascanWsConnected|async) || !(pa.substrateRpcRegistered|async) || !(pa.polkascanRegistered|async))">
+  Initializing...
+</p>
+
+<p *ngIf="!(pa.substrateRpcRegistered|async) && !(pa.polkascanRegistered|async)" style="color: red">Connection error! Please try again later or try a different endpoint.</p>

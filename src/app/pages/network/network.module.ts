@@ -20,12 +20,19 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NetworkComponent } from './network.component';
 import { NetworkRoutingModule } from './network-routing.module';
+import { PsTopBarComponent } from '../../components/ps-top-bar/ps-top-bar.component';
+import { PsConnectionDialogComponent } from '../../components/ps-connection-dialog/ps-connection-dialog.component';
 import { ExplorerMenuComponent } from '../../components/explorer-menu/explorer-menu.component';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatButtonModule } from '@angular/material/button';
-import { PsTopBarComponent } from '../../components/ps-top-bar/ps-top-bar.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatSelectModule } from '@angular/material/select';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatOptionModule } from '@angular/material/core';
+import { MatDialogModule } from '@angular/material/dialog';
 
 
 @NgModule({
@@ -33,14 +40,21 @@ import { MatSelectModule } from '@angular/material/select';
     NetworkComponent,
     ExplorerMenuComponent,
     PsTopBarComponent,
+    PsConnectionDialogComponent
   ],
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     NetworkRoutingModule,
     MatMenuModule,
     MatButtonModule,
-    ReactiveFormsModule,
-    MatSelectModule
+    MatSelectModule,
+    MatFormFieldModule,
+    MatAutocompleteModule,
+    MatOptionModule,
+    MatInputModule,
+    MatIconModule,
+    MatDialogModule
   ]
 })
 export class NetworkModule {

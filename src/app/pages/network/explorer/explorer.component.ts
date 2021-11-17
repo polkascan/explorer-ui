@@ -27,6 +27,7 @@ import { AppConfig } from '../../../app-config';
 import { AbstractControl, FormControl, FormGroup, ValidationErrors } from '@angular/forms';
 import { validateAddress } from '@polkadot/util-crypto'
 import { ActivatedRoute, Router } from '@angular/router';
+import { VariablesService } from '../../../services/variables.service';
 
 
 const blocksAnimation = trigger('blocksAnimation', [
@@ -56,8 +57,8 @@ const blockContentAnimation = trigger('blockContentAnimation', [
     query('.transaction:enter, .event:enter',
       [
         style({opacity: 0}),
-        stagger('60ms',
-          animate('400ms cubic-bezier(0.25, 0.25, 0.2, 1.3)',
+        stagger('40ms',
+          animate('200ms cubic-bezier(0.25, 0.25, 0.2, 1.3)',
             style({opacity: 1})
           )
         )
@@ -81,16 +82,11 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   searchForm = new FormGroup({
     search: new FormControl('', [this.searchValidator()])
   })
-  substrateRpcUrlForm = new FormGroup({
-    url: new FormControl('')
-  });
-  polkascanWsUrlForm = new FormGroup({
-    url: new FormControl('')
-  });
 
   constructor(
     public pa: PolkadaptService,
     public ns: NetworkService,
+    private vars: VariablesService,
     private config: AppConfig,
     private router: Router,
     private route: ActivatedRoute
@@ -144,12 +140,16 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.pa.substrateRpcUrl.pipe(takeUntil(this.destroyer)).subscribe(url => {
-      this.substrateRpcUrlForm.setValue({url});
-    });
-
-    this.pa.polkascanWsUrl.pipe(takeUntil(this.destroyer)).subscribe(url => {
-      this.polkascanWsUrlForm.setValue({url});
+    // Watch the network variable that changes as soon as another network is *selected* by the user,
+    // whereas the currentNetwork variable is only changed after initialization.
+    this.vars.network.pipe(
+      takeUntil(this.destroyer),
+      filter(network => !!network),
+      distinctUntilChanged()
+    ).subscribe(() => {
+      this.latestBlockNumber.next(0);
+      this.blocks.next([]);
+      this.searchForm.controls['search'].setValue('');
     });
   }
 
@@ -226,13 +226,5 @@ export class ExplorerComponent implements OnInit, OnDestroy {
         }
       }
     }
-  }
-
-  async submitSubstrateRpcUrl(): Promise<void> {
-    await this.pa.setSubstrateRpcUrl(this.substrateRpcUrlForm.value.url);
-  }
-
-  async submitPolkascanWsUrl(): Promise<void> {
-    await this.pa.setPolkascanWsUrl(this.polkascanWsUrlForm.value.url);
   }
 }

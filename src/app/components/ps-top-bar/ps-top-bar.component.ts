@@ -26,12 +26,15 @@ import {
   Renderer2,
   ViewEncapsulation
 } from '@angular/core';
-import { FormControl } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { AppConfig } from '../../app-config';
 import { VariablesService } from '../../services/variables.service';
+import { PolkadaptService } from '../../services/polkadapt.service';
+import { NetworkService } from '../../services/network.service';
+import { MatDialog } from '@angular/material/dialog';
+import { PsConnectionDialogComponent } from '../ps-connection-dialog/ps-connection-dialog.component';
 
 @Component({
   templateUrl: 'ps-top-bar.component.html',
@@ -42,8 +45,7 @@ import { VariablesService } from '../../services/variables.service';
 })
 export class PsTopBarComponent implements OnInit, OnDestroy {
   networks: string[];
-  networkControl: FormControl = new FormControl('');
-  languageControl: FormControl = new FormControl('');
+  networkLabel = new BehaviorSubject('');
 
   private destroyer = new Subject();
 
@@ -52,21 +54,14 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
               private cd: ChangeDetectorRef,
               private router: Router,
               private config: AppConfig,
-              public vars: VariablesService) {
+              public pa: PolkadaptService,
+              public ns: NetworkService,
+              public vars: VariablesService,
+              public dialog: MatDialog) {
   }
 
   ngOnInit(): void {
     this.networks = Object.keys(this.config.networks);
-
-    this.networkControl.valueChanges
-      .pipe(
-        distinctUntilChanged(),
-        takeUntil(this.destroyer)
-      )
-      .subscribe((value) => {
-        this.router.navigateByUrl(`/n/${value}`);
-      });
-
     this.vars.network
       .pipe(
         takeUntil(this.destroyer),
@@ -74,15 +69,25 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
       )
       .subscribe((network) => {
         if (network) {
-          this.networkControl.setValue(network, {onlySelf: true, emitEvent: false});
+          this.networkLabel.next('Network');
         } else {
-          this.networkControl.reset('', {onlySelf: true, emitEvent: false});
+          this.networkLabel.next(network);
         }
       });
   }
 
   ngOnDestroy(): void {
     this.destroyer.next(undefined);
+  }
+
+  setNetwork(network: string): void {
+    this.router.navigateByUrl(`/n/${network}`);
+  }
+
+  openConnectionDialog(): void {
+    this.dialog.open(PsConnectionDialogComponent, {
+      width: '600px'
+    });
   }
 }
 

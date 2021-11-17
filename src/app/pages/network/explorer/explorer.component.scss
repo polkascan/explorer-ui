@@ -22,7 +22,8 @@
 
 .blocks {
   display: flex;
-  height: 81px;
+  margin: 15px 0;
+  height: 107px;
 }
 
 .block-outer {
@@ -34,11 +35,11 @@
 
 .block-inner {
   position: relative;
-  box-sizing: border-box;
   display: flex;
   align-content: flex-start;
   flex-flow: row wrap;
   margin-right: 15px;
+  padding-top: 26px;
   height: 81px;
   max-height: 81px;
   overflow: hidden;
@@ -47,19 +48,24 @@
   transition: max-height 400ms, background-color 400ms;
 
   &.finalized {
-    background: #556b2f;
+
   }
 
   &:hover {
-    max-height: none;
+    max-height: 100vh;
     overflow: visible;
   }
 
   .number {
     position: absolute;
-    bottom: 100%;
+    top: 0;
     left: 0;
-    color: #222;
+    color: #777;
+
+    strong {
+      margin-left: 0.1em;
+      color: #222;
+    }
   }
 
   .transaction,
@@ -80,5 +86,6 @@
 }
 
 .search {
+  margin-top: 15px;
   width: 100%;
 }

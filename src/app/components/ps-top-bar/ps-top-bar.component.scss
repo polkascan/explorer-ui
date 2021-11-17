@@ -21,17 +21,13 @@ ps-top-bar {
   justify-content: center;
   background: var(--ps-top-bar-bg-color);
   color: var(--ps-top-bar-text-color);
-}
 
-.ps-top-bar-container {
-  display: flex;
-  height: 50px;
-  width: 100%;
-  max-width: 1000px;
-  box-sizing: border-box;
-  padding: 0 20px;
-  align-items: center;
-  justify-content: flex-end;
+  .width-container {
+    display: flex;
+    height: 50px;
+    align-items: center;
+    justify-content: flex-end;
+  }
 }
 
 .ps-top-bar-brand {
@@ -39,10 +35,10 @@ ps-top-bar {
   margin-right: auto;
 }
 
-.ps-top-bar-brand path:first-child {
+.ps-top-bar-brand .logo-text {
   fill: var(--ps-top-bar-logo-text-color);
 }
-.ps-top-bar-brand path:last-child {
+.ps-top-bar-brand .logo-circle {
   fill: var(--ps-top-bar-logo-dot-color);
 }
 
@@ -61,16 +57,31 @@ ps-top-bar {
   margin: 0 0.3rem;
 }
 
-.ps-top-bar-network-selector {
+@keyframes breathe {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
-.ps-top-bar-language-selector {
+.connecting {
+  animation: breathe 1s infinite;
 }
 
-.mat-form-field-appearance-fill .mat-form-field-flex {
-  background: white;
-}
-
-.mat-form-field-wrapper {
-  margin-bottom: -1.34375em;
+.network-polkadot {
+  ps-top-bar {
+    background: pink;
+    color: #000;
+  }
+  .logo-text {
+    fill: #000;
+  }
+  .logo-circle {
+    fill: white;
+  }
 }

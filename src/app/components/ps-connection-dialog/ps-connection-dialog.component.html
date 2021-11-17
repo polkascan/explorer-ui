@@ -1,0 +1,68 @@
+<h1 mat-dialog-title>{{vars.network|async}} connection</h1>
+<div mat-dialog-content>
+  <p>Select or enter connection endpoints:</p>
+    <form [formGroup]="substrateRpcUrlForm" (ngSubmit)="submitSubstrateRpcUrl()">
+      <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+        <mat-label>{{vars.network|async}} node URL</mat-label>
+        <input type="text"
+               placeholder="Enter URL"
+               aria-label="URL"
+               matInput
+               formControlName="url"
+               [matAutocomplete]="substrateUrlOptionsAuto">
+        <mat-autocomplete #substrateUrlOptionsAuto="matAutocomplete" (optionSelected)="submitSubstrateRpcUrl()">
+          <mat-option *ngFor="let option of pa.substrateRpcUrls|async" [value]="option">
+            {{option}}
+          </mat-option>
+        </mat-autocomplete>
+        <span class="mat-select-arrow" style="position: absolute; right: 0; top: 10px;"></span>
+      </mat-form-field>
+      <button mat-stroked-button color="primary" type="submit" style="margin-right: 10px;">Connect</button>
+      <ng-container [ngSwitch]="pa.substrateRpcRegistered|async">
+        <ng-container *ngSwitchCase="true">
+          <ng-container [ngSwitch]="pa.substrateRpcConnected|async">
+            <span *ngSwitchCase="true" style="color: green">(connected)</span>
+            <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
+          </ng-container>
+        </ng-container>
+        <ng-container *ngSwitchCase="false">
+          <span style="color: red;">(error)</span>
+        </ng-container>
+      </ng-container>
+    </form>
+
+    <form [formGroup]="polkascanWsUrlForm" (ngSubmit)="submitPolkascanWsUrl()">
+      <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+        <mat-label>{{vars.network|async}} Polkascan URL</mat-label>
+        <input type="text"
+               placeholder="Enter URL"
+               aria-label="URL"
+               matInput
+               formControlName="url"
+               [matAutocomplete]="polkascanWsUrlOptionsAuto">
+        <mat-autocomplete #polkascanWsUrlOptionsAuto="matAutocomplete" (optionSelected)="submitPolkascanWsUrl()">
+          <mat-option *ngFor="let option of pa.polkascanWsUrls|async" [value]="option">
+            {{option}}
+          </mat-option>
+        </mat-autocomplete>
+        <span class="mat-select-arrow" style="position: absolute; right: 0; top: 10px;"></span>
+      </mat-form-field>
+      <button mat-stroked-button color="primary" type="submit" style="margin-right: 10px;">Connect</button>
+      <ng-container [ngSwitch]="pa.polkascanRegistered|async">
+        <ng-container *ngSwitchCase="true">
+          <ng-container [ngSwitch]="pa.polkascanWsConnected|async">
+            <span *ngSwitchCase="true" style="color: green">(connected)</span>
+            <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
+          </ng-container>
+        </ng-container>
+        <ng-container *ngSwitchCase="false">
+          <span style="color: red;">(error)</span>
+        </ng-container>
+      </ng-container>
+
+      <span style="margin-left: 10px; color: red;" *ngIf="(pa.polkascanDataErrors|async)?.length as dataErrorCount">{{ dataErrorCount }} errors</span>
+    </form>
+</div>
+<div mat-dialog-actions>
+  <button mat-button mat-dialog-close cdkFocusInitial>Close</button>
+</div>

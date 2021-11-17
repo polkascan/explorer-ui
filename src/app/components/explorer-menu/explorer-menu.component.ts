@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, ViewEncapsulation } from '@angular/core';
-import { NetworkService } from '../../services/network.service';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { VariablesService } from '../../services/variables.service';
 
 @Component({
   templateUrl: 'explorer-menu.component.html',
@@ -13,8 +13,8 @@ import { map } from 'rxjs/operators';
 export class ExplorerMenuComponent {
   network: Observable<string>;
 
-  constructor(private ns: NetworkService) {
-    this.network = this.ns.currentNetwork.pipe(map((network) => {
+  constructor(private vars: VariablesService) {
+    this.network = this.vars.network.pipe(map((network) => {
       // Find image or something else?
       return network ? network : '';
     }));

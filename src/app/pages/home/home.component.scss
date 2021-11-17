@@ -75,7 +75,7 @@
   background-size: 100% 400px;
   text-indent: -9999px;
   overflow: hidden;
-  animation: sunrise-sky 1s ease-out;
+  animation: sunrise-sky 5s ease-out;
 
   svg {
     content: ' ';
@@ -83,16 +83,16 @@
     bottom: 30px;
     left: 30%;
     width: 189px;
-    animation: sunrise-logo 1s ease-out;
+    animation: sunrise-logo 5s ease-out;
   }
 
   circle {
     opacity: 0;
-    animation: sunrise-circle 1s ease-out backwards, sunrise-circle-out 200ms 1.3s ease-out backwards;
+    animation: sunrise-circle 4s ease-out backwards, sunrise-circle-out 200ms 4.3s ease-out backwards;
   }
 
   path:nth-of-type(1) {
-    animation: sunrise-polka 200ms 1s linear backwards;
+    animation: sunrise-polka 200ms 4s linear backwards;
   }
 
   path:nth-of-type(2) {
