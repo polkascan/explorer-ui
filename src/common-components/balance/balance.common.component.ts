@@ -22,7 +22,7 @@ import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, Vi
   selector: 'balance',
   template: `
     <ng-container *ngIf="convertedValue !== null">
-        {{ tokenSymbol }} {{ convertedValue }}
+      {{ convertedValue }} {{ tokenSymbol }}
     </ng-container>
   `,
   encapsulation: ViewEncapsulation.None,

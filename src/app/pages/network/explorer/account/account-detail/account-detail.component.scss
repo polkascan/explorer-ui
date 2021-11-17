@@ -19,3 +19,20 @@
 table {
   width: 100%;
 }
+
+.account-address {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.account-address-identicon {
+  padding: 0.5rem;
+}
+
+.account-address-readable {
+  font-size: 120%;
+}
+

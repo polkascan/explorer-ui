@@ -79,3 +79,26 @@ attribute-struct {
     display: block;
   }
 }
+
+.detail-table {
+  border-spacing: 0;
+
+  th {
+    text-align: right;
+    color: #350659;
+    font-weight: normal;
+    font-style: italic;
+    font-size: 85%;
+    min-width: 8rem;
+  }
+
+  td, th {
+    border-bottom: solid 1px #350659;
+    padding: 0.5rem;
+  }
+
+  td {
+    width: 100%;
+  }
+}
+

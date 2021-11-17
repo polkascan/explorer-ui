@@ -29,7 +29,7 @@ import {
   shareReplay,
   startWith,
   switchMap,
-  takeUntil
+  takeUntil, tap
 } from 'rxjs/operators';
 import { BehaviorSubject, combineLatest, Observable, of, Subject, Subscriber } from 'rxjs';
 import {
@@ -256,7 +256,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     );
 
     this.accountNonce = this.account.pipe(
-      map((account: AccountInfo) => account.nonce ? account.nonce.toNumber() : undefined)
+      map((account: AccountInfo) => account && account.nonce ? account.nonce.toNumber() : undefined)
     );
 
     this.indices = this.accountIndex.pipe(
@@ -409,8 +409,15 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         signed: 1,
         multiAddressAccountId: idHex
       },
-      () => {
-        //todo
+      (extrinsic) => {
+        const extrisics = this.signedExtrinsics.value;
+        if (extrisics) {
+          const result = extrisics
+            .filter((e) => e.blockNumber !== extrinsic.blockNumber && e.extrinsicIdx !== extrinsic.extrinsicIdx)
+            .splice(0, 0, extrinsic);
+
+          this.signedExtrinsics.next(result);
+        }
       });
 
     this.unsubscribeFns.set('signedExtrinsicsUnsubscribeFn', signedExtrinsicsUnsubscribeFn);
@@ -427,8 +434,16 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       {
         fromMultiAddressAccountId: idHex
       },
-      () => {
-        // todo
+      (transfer) => {
+        const transfers = this.fromBalanceTransfers.value;
+        if (transfers) {
+          const result = transfers
+            .filter((t) => t.blockNumber !== transfer.blockNumber && t.eventIdx !== transfer.eventIdx)
+            .splice(0, 0, transfer);
+
+          this.fromBalanceTransfers.next(result);
+        }
+
       });
 
     this.unsubscribeFns.set('fromBalanceTransfersUnsubscribeFn', fromBalanceTransfersUnsubscribeFn);
@@ -444,8 +459,15 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       {
         toMultiAddressAccountId: idHex
       },
-      () => {
-        // todo
+      (transfer) => {
+        const transfers = this.toBalanceTransfers.value;
+        if (transfers) {
+          const result = transfers
+            .filter((t) => t.blockNumber !== transfer.blockNumber && t.eventIdx !== transfer.eventIdx)
+            .splice(0, 0, transfer);
+
+          this.toBalanceTransfers.next(result);
+        }
       });
 
     this.unsubscribeFns.set('toBalanceTransfersUnsubscribeFn', toBalanceTransfersUnsubscribeFn);

@@ -1,8 +1,14 @@
+<h1>Account</h1>
+
 <ng-template #noAccount>
   <ng-container *ngIf="(networkProperties | async) as props">
     <div *ngIf="(id | async) as address">
-      <identicon [value]="address" [theme]="'polkadot'" [size]="64" [prefix]="props.ss58Prefix"></identicon>
-      {{ address }}
+      <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
+        <div class="account-address-identicon">
+          <identicon [value]="address" [theme]="'polkadot'" [size]="64" [prefix]="props.ss58Prefix"></identicon>
+        </div>
+        <div class="account-address-readable">{{ address }}</div>
+      </div>
     </div>
   </ng-container>
 
@@ -14,292 +20,396 @@
   <ng-container *ngIf="(networkProperties | async) as props">
     <ng-container *ngIf="(derivedAccountInfo | async) as dai">
 
-      <div *ngIf="(accountId | async)?.toHuman() as address">
-        <identicon [value]="address" [theme]="'polkadot'" [size]="64" [prefix]="props.ss58Prefix"></identicon>
-        {{ address }}
+      <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
+        <div class="account-address-identicon">
+          <identicon [value]="address" [theme]="'polkadot'" [size]="64" [prefix]="props.ss58Prefix"></identicon>
+        </div>
+        <div class="account-address-readable">{{ address }}</div>
       </div>
 
-      <h3>Identity</h3>
-      <ng-container *ngIf="dai.identity as idn">
-        <div [ngSwitch]="!!(idn.parent)">
-          <ng-container *ngSwitchCase="true">
-            <b>{{ idn.displayParent }}</b> {{ idn.display ? '/' : '' }} {{ idn.display }}
-          </ng-container>
-          <ng-container *ngSwitchDefault>
-            <b>{{ idn.display }}</b>
-          </ng-container>
-        </div>
-      </ng-container>
-
-      <div *ngIf="(accountIndex | async) as idx">Index: {{ idx }}</div>
-
-      <div>Nonce: {{ (accountNonce | async) }}</div>
 
       <ng-container *ngIf="dai.identity as idn">
-        <div>
-          Judgements:
-          <ng-container [ngSwitch]="!!(idn?.judgements?.length)">
+        <h2>Identity</h2>
+        <table class="detail-table">
+          <tbody>
+          <ng-container [ngSwitch]="!!(idn.parent)">
             <ng-container *ngSwitchCase="true">
-              <ng-container *ngFor="let jmnt of idn.judgements">
-                {{ jmnt[1] }}
-              </ng-container>
+              <tr>
+                <th>Name</th>
+                <td>{{ idn.displayParent }}</td>
+              </tr>
+              <tr>
+                <th>Subname</th>
+                <td>{{ idn.display }}</td>
+              </tr>
             </ng-container>
             <ng-container *ngSwitchDefault>
-              No judgements provided
+              <tr *ngIf="idn.display">
+                <th>Name</th>
+                <td>{{ idn.display }}</td>
+              </tr>
             </ng-container>
           </ng-container>
-        </div>
 
-        <div>Legal: {{idn?.legal}}</div>
-        <div>Web: {{idn?.web}}</div>
-        <div>Riot: {{idn?.riot}}</div>
-        <div>PGP: {{idn?.pgp}}</div>
-        <div>Email: {{idn?.email}}</div>
-        <div>Twitter: {{idn?.twitter}}</div>
-        <div>Image: {{idn?.image}}</div>
-        <div>Other: {{idn?.other | json}}</div>
+          <tr *ngIf="(accountIndex | async) as idx">
+            <th>Index</th>
+            <td>{{idx}}</td>
+          </tr>
 
-        <h3>Balances</h3>
-        <ng-container *ngIf="$any((accountBalances | async)) as balances">
+          <tr>
+            <th>Nonce</th>
+            <td>{{ (accountNonce | async) }}</td>
+          </tr>
 
-          <div>Total:
-            <balance [value]="balances.total" [tokenSymbol]="props.tokenSymbol"
-                     [tokenDecimals]="props.tokenDecimals"></balance>
-          </div>
+          <tr>
+            <th>Judgements</th>
+            <td>
+              <ng-container [ngSwitch]="!!(idn?.judgements?.length)">
+                <ng-container *ngSwitchCase="true">
+                  <ng-container *ngFor="let jmnt of idn.judgements">
+                    {{ jmnt[1] }}
+                  </ng-container>
+                </ng-container>
+                <ng-container *ngSwitchDefault>
+                  No judgements provided
+                </ng-container>
+              </ng-container>
+            </td>
+          </tr>
 
-          <div>Free:
-            <balance [value]="balances.free" [tokenSymbol]="props.tokenSymbol"
-                     [tokenDecimals]="props.tokenDecimals"></balance>
+          <tr *ngIf="idn?.legal">
+            <th>Legal</th>
+            <td>{{idn?.legal}}</td>
+          </tr>
 
-            <div style="text-indent: 40px;">Transferrable:
+          <tr *ngIf="idn?.web">
+            <th>Web</th>
+            <td>{{idn?.web}}</td>
+          </tr>
+
+          <tr *ngIf="idn?.riot">
+            <th>Riot</th>
+            <td>{{idn?.riot}}</td>
+          </tr>
+
+          <tr *ngIf="idn?.pgp">
+            <th>PGP</th>
+            <td>{{idn?.pgp}}</td>
+          </tr>
+
+          <tr *ngIf="idn?.email">
+            <th>Email</th>
+            <td>{{idn?.email}}</td>
+          </tr>
+
+          <tr *ngIf="idn?.twitter">
+            <th>Twitter</th>
+            <td>{{idn?.twitter}}</td>
+          </tr>
+
+          <tr *ngIf="idn?.image">
+            <th>Image</th>
+            <td>{{idn?.image}}</td>
+          </tr>
+
+          <ng-container *ngIf="idn?.other">
+            <tr *ngFor="let param of (idn.other | keyvalue)">
+              <th>{{param.key}}</th>
+              <td>{{param.value}}</td>
+            </tr>
+          </ng-container>
+          </tbody>
+        </table>
+      </ng-container>
+
+
+      <ng-container *ngIf="$any((accountBalances | async)) as balances">
+        <h2>Balances</h2>
+        <table class="detail-table">
+          <tbody>
+          <tr>
+            <th>Total</th>
+            <td>
+              <balance [value]="balances.total" [tokenSymbol]="props.tokenSymbol"
+                       [tokenDecimals]="props.tokenDecimals"></balance>
+            </td>
+          </tr>
+
+          <tr>
+            <th>Free</th>
+            <td>
+              <balance [value]="balances.free" [tokenSymbol]="props.tokenSymbol"
+                       [tokenDecimals]="props.tokenDecimals"></balance>
+            </td>
+          </tr>
+
+          <tr>
+            <th>Transferrable</th>
+            <td>
               <balance [value]="balances.transferrable" [tokenSymbol]="props.tokenSymbol"
                        [tokenDecimals]="props.tokenDecimals"></balance>
-            </div>
+            </td>
+          </tr>
 
-            <div style="text-indent: 40px;">Locked:
+          <tr>
+            <th>Locked</th>
+            <td>
               <balance [value]="balances.locked" [tokenSymbol]="props.tokenSymbol"
                        [tokenDecimals]="props.tokenDecimals"></balance>
-            </div>
-          </div>
+            </td>
+          </tr>
 
-          <div>Reserved:
-            <balance [value]="balances.reserved" [tokenSymbol]="props.tokenSymbol"
-                     [tokenDecimals]="props.tokenDecimals"></balance>
-          </div>
+          <tr>
+            <th>
+              Reserved
+            </th>
+            <td>
+              <balance [value]="balances.reserved" [tokenSymbol]="props.tokenSymbol"
+                       [tokenDecimals]="props.tokenDecimals"></balance>
+            </td>
+          </tr>
 
-          <div>Redeemable:
-            <balance [value]="balances.redeemable" [tokenSymbol]="props.tokenSymbol"
-                     [tokenDecimals]="props.tokenDecimals"></balance>
-          </div>
+          <tr>
+            <th>
+              Redeemable
+            </th>
+            <td>
+              <balance [value]="balances.redeemable" [tokenSymbol]="props.tokenSymbol"
+                       [tokenDecimals]="props.tokenDecimals"></balance>
+            </td>
+          </tr>
 
-          <div>Bonded:
-            <balance [value]="balances.bonded" [tokenSymbol]="props.tokenSymbol"
-                     [tokenDecimals]="props.tokenDecimals"></balance>
-          </div>
+          <tr>
+            <th>
+              Bonded
+            </th>
+            <td>
+              <balance [value]="balances.bonded" [tokenSymbol]="props.tokenSymbol"
+                       [tokenDecimals]="props.tokenDecimals"></balance>
+            </td>
+          </tr>
 
-          <div>Unbonding:
-            <balance [value]="balances.unbonding" [tokenSymbol]="props.tokenSymbol"
-                     [tokenDecimals]="props.tokenDecimals"></balance>
-          </div>
-        </ng-container>
+          <tr>
+            <th>
+              Unbonding
+            </th>
+            <td>
+              <balance [value]="balances.unbonding" [tokenSymbol]="props.tokenSymbol"
+                       [tokenDecimals]="props.tokenDecimals"></balance>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </ng-container>
 
 
-        <div *ngIf="((subs | async) | keyvalue) as subsMap">
+      <ng-container *ngIf="((subs | async) | keyvalue) as subsMap">
+        <ng-container *ngIf="subsMap.length">
           <h2>Accounts</h2>
 
-            <div *ngIf="dai?.identity?.parent">
-              Parent:
-              <identicon [value]="$any(dai.identity.parent)" [theme]="'polkadot'" [size]="16"
-                         [prefix]="props.ss58Prefix"></identicon>
-              <a [routerLink]="'../' + dai.identity?.parent?.toHuman()">{{ dai.identity.parent }}</a>
-              <ng-container *ngIf="dai.identity.displayParent"> - {{ dai.identity.displayParent}}</ng-container>
-            </div>
-
-            <div *ngFor="let sub of (subsMap); let i = index" style="display: block; margin-left: 8px;">
-              <identicon [value]="$any(sub.key)" [theme]="'polkadot'" [size]="16"
-                         [prefix]="props.ss58Prefix"></identicon>
-              <a [routerLink]="'../' + $any(sub.key).toHuman()">{{ $any(sub.key).toHuman() }}</a>
-              <ng-container *ngIf="sub.value">- {{sub.value}}</ng-container>
-            </div>
-        </div>
-
-
-        <div>
-          <h2>signed Extrinsics:</h2>
-
-          <table mat-table [dataSource]="(signedExtrinsics | async) || []" [trackBy]="signedExtrinsicTrackBy">
-
-            <ng-container matColumnDef="icon">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef>
-                <i class="fas fa-file-signature"></i>
-              </td>
+          <mat-list>
+            <ng-container *ngIf="dai?.identity?.parent">
+              <div mat-subheader>Parent</div>
+              <mat-list-item>
+                <div mat-line>
+                  <identicon [value]="$any(dai.identity.parent)" [theme]="'polkadot'" [size]="16"
+                             [prefix]="props.ss58Prefix"></identicon>
+                  <a [routerLink]="'../' + dai.identity?.parent?.toHuman()">{{ dai.identity.parent }}</a>
+                  <ng-container *ngIf="dai.identity.displayParent"><b> {{ dai.identity.displayParent}}</b></ng-container>
+                </div>
+              </mat-list-item>
+              <mat-divider></mat-divider>
             </ng-container>
+            <div mat-subheader *ngIf="subsMap.length">Subs</div>
+            <mat-list-item *ngFor="let sub of (subsMap); let i = index">
+              <div mat-line>
+                <identicon [value]="$any(sub.key)" [theme]="'polkadot'" [size]="16"
+                           [prefix]="props.ss58Prefix"></identicon>
+                <a [routerLink]="'../' + $any(sub.key).toHuman()">{{ $any(sub.key).toHuman() }}</a>
+                <ng-container *ngIf="sub.value"><b> {{sub.value}}</b></ng-container>
+              </div>
+            </mat-list-item>
+          </mat-list>
 
-            <ng-container matColumnDef="extrinsicID">
-              <th mat-header-cell *matHeaderCellDef>Extrinsic ID</th>
-              <td mat-cell *matCellDef="let extrinsic">
-                <a
-                  [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="block">
-              <th mat-header-cell *matHeaderCellDef>Block</th>
-              <td mat-cell *matCellDef="let extrinsic">
-                <a [routerLink]="'../block/' + extrinsic.blockNumber">{{extrinsic.blockNumber}}</a>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="pallet">
-              <th mat-header-cell *matHeaderCellDef>Pallet</th>
-              <td mat-cell *matCellDef="let extrinsic">
-                {{extrinsic.callModule}}
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="call">
-              <th mat-header-cell *matHeaderCellDef>Call</th>
-              <td mat-cell *matCellDef="let extrinsic">
-                {{extrinsic.callName}}
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="details">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let extrinsic">
-                <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">Details</a>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="signedExtrinsicsColumns; sticky: true"></tr>
-            <tr mat-row *matRowDef="let myRowData; columns: signedExtrinsicsColumns"></tr>
-
-          </table>
-        </div>
-
-        <div>
-          <h2>from transfers:</h2>
-
-          <table mat-table [dataSource]="(fromBalanceTransfers | async) || []" [trackBy]="balanceTransfersTrackBy">
-
-            <ng-container matColumnDef="icon">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef>
-                <i class="fas fa-file-signature"></i>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="block">
-              <th mat-header-cell *matHeaderCellDef>Block</th>
-              <td mat-cell *matCellDef="let transfer">
-                <a [routerLink]="'../../block/' + transfer.blockNumber">{{transfer.blockNumber}}</a>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="from">
-              <th mat-header-cell *matHeaderCellDef>From</th>
-              <td mat-cell *matCellDef="let transfer">
-                <ng-container *ngIf="transfer.fromMultiAddressAccountId">
-                  <account-id [address]="transfer.fromMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="64"
-                              [ss58Prefix]="props.ss58Prefix"
-                              (clicked)="routeToAccount($event)"></account-id>
-                </ng-container>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="to">
-              <th mat-header-cell *matHeaderCellDef>To</th>
-              <td mat-cell *matCellDef="let transfer">
-                <ng-container *ngIf="transfer.toMultiAddressAccountId">
-                  <account-id [address]="transfer.toMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="64"
-                              [ss58Prefix]="props.ss58Prefix"
-                              (clicked)="routeToAccount($event)"></account-id>
-                </ng-container>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="value">
-              <th mat-header-cell *matHeaderCellDef>Value</th>
-              <td mat-cell *matCellDef="let transfer">
-                {{transfer.value}}
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="details">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let transfer">
-                <a [routerLink]="transfer.blockNumber + '-' + transfer.eventIdx">Details</a>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="fromBalanceTransferColumns; sticky: true"></tr>
-            <tr mat-row *matRowDef="let myRowData; columns: fromBalanceTransferColumns"></tr>
-
-          </table>
-        </div>
-
-        <div>
-          <h2>to transfers:</h2>
-
-          <table mat-table [dataSource]="(toBalanceTransfers | async) || []" [trackBy]="balanceTransfersTrackBy">
-
-            <ng-container matColumnDef="icon">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef>
-                <i class="fas fa-file-signature"></i>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="block">
-              <th mat-header-cell *matHeaderCellDef>Block</th>
-              <td mat-cell *matCellDef="let transfer">
-                <a [routerLink]="'../../block/' + transfer.blockNumber">{{transfer.blockNumber}}</a>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="from">
-              <th mat-header-cell *matHeaderCellDef>From</th>
-              <td mat-cell *matCellDef="let transfer">
-                <ng-container *ngIf="transfer.fromMultiAddressAccountId">
-                  <account-id [address]="transfer.fromMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="64"
-                              [ss58Prefix]="props.ss58Prefix"
-                              (clicked)="routeToAccount($event)"></account-id>
-                </ng-container>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="to">
-              <th mat-header-cell *matHeaderCellDef>To</th>
-              <td mat-cell *matCellDef="let transfer">
-                <ng-container *ngIf="transfer.toMultiAddressAccountId">
-                  <account-id [address]="transfer.toMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="64"
-                              [ss58Prefix]="props.ss58Prefix"
-                              (clicked)="routeToAccount($event)"></account-id>
-                </ng-container>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="value">
-              <th mat-header-cell *matHeaderCellDef>Value</th>
-              <td mat-cell *matCellDef="let transfer">
-                {{transfer.value}}
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="details">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let transfer">
-                <a [routerLink]="transfer.blockNumber + '-' + transfer.eventIdx">Details</a>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="fromBalanceTransferColumns; sticky: true"></tr>
-            <tr mat-row *matRowDef="let myRowData; columns: fromBalanceTransferColumns"></tr>
-
-          </table>
-        </div>
+        </ng-container>
       </ng-container>
+
+
+      <div>
+        <h2>Signed Extrinsics:</h2>
+
+        <table mat-table [dataSource]="(signedExtrinsics | async) || []" [trackBy]="signedExtrinsicTrackBy">
+
+          <ng-container matColumnDef="icon">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef>
+              <i class="fas fa-file-signature"></i>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="extrinsicID">
+            <th mat-header-cell *matHeaderCellDef>Extrinsic ID</th>
+            <td mat-cell *matCellDef="let extrinsic">
+              <a
+                [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="block">
+            <th mat-header-cell *matHeaderCellDef>Block</th>
+            <td mat-cell *matCellDef="let extrinsic">
+              <a [routerLink]="'../block/' + extrinsic.blockNumber">{{extrinsic.blockNumber}}</a>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="pallet">
+            <th mat-header-cell *matHeaderCellDef>Pallet</th>
+            <td mat-cell *matCellDef="let extrinsic">
+              {{extrinsic.callModule}}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="call">
+            <th mat-header-cell *matHeaderCellDef>Call</th>
+            <td mat-cell *matCellDef="let extrinsic">
+              {{extrinsic.callName}}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="details">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let extrinsic">
+              <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">Details</a>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="signedExtrinsicsColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let myRowData; columns: signedExtrinsicsColumns"></tr>
+
+        </table>
+      </div>
+
+      <div>
+        <h2>From transfers:</h2>
+
+        <table mat-table [dataSource]="(fromBalanceTransfers | async) || []" [trackBy]="balanceTransfersTrackBy">
+
+          <ng-container matColumnDef="icon">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef>
+              <i class="fas fa-file-signature"></i>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="block">
+            <th mat-header-cell *matHeaderCellDef>Block</th>
+            <td mat-cell *matCellDef="let transfer">
+              <a [routerLink]="'../../block/' + transfer.blockNumber">{{transfer.blockNumber}}</a>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="from">
+            <th mat-header-cell *matHeaderCellDef>From</th>
+            <td mat-cell *matCellDef="let transfer">
+              <ng-container *ngIf="transfer.fromMultiAddressAccountId">
+                <account-id [address]="transfer.fromMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="64"
+                            [ss58Prefix]="props.ss58Prefix"
+                            (clicked)="routeToAccount($event)"></account-id>
+              </ng-container>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="to">
+            <th mat-header-cell *matHeaderCellDef>To</th>
+            <td mat-cell *matCellDef="let transfer">
+              <ng-container *ngIf="transfer.toMultiAddressAccountId">
+                <account-id [address]="transfer.toMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="64"
+                            [ss58Prefix]="props.ss58Prefix"
+                            (clicked)="routeToAccount($event)"></account-id>
+              </ng-container>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="value">
+            <th mat-header-cell *matHeaderCellDef>Value</th>
+            <td mat-cell *matCellDef="let transfer">
+              {{transfer.value}}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="details">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let transfer">
+              <a [routerLink]="transfer.blockNumber + '-' + transfer.eventIdx">Details</a>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="fromBalanceTransferColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let myRowData; columns: fromBalanceTransferColumns"></tr>
+
+        </table>
+      </div>
+
+      <div>
+        <h2>To transfers:</h2>
+
+        <table mat-table [dataSource]="(toBalanceTransfers | async) || []" [trackBy]="balanceTransfersTrackBy">
+
+          <ng-container matColumnDef="icon">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef>
+              <i class="fas fa-file-signature"></i>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="block">
+            <th mat-header-cell *matHeaderCellDef>Block</th>
+            <td mat-cell *matCellDef="let transfer">
+              <a [routerLink]="'../../block/' + transfer.blockNumber">{{transfer.blockNumber}}</a>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="from">
+            <th mat-header-cell *matHeaderCellDef>From</th>
+            <td mat-cell *matCellDef="let transfer">
+              <ng-container *ngIf="transfer.fromMultiAddressAccountId">
+                <account-id [address]="transfer.fromMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="64"
+                            [ss58Prefix]="props.ss58Prefix"
+                            (clicked)="routeToAccount($event)"></account-id>
+              </ng-container>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="to">
+            <th mat-header-cell *matHeaderCellDef>To</th>
+            <td mat-cell *matCellDef="let transfer">
+              <ng-container *ngIf="transfer.toMultiAddressAccountId">
+                <account-id [address]="transfer.toMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="64"
+                            [ss58Prefix]="props.ss58Prefix"
+                            (clicked)="routeToAccount($event)"></account-id>
+              </ng-container>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="value">
+            <th mat-header-cell *matHeaderCellDef>Value</th>
+            <td mat-cell *matCellDef="let transfer">
+              {{transfer.value}}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="details">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let transfer">
+              <a [routerLink]="transfer.blockNumber + '-' + transfer.eventIdx">Details</a>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="fromBalanceTransferColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let myRowData; columns: fromBalanceTransferColumns"></tr>
+
+        </table>
+      </div>
     </ng-container>
   </ng-container>
 </ng-template>
