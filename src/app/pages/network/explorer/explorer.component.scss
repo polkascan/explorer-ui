@@ -22,13 +22,14 @@
 
 .blocks {
   display: flex;
-  height: 100px;
+  height: 81px;
 }
 
 .block-outer {
   box-sizing: border-box;
   flex: 0 0 auto;
-  width: 10%;
+  width: 9vw;
+  max-width: 96px;
 }
 
 .block-inner {
@@ -37,9 +38,9 @@
   display: flex;
   align-content: flex-start;
   flex-flow: row wrap;
-  margin-right: 10px;
-  min-height: 100px;
-  max-height: 100px;
+  margin-right: 15px;
+  height: 81px;
+  max-height: 81px;
   overflow: hidden;
   text-decoration: none;
   font-size: 0.8rem;
@@ -50,7 +51,7 @@
   }
 
   &:hover {
-    max-height: 1000px;
+    max-height: none;
     overflow: visible;
   }
 

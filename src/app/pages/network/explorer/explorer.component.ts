@@ -31,18 +31,18 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 const blocksAnimation = trigger('blocksAnimation', [
   transition(':increment', group([
-    query(':enter',
+    query('.block-outer:enter',
       [
         style({opacity: 0, width: 0, transform: 'scale(0.5)', 'transform-origin': 'left center'}),
         stagger('60ms',
           animate('400ms cubic-bezier(0.25, 0.25, 0.2, 1.3)',
-            style({opacity: 1, width: '10%', transform: 'scale(1)'})
+            style({opacity: 1, width: '9vw', transform: 'scale(1)'})
           )
         )
       ],
       {optional: true}
     ),
-    query(':leave',
+    query('.block-outer:leave',
       animate('400ms cubic-bezier(0.2, -0.2, 0.75, 0.75)',
         style({opacity: 0, transform: 'scale(1.2) rotate(2deg)', 'transform-origin': 'left center'})
       ),
@@ -51,12 +51,27 @@ const blocksAnimation = trigger('blocksAnimation', [
   ]))
 ]);
 
+const blockContentAnimation = trigger('blockContentAnimation', [
+  transition('* => *', [
+    query('.transaction:enter, .event:enter',
+      [
+        style({opacity: 0}),
+        stagger('60ms',
+          animate('400ms cubic-bezier(0.25, 0.25, 0.2, 1.3)',
+            style({opacity: 1})
+          )
+        )
+      ],
+      {optional: true}
+    )])
+]);
+
 @Component({
   selector: 'app-explorer',
   templateUrl: './explorer.component.html',
   styleUrls: ['./explorer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  animations: [blocksAnimation]
+  animations: [blocksAnimation, blockContentAnimation]
 })
 export class ExplorerComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
