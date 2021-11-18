@@ -29,7 +29,7 @@ import {
   shareReplay,
   startWith,
   switchMap,
-  takeUntil, tap
+  takeUntil
 } from 'rxjs/operators';
 import { BehaviorSubject, combineLatest, Observable, of, Subject, Subscriber } from 'rxjs';
 import {
@@ -89,7 +89,7 @@ function calcBonded(stakingInfo?: DeriveStakingAccount, bonded?: boolean | BN[])
 }
 
 
-function asObservable(fn: (...args: any[]) => Promise<() => void>, ...args: any[]) {
+function polkadaptSubscriptionAsObservable(fn: (...args: any[]) => Promise<() => void>, ...args: any[]) {
   let unsubscribeFn: (() => void) | null = null;
   let finalized = false;
   let subscr: Subscriber<any>;
@@ -186,11 +186,14 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
   fromBalanceTransfers = new BehaviorSubject<pst.Transfer[]>([]);
   toBalanceTransfers = new BehaviorSubject<pst.Transfer[]>([]);
+  balanceTransfers: Observable<pst.Transfer[]>;
   signedExtrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
 
   fromBalanceTransferColumns = ['icon', 'block', 'to', 'value', 'details']
   toBalanceTransferColumns = ['icon', 'block', 'from', 'to', 'value', 'details']
   signedExtrinsicsColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'details'];
+
+  private listsSize = 10;
 
   private unsubscribeFns: Map<string, (() => void)> = new Map();
   private destroyer: Subject<undefined> = new Subject();
@@ -227,6 +230,10 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       this.unsubscribeFns.forEach((unsub) => unsub());
       this.unsubscribeFns.clear();
 
+      this.fromBalanceTransfers.next([]);
+      this.toBalanceTransfers.next([]);
+      this.signedExtrinsics.next([]);
+
       try {
         const accountIdHex = u8aToHex(decodeAddress(id));
         this.fetchAndSubscribeFromTransfers(accountIdHex);
@@ -238,12 +245,12 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     });
 
     this.account = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.system.account, id).pipe(takeUntil(this.destroyer))),
+      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().query.system.account, id).pipe(takeUntil(this.destroyer))),
       map((account) => account ? account : undefined)
     );
 
     const idAndIndexObservable = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.accounts.idAndIndex, id).pipe(takeUntil(this.destroyer))),
+      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().derive.accounts.idAndIndex, id).pipe(takeUntil(this.destroyer))),
       shareReplay(1)
     );
 
@@ -261,37 +268,37 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
     this.indices = this.accountIndex.pipe(
       switchMap((accountIndex) => accountIndex
-        ? asObservable(this.pa.run().query.indices.accounts, accountIndex.toNumber()).pipe(takeUntil(this.destroyer))
+        ? polkadaptSubscriptionAsObservable(this.pa.run().query.indices.accounts, accountIndex.toNumber()).pipe(takeUntil(this.destroyer))
         : of(undefined)),
     )
 
     this.superOf = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.identity.superOf, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().query.identity.superOf, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.identity = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.identity.identityOf, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().query.identity.identityOf, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.subsOf = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.identity.subsOf, id).pipe(takeUntil(this.destroyer))),
+      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().query.identity.subsOf, id).pipe(takeUntil(this.destroyer))),
       shareReplay(1)
     );
 
     this.derivedAccountInfo = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.accounts.info, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().derive.accounts.info, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.derivedAccountFlags = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.accounts.flags, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().derive.accounts.flags, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.derivedBalancesAll = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.balances.all, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().derive.balances.all, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.stakingInfo = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.staking.account, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().derive.staking.account, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.accountBalances = combineLatest(
@@ -321,20 +328,20 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.parent = this.superOf.pipe(
       switchMap((val: any) => {
         return val && val.value && val.value[0]
-          ? asObservable(this.pa.run().query.system.account, val.value[0]).pipe(takeUntil(this.destroyer))
+          ? polkadaptSubscriptionAsObservable(this.pa.run().query.system.account, val.value[0]).pipe(takeUntil(this.destroyer))
           : of(undefined)
       })
     )
 
     this.parentIdentity = this.superOf.pipe(
       switchMap((val: any) => val && val.value && val.value[0]
-        ? asObservable(this.pa.run().query.identity.identityOf, val.value[0]).pipe(takeUntil(this.destroyer))
+        ? polkadaptSubscriptionAsObservable(this.pa.run().query.identity.identityOf, val.value[0]).pipe(takeUntil(this.destroyer))
         : of(undefined)),
     )
 
     this.parentSubsOf = this.superOf.pipe(
       switchMap((val: any) => val && val.value && val.value[0]
-        ? asObservable(this.pa.run().query.identity.subsOf, val.value[0]).pipe(takeUntil(this.destroyer))
+        ? polkadaptSubscriptionAsObservable(this.pa.run().query.identity.subsOf, val.value[0]).pipe(takeUntil(this.destroyer))
         : of(undefined)),
       shareReplay(1)
     )
@@ -350,7 +357,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       takeUntil(this.destroyer),
       switchMap(([subsOf, parentSubsOf]) => {
         const subs = subsOf && subsOf.length ? subsOf : parentSubsOf && parentSubsOf.length ? parentSubsOf : [];
-        const observables: Observable<any>[] = subs.map((sub: any) => asObservable(this.pa.run().query.identity.superOf, sub).pipe(takeUntil(this.destroyer)))
+        const observables: Observable<any>[] = subs.map((sub: any) => polkadaptSubscriptionAsObservable(this.pa.run().query.identity.superOf, sub).pipe(takeUntil(this.destroyer)))
 
         if (observables.length > 0) {
           return combineLatest(observables);
@@ -394,6 +401,16 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       }),
       shareReplay(1)
     )
+
+    this.balanceTransfers = combineLatest(
+      this.toBalanceTransfers,
+      this.fromBalanceTransfers
+    ).pipe(
+      takeUntil(this.destroyer),
+      map(([to, from]) => to.concat(from)
+        .sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx)
+        .slice(0, this.listsSize))
+    )
   }
 
 
@@ -402,7 +419,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       {
         signed: 1,
         multiAddressAccountId: idHex
-      }, 10);
+      }, this.listsSize);
     this.signedExtrinsics.next(extrinsics.objects);
     const signedExtrinsicsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewExtrinsic(
       {
@@ -428,7 +445,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     const fromTransfers = await this.pa.run().polkascan.chain.getTransfers(
       {
         fromMultiAddressAccountId: idHex
-      }, 10);
+      }, this.listsSize);
     this.fromBalanceTransfers.next(fromTransfers.objects);
     const fromBalanceTransfersUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewTransfer(
       {
@@ -443,7 +460,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
           this.fromBalanceTransfers.next(result);
         }
-
       });
 
     this.unsubscribeFns.set('fromBalanceTransfersUnsubscribeFn', fromBalanceTransfersUnsubscribeFn);
@@ -453,7 +469,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   async fetchAndSubscribeToTransfers(idHex: string): Promise<void> {
     const toTransfers = await this.pa.run().polkascan.chain.getTransfers({
       toMultiAddressAccountId: idHex
-    }, 10);
+    }, this.listsSize);
     this.toBalanceTransfers.next(toTransfers.objects);
     const toBalanceTransfersUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewTransfer(
       {
