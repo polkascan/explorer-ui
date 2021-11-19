@@ -1,7 +1,10 @@
-<ng-container *ngIf="call|async as call; else loading">
-  <h1>Call Function '{{ $any(call).callName }}'</h1>
+<h1>Call Function</h1>
 
-  <h2>Arguments</h2>
+<ng-container *ngIf="call|async as call; else loading">
+
+  <h2>{{$any(call).callName}}</h2>
+
+  <h3>Arguments</h3>
 
   <ng-container *ngIf="(callArguments | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="trackCallArgument">

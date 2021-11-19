@@ -1,22 +1,56 @@
+<h1>Event</h1>
+
 <ng-container *ngIf="event">
   <ng-container *ngIf="(networkProperties | async) as props">
-    <h1>Event: #{{event.blockNumber}}-{{event.eventIdx}}</h1>
-    <div>Block: <a [routerLink]="'../../block/' + event.blockNumber">{{event.blockNumber}}</a></div>
-    <!--  <div>Referenced Transaction: <a [routerLink]="'../../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a></div>-->
-    <div>Extrinsic:
-      <a [routerLink]="'../../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">
-        {{event.blockNumber + '-' + event.extrinsicIdx}}
-      </a>
-    </div>
-    <div>Event Index: {{event.eventIdx}}</div>
-    <div>Module: {{event.eventModule}}</div>
-    <div>Event name: {{event.eventName}}</div>
 
-    <div *ngIf="event.attributes">
-      <div><b>Attributes</b></div>
-      <event-attributes [attributes]="event.attributes" [iconTheme]="'polkadot'" [iconSize]="24"
-                        [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
-                        [ss58Prefix]="props.ss58Prefix"></event-attributes>
-    </div>
+    <h2>{{event.blockNumber}}-{{event.eventIdx}}</h2>
+
+
+    <table class="detail-table">
+      <tbody>
+      <tr>
+        <th>Block</th>
+        <td><a [routerLink]="'../../block/' + event.blockNumber">{{event.blockNumber}}</a></td>
+      </tr>
+
+      <!--  <div>Referenced Transaction: <a [routerLink]="'../../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a></div>-->
+
+      <tr>
+        <th>Extrinsic</th>
+        <td>
+          <a [routerLink]="'../../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">
+            {{event.blockNumber + '-' + event.extrinsicIdx}}
+          </a>
+        </td>
+      </tr>
+
+      <tr>
+        <th>Event Index</th>
+        <td>{{event.eventIdx}}</td>
+      </tr>
+
+      <tr>
+        <th>Module</th>
+        <td>{{event.eventModule}}</td>
+      </tr>
+
+      <tr>
+        <th>Event name</th>
+        <td>{{event.eventName}}</td>
+      </tr>
+
+
+      <tr *ngIf="event.attributes">
+        <th>Attributes</th>
+        <td>
+          <attributes [attributes]="event.attributes" [iconTheme]="'polkadot'" [iconSize]="24"
+                      [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                      [ss58Prefix]="props.ss58Prefix"></attributes>
+        </td>
+      </tr>
+
+      </tbody>
+    </table>
+
   </ng-container>
 </ng-container>

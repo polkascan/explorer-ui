@@ -19,11 +19,6 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { IdenticonComponent } from './identicon/identicon.component';
-import {
-  ChildAttributesComponent,
-  EventAttributesComponent,
-  ExtrinsicAttributesComponent
-} from './attributes/attributes.component';
 import { AttributeAccountIndexComponent } from './attributes/attributes/attribute-account-index.component';
 import { AttributeAddressComponent } from './attributes/attributes/attribute-address.component';
 import { AttributeBalanceComponent } from './attributes/attributes/attribute-balance.component';
@@ -39,15 +34,14 @@ import { AttributeSessionComponent } from './attributes/attributes/attribute-ses
 import { AttributeStructComponent } from './attributes/attributes/attribute-struct.component';
 import { AccountIdCommonComponent } from './account-id/account-id.common.component';
 import { BalanceCommonComponent } from './balance/balance.common.component';
+import { AttributesComponent } from './attributes/attributes.component';
 
 @NgModule({
   declarations: [
     IdenticonComponent,
     AccountIdCommonComponent,
     BalanceCommonComponent,
-    ChildAttributesComponent,
-    EventAttributesComponent,
-    ExtrinsicAttributesComponent,
+    AttributesComponent,
     AttributeAccountIndexComponent,
     AttributeAddressComponent,
     AttributeBalanceComponent,
@@ -69,8 +63,7 @@ import { BalanceCommonComponent } from './balance/balance.common.component';
     IdenticonComponent,
     AccountIdCommonComponent,
     BalanceCommonComponent,
-    EventAttributesComponent,
-    ExtrinsicAttributesComponent,
+    AttributesComponent,
     AttributeAccountIndexComponent,
     AttributeAddressComponent,
     AttributeBalanceComponent,

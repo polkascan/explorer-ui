@@ -1,7 +1,10 @@
-<ng-container *ngIf="runtime|async as runtime; else loading">
-  <h1>Runtime '{{$any(runtime).specName}}' {{$any(runtime).specVersion}}</h1>
+<h1>Runtime</h1>
 
-  <h2>Pallets</h2>
+<ng-container *ngIf="runtime|async as runtime; else loading">
+
+  <h2>{{$any(runtime).specName}} {{$any(runtime).specVersion}}</h2>
+
+  <h3>Pallets</h3>
 
   <ng-container *ngIf="(pallets | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="track">

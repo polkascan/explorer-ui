@@ -1,44 +1,107 @@
+<h1>Extrinsic</h1>
+
 <ng-container *ngIf="extrinsic">
   <ng-container *ngIf="(networkProperties | async) as props">
-    <div>Block <a [routerLink]="'../../block/' + extrinsic.blockNumber">#{{extrinsic.blockNumber}}</a></div>
-    <div>Timestamp: {{extrinsic.blockDatetime | date: 'medium'}}</div>
-    <div>Extrinsic Index: {{extrinsic.extrinsicIdx}}</div>
-    <div>Extrinsic hash: {{extrinsic.hash}}</div>
-    <div>Pallet: {{extrinsic.callModule}}</div>
-    <div>Call: {{extrinsic.callName}}</div>
-    <div>Address: {{extrinsic.blockHash}}</div>
-    <div>Nonce: {{extrinsic.nonce}}</div>
-    <div>Signature: {{extrinsic.signature}}</div>
 
-    <h2>Call Arguments</h2>
-    <ng-container *ngIf="callArguments">
-      <extrinsic-attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24"
-                            [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
-                            [ss58Prefix]="props.ss58Prefix">
-      </extrinsic-attributes>
-    </ng-container>
+    <h2>{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</h2>
 
-    <h2>Events</h2>
-    <table *ngIf="events">
-      <thead>
-      <tr>
-        <th>Event ID</th>
-        <th>Pallet</th>
-        <th>Event</th>
-        <th></th>
-      </tr>
-      </thead>
+    <table class="detail-table">
       <tbody>
-      <ng-container *ngFor="let event of events">
-        <tr>
-          <td><a [routerLink]="'../../event/' + extrinsic.blockNumber + '-' + event.eventIdx">{{event.eventIdx}}</a>
-          </td>
-          <td>{{event.eventModule}}</td>
-          <td>{{event.eventName}}</td>
-          <td><a [routerLink]="'../../event/' + extrinsic.blockNumber + '-' + event.eventIdx">Details</a></td>
-        </tr>
-      </ng-container>
+      <tr>
+        <th>Block</th>
+        <td><a [routerLink]="'../../block/' + extrinsic.blockNumber">{{extrinsic.blockNumber}}</a></td>
+      </tr>
+
+      <tr>
+        <th>Timestamp</th>
+        <td>{{extrinsic.blockDatetime | date: 'medium'}}</td>
+      </tr>
+
+      <tr>
+        <th>Extrinsic Index</th>
+        <td>{{extrinsic.extrinsicIdx}}</td>
+      </tr>
+
+      <tr>
+        <th>Extrinsic Hash</th>
+        <td>{{extrinsic.hash}}</td>
+      </tr>
+
+      <tr>
+        <th>Pallet</th>
+        <td>{{extrinsic.callModule}}</td>
+      </tr>
+
+      <tr>
+        <th>Call</th>
+        <td>{{extrinsic.callName}}</td>
+      </tr>
+
+      <tr>
+        <th>Address</th>
+        <td>{{extrinsic.blockHash}}</td>
+      </tr>
+
+      <tr>
+        <th>Nonce</th>
+        <td>{{extrinsic.nonce}}</td>
+      </tr>
+
+      <tr>
+        <th>Signature</th>
+        <td>{{extrinsic.signature}}</td>
+      </tr>
+
+      <tr *ngIf="callArguments">
+        <th>Call Arguments</th>
+        <td>
+          <attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24"
+                      [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                      [ss58Prefix]="props.ss58Prefix">
+          </attributes>
+        </td>
+      </tr>
+
       </tbody>
     </table>
+
+
+    <h3>Events</h3>
+
+    <table mat-table [dataSource]="events" [trackBy]="trackEvent">
+
+      <ng-container matColumnDef="eventId">
+        <th mat-header-cell *matHeaderCellDef>Event ID</th>
+        <td mat-cell *matCellDef="let event">
+          <a [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx">{{event.blockNumber + '-' + event.eventIdx}}</a>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="pallet">
+        <th mat-header-cell *matHeaderCellDef>Pallet</th>
+        <td mat-cell *matCellDef="let event">
+          {{event.eventModule}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="event">
+        <th mat-header-cell *matHeaderCellDef>Event</th>
+        <td mat-cell *matCellDef="let event">
+          {{event.eventName}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="details">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let event">
+          <a [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx">Details</a>
+        </td>
+      </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="visibleColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
+
+    </table>
+
   </ng-container>
 </ng-container>

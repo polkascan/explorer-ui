@@ -40,7 +40,7 @@ import { IconTheme } from '../../identicon/identicon.types';
             <ng-container [ngSwitch]="itemCheck.isObject">
               <ng-container *ngSwitchCase="true">
                 <ng-container [ngSwitch]="itemCheck.hasType">
-                  <child-attributes *ngSwitchCase="true" [attributes]="$any(item.value)" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></child-attributes>
+                  <attributes *ngSwitchCase="true" [attributes]="$any(item.value)" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></attributes>
                   <attribute-struct *ngSwitchDefault [attribute]="item.value" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></attribute-struct>
                 </ng-container>
               </ng-container>

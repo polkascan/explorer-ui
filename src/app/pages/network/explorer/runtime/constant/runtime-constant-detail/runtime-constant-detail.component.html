@@ -1,10 +1,30 @@
+<h1>Constant</h1>
+
 <ng-container *ngIf="constant|async as constant; else loading">
-  <h1>Constant '{{constant.constantName}}'</h1>
 
-  <div>Type: {{constant.scaleType}}</div>
-  <div>Value: {{constant.value}}</div>
-  <div>Documentation: {{constant.documentation}}</div>
+  <h2>{{constant.constantName}}</h2>
 
+  <table class="detail-table">
+    <tbody>
+
+    <tr>
+      <th>Type</th>
+      <td>{{constant.scaleType}}</td>
+    </tr>
+
+    <tr>
+      <th>Value</th>
+      <td>{{constant.value}}</td>
+    </tr>
+
+    <tr>
+      <th>Documentation</th>
+      <td>{{constant.documentation}}</td>
+    </tr>
+
+
+    </tbody>
+  </table>
 </ng-container>
 
 <ng-template #loading>

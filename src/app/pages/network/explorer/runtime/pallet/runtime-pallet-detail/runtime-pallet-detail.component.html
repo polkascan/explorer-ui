@@ -1,7 +1,10 @@
-<ng-container *ngIf="pallet|async as pallet; else loading">
-  <h1>Pallet '{{ $any(pallet).pallet }}'</h1>
+<h1>Pallet</h1>
 
-  <h2>Call Functions</h2>
+<ng-container *ngIf="pallet|async as pallet; else loading">
+
+  <h2>{{ $any(pallet).pallet }}</h2>
+
+  <h3>Call Functions</h3>
 
   <ng-container *ngIf="(calls | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="trackCall">
@@ -47,7 +50,7 @@
     </table>
   </ng-container>
 
-  <h2>Events</h2>
+  <h3>Events</h3>
 
   <ng-container *ngIf="(events | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="trackEvent">
@@ -94,7 +97,7 @@
   </ng-container>
 
 
-  <h2>Storage Functions</h2>
+  <h3>Storage Functions</h3>
 
   <ng-container *ngIf="(storages | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="trackStorage">
@@ -134,7 +137,7 @@
   </ng-container>
 
 
-  <h2>Constants</h2>
+  <h3>Constants</h3>
 
   <ng-container *ngIf="(constants | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="trackConstant">
@@ -181,7 +184,7 @@
   </ng-container>
 
 
-  <h2>Types</h2>
+  <h3>Types</h3>
 
   <ng-container *ngIf="(types | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="trackType">
@@ -228,7 +231,7 @@
   </ng-container>
 
 
-  <h2>Error Messages</h2>
+  <h3>Error Messages</h3>
 
   <ng-container *ngIf="(errors | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="trackError">

@@ -1,7 +1,10 @@
-<ng-container *ngIf="event|async as event; else loading">
-  <h1>Event '{{ $any(event).eventName }}'</h1>
+<h1>Event</h1>
 
-  <h2>Attributes</h2>
+<ng-container *ngIf="event|async as event; else loading">
+
+  <h2>{{ $any(event).eventName }}</h2>
+
+  <h3>Attributes</h3>
 
   <ng-container *ngIf="(eventAttributes | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="trackEventAttribute">

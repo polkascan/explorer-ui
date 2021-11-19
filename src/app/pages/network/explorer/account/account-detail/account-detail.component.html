@@ -41,7 +41,7 @@
 
 
       <ng-container *ngIf="dai.identity as idn">
-        <h2>Identity</h2>
+        <h3>Identity</h3>
         <table class="detail-table">
           <tbody>
           <ng-container [ngSwitch]="!!(idn.parent)">
@@ -136,7 +136,7 @@
 
 
       <ng-container *ngIf="$any((accountBalances | async)) as balances">
-        <h2>Balances</h2>
+        <h3>Balances</h3>
         <table class="detail-table">
           <tbody>
           <tr>
@@ -217,7 +217,7 @@
 
       <ng-container *ngIf="((subs | async) | keyvalue) as subsMap">
         <ng-container *ngIf="subsMap.length">
-          <h2>Accounts</h2>
+          <h3>Accounts</h3>
 
           <mat-list>
             <ng-container *ngIf="dai?.identity?.parent">

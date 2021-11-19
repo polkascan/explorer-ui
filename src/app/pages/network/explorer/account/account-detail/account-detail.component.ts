@@ -193,7 +193,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   toBalanceTransferColumns = ['icon', 'block', 'from', 'to', 'value', 'details']
   signedExtrinsicsColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'details'];
 
-  private listsSize = 10;
+  private listsSize = 50;
 
   private unsubscribeFns: Map<string, (() => void)> = new Map();
   private destroyer: Subject<undefined> = new Subject();

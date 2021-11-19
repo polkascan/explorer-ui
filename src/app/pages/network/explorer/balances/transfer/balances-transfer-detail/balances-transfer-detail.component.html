@@ -1,17 +1,46 @@
+<h1>Balance transfer</h1>
+
 <ng-container *ngIf="$any(transfer) as transfer">
   <ng-container *ngIf="(networkProperties | async) as props">
-    <div>Block <a [routerLink]="'../../../block/' + transfer.blockNumber">#{{transfer.blockNumber}}</a></div>
-    <div>Event Index: {{transfer.eventIdx}}</div>
-    <div *ngIf="transfer.fromMultiAddressAccountId as accountId">
-      From:
-      <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Prefix"
+
+    <h2>{{transfer.blockNumber}}-{{transfer.eventIdx}}</h2>
+
+    <table class="detail-table">
+      <tbody>
+
+      <tr>
+        <th>Block</th>
+        <td><a [routerLink]="'../../../block/' + transfer.blockNumber">{{transfer.blockNumber}}</a></td>
+      </tr>
+
+      <tr>
+        <th>Event Index</th>
+        <td>{{transfer.eventIdx}}</td>
+      </tr>
+
+      <tr *ngIf="transfer.fromMultiAddressAccountId as accountId">
+        <th>From</th>
+        <td>
+          <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Prefix"
                   (clicked)="routeToAccount($event)"></account-id>
-    </div>
-    <div *ngIf="transfer.toMultiAddressAccountId as accountId">
-      To:
-      <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Prefix"
+        </td>
+      </tr>
+
+      <tr *ngIf="transfer.toMultiAddressAccountId as accountId">
+        <th>To</th>
+        <td>
+          <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Prefix"
                   (clicked)="routeToAccount($event)"></account-id>
-    </div>
-    <div>Value: {{transfer.value}}</div>
+        </td>
+      </tr>
+
+      <tr>
+        <th>Value</th>
+        <td><balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol" [value]="transfer.value"></balance></td>
+      </tr>
+
+      </tbody>
+    </table>
+
   </ng-container>
 </ng-container>

@@ -31,9 +31,12 @@ import { Prefix } from '@polkadot/util-crypto/address/types';
 
 
 @Component({
-  template: ''
+  selector: 'attributes',
+  templateUrl: 'attributes.component.html',
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-class AttributesBaseComponent implements OnChanges {
+export class AttributesComponent implements OnChanges {
   @Input() attributes: any[] | string;
   @Input() iconTheme: IconTheme;
   @Input() iconSize: number;
@@ -67,44 +70,5 @@ class AttributesBaseComponent implements OnChanges {
 
       this.parsedAttributes = attrs;
     }
-  }
-}
-
-
-@Component({
-  selector: 'child-attributes',
-  templateUrl: 'attributes.component.html',
-  encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush
-})
-export class ChildAttributesComponent extends AttributesBaseComponent {
-  constructor() {
-    super();
-  }
-}
-
-
-@Component({
-  selector: 'event-attributes',
-  templateUrl: 'attributes.component.html',
-  encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush
-})
-export class EventAttributesComponent extends AttributesBaseComponent {
-  constructor() {
-    super();
-  }
-}
-
-
-@Component({
-  selector: 'extrinsic-attributes',
-  templateUrl: 'attributes.component.html',
-  encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush
-})
-export class ExtrinsicAttributesComponent extends AttributesBaseComponent {
-  constructor() {
-    super();
   }
 }

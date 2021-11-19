@@ -37,6 +37,8 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
   events: pst.Event[];
   networkProperties = this.ns.currentNetworkProperties;
 
+  visibleColumns = ['eventId', 'pallet', 'event', 'details']
+
   private destroyer: Subject<undefined> = new Subject();
   private onDestroyCalled = false;
 
@@ -83,5 +85,9 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
     this.onDestroyCalled = true;
     this.destroyer.next(undefined);
     this.destroyer.complete();
+  }
+
+  trackEvent(i: any, event: pst.Event): string {
+    return `${event.blockNumber}-${event.eventIdx}`;
   }
 }

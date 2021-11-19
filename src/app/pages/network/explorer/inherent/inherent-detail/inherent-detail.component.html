@@ -1,41 +1,89 @@
+<h1>Inherent</h1>
+
 <ng-container *ngIf="inherent">
   <ng-container *ngIf="(networkProperties | async) as props">
-    <div>Block <a [routerLink]="'../../block/' + inherent.blockNumber">#{{inherent.blockNumber}}</a></div>
-    <div>Timestamp: {{inherent.blockDatetime | date: 'medium'}}</div>
-    <div>Inherent Index: {{inherent.extrinsicIdx}}</div>
-    <div>Pallet: {{inherent.callModule}}</div>
-    <div>Call: {{inherent.callName}}</div>
 
-    <h2>Call Arguments</h2>
-    <ng-container *ngIf="callArguments">
-      <extrinsic-attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24"
-                            [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
-                            [ss58Prefix]="props.ss58Prefix">
+    <h2>{{inherent.blockNumber}}-{{inherent.extrinsicIdx}}</h2>
 
-      </extrinsic-attributes>
-    </ng-container>
-
-    <h2>Tiggered Events</h2>
-    <table *ngIf="events">
-      <thead>
-      <tr>
-        <th>Event ID</th>
-        <th>Pallet</th>
-        <th>Event</th>
-        <th></th>
-      </tr>
-      </thead>
+    <table class="detail-table">
       <tbody>
-      <ng-container *ngFor="let event of events">
-        <tr>
-          <td><a [routerLink]="'../../event/' + inherent.blockNumber + '-' + event.eventIdx">
-            {{inherent.blockNumber + '-' + event.eventIdx}}</a></td>
-          <td>{{event.eventModule}}</td>
-          <td>{{event.eventName}}</td>
-          <td><a [routerLink]="'../../event/' + inherent.blockNumber + '-' + event.eventIdx">Details</a></td>
-        </tr>
-      </ng-container>
+
+      <tr>
+        <th>Block</th>
+        <td><a [routerLink]="'../../block/' + inherent.blockNumber">{{inherent.blockNumber}}</a></td>
+      </tr>
+
+      <tr>
+        <th>Timestamp</th>
+        <td>{{inherent.blockDatetime | date: 'medium'}}</td>
+      </tr>
+
+      <tr>
+        <th>Inherent Index</th>
+        <td>{{inherent.extrinsicIdx}}</td>
+      </tr>
+
+      <tr>
+        <th>Pallet</th>
+        <td>{{inherent.callModule}}</td>
+      </tr>
+
+      <tr>
+        <th>Call</th>
+        <td>{{inherent.callName}}</td>
+      </tr>
+
+      <tr *ngIf="callArguments">
+        <th>Call Arguments</th>
+        <td>
+          <attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24"
+                      [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                      [ss58Prefix]="props.ss58Prefix">
+          </attributes>
+        </td>
+      </tr>
+
+
       </tbody>
     </table>
+
+
+    <h3>Events</h3>
+
+    <table mat-table [dataSource]="events" [trackBy]="trackEvent">
+
+      <ng-container matColumnDef="eventId">
+        <th mat-header-cell *matHeaderCellDef>Event ID</th>
+        <td mat-cell *matCellDef="let event">
+          <a [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx">{{event.blockNumber + '-' + event.eventIdx}}</a>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="pallet">
+        <th mat-header-cell *matHeaderCellDef>Pallet</th>
+        <td mat-cell *matCellDef="let event">
+          {{event.eventModule}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="event">
+        <th mat-header-cell *matHeaderCellDef>Event</th>
+        <td mat-cell *matCellDef="let event">
+          {{event.eventName}}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="details">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let event">
+          <a [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx">Details</a>
+        </td>
+      </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="visibleColumns; sticky: true"></tr>
+      <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
+
+    </table>
+
   </ng-container>
 </ng-container>

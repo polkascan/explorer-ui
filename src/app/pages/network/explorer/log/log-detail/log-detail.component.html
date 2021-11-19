@@ -1,12 +1,39 @@
+<h1>Log</h1>
+
 <ng-container *ngIf="log">
   <ng-container *ngIf="(networkProperties | async) as props">
-    <div>Block <a [routerLink]="'../../block/' + log.blockNumber">#{{log.blockNumber}}</a></div>
-    <div>Log Index: {{log.logIdx}}</div>
-    <div>Type: {{log.typeName}}</div>
-    <div *ngIf="log.data">
-      <div><b>Data</b></div>
-      <attribute-struct [attribute]="log.data" [iconTheme]="'polkadot'" [iconSize]="24" [tokenDecimals]="props.tokenDecimals"
-                        [tokenSymbol]="props.tokenSymbol"></attribute-struct>
-    </div>
+
+    <h2>{{log.blockNumber + '-' + log.logIdx}}</h2>
+
+    <table class="detail-table">
+      <tbody>
+
+      <tr>
+        <th>Block</th>
+        <td><a [routerLink]="'../../block/' + log.blockNumber">{{log.blockNumber}}</a></td>
+      </tr>
+
+      <tr>
+        <th>Log Index</th>
+        <td>{{log.logIdx}}</td>
+      </tr>
+
+      <tr>
+        <th>Type</th>
+        <td>{{log.typeName}}</td>
+      </tr>
+
+      <tr *ngIf="log.data">
+        <th>Data</th>
+        <td>
+          <attribute-struct [attribute]="log.data" [iconTheme]="'polkadot'" [iconSize]="24"
+                            [tokenDecimals]="props.tokenDecimals"
+                            [tokenSymbol]="props.tokenSymbol"></attribute-struct>
+        </td>
+      </tr>
+
+      </tbody>
+    </table>
+
   </ng-container>
 </ng-container>
