@@ -16,14 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { NetworkService } from '../../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import {
   PaginatedListComponentBase
 } from '../../../../../../components/list-base/paginated-list-component-base.directive';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { debounceTime, distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
+import { FormControl } from '@angular/forms';
 
 
 @Component({
@@ -32,14 +34,44 @@ import { Router } from '@angular/router';
   styleUrls: ['./balances-transfer-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class BalancesTransferListComponent extends PaginatedListComponentBase<pst.Transfer> {
+export class BalancesTransferListComponent extends PaginatedListComponentBase<pst.Transfer> implements OnInit {
   listSize = 100;
   visibleColumns = ['icon', 'block', 'from', 'to', 'value', 'details'];
 
+  addressControl: FormControl = new FormControl('');
+
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
-              private router: Router) {
+              private router: Router,
+              private route: ActivatedRoute) {
     super(ns);
+  }
+
+
+  ngOnInit(): void {
+    // Set address if already in route query params;
+    this.route.queryParamMap.pipe(
+      takeUntil(this.destroyer),
+      map((params) => params.get('address') || ''),
+      distinctUntilChanged()
+    ).subscribe((address) => {
+      this.addressControl.setValue(address)
+    });
+
+    // Initialize and get items
+    super.ngOnInit();
+
+    this.addressControl.valueChanges
+      .pipe(
+        debounceTime(100),
+        takeUntil(this.destroyer)
+      )
+      .subscribe((values) => {
+        this.items = [];
+        this.subscribeNewItem();
+        this.getItems();
+      });
+
   }
 
   createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Transfer>> {

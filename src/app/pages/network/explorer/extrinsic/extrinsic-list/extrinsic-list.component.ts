@@ -47,6 +47,8 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
   }
 
   ngOnInit(): void {
+    super.ngOnInit();
+
     this.filtersFormGroup.valueChanges
       .pipe(
         takeUntil(this.destroyer)

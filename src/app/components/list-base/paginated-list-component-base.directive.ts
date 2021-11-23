@@ -1,4 +1,4 @@
-import { Directive, OnDestroy } from '@angular/core';
+import { Directive, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { NetworkService } from '../../services/network.service';
@@ -7,7 +7,7 @@ import { ListResponse } from '../../../../polkadapt/projects/polkascan/src/lib/p
 
 
 @Directive()
-export abstract class PaginatedListComponentBase<T> implements OnDestroy {
+export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy {
   abstract listSize: number;
 
   abstract createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<T>>;
@@ -63,6 +63,10 @@ export abstract class PaginatedListComponentBase<T> implements OnDestroy {
   protected onDestroyCalled = false;
 
   constructor(private _ns: NetworkService) {
+  }
+
+
+  ngOnInit(): void {
     this._ns.currentNetwork
       .pipe(
         debounceTime(100),

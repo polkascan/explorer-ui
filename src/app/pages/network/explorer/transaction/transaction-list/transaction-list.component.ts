@@ -21,9 +21,14 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
-import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, filter, first, map, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
+import {
+  PaginatedListComponentBase
+} from '../../../../../components/list-base/paginated-list-component-base.directive';
+import { ActivatedRoute } from '@angular/router';
+import { u8aToHex } from '@polkadot/util';
+import { decodeAddress } from '@polkadot/util-crypto';
 
 
 @Component({
@@ -38,9 +43,12 @@ export class TransactionListComponent extends PaginatedListComponentBase<pst.Ext
 
   palletControl: FormControl = new FormControl('');
   callNameControl: FormControl = new FormControl('');
+  addressControl: FormControl = new FormControl('');
+
   filtersFormGroup: FormGroup = new FormGroup({
     eventModule: this.palletControl,
-    callName: this.callNameControl
+    callName: this.callNameControl,
+    addressControl: this.addressControl
   });
 
   visibleColumns = ['icon', 'transactionID', 'from', 'block', 'pallet', 'call', 'success', 'details'];
@@ -48,11 +56,24 @@ export class TransactionListComponent extends PaginatedListComponentBase<pst.Ext
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
               private rs: RuntimeService,
-              private cd: ChangeDetectorRef) {
+              private cd: ChangeDetectorRef,
+              private route: ActivatedRoute) {
     super(ns);
   }
 
   ngOnInit(): void {
+    // Set address if already in route query params;
+    this.route.queryParamMap.pipe(
+      takeUntil(this.destroyer),
+      map((params) => params.get('address') || ''),
+      distinctUntilChanged()
+    ).subscribe((address) => {
+      this.addressControl.setValue(address)
+    });
+
+    // Initialize and get items
+    super.ngOnInit();
+
     this.filtersFormGroup.valueChanges
       .pipe(
         debounceTime(100),  // Also to make sure eventControl reset has taken place
@@ -143,6 +164,10 @@ export class TransactionListComponent extends PaginatedListComponentBase<pst.Ext
     }
     if (this.callNameControl.value) {
       filters.callName = this.callNameControl.value;
+    }
+    if (this.addressControl.value) {
+      const accountIdHex = u8aToHex(decodeAddress(this.addressControl.value))
+      filters.multiAddressAccountId = accountIdHex;
     }
 
     return filters;

@@ -53,6 +53,8 @@ export class InherentListComponent extends PaginatedListComponentBase<pst.Extrin
   }
 
   ngOnInit(): void {
+    super.ngOnInit();
+
     this.filtersFormGroup.valueChanges
       .pipe(
         debounceTime(100),  // Also to make sure eventControl reset has taken place

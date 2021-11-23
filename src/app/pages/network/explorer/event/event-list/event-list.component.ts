@@ -53,6 +53,8 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
   }
 
   ngOnInit(): void {
+    super.ngOnInit();
+
     this.filtersFormGroup.valueChanges
       .pipe(
         debounceTime(100),  // Also to make sure eventNameControl reset has taken place
