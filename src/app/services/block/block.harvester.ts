@@ -33,7 +33,7 @@ export type Block = Partial<pst.Block> & {
 
 export type BlockSubject = BehaviorSubject<Block>;
 
-type BlockCache = { [nr: string]: BlockSubject };
+type BlockCache = {[nr: string]: BlockSubject};
 
 export class BlockHarvester {
   private unsubscribeNewHeads: (() => void) | null;
@@ -141,10 +141,7 @@ export class BlockHarvester {
 
       if (block.number <= finalizedNumber) {
         // Load finalized data from Polkascan.
-        block = Object.assign(block, await this.polkadapt.run({
-          chain: this.network,
-          adapters: ['substrate-rpc']
-        }).polkascan.chain.getBlock(block.number));
+        block = Object.assign(block, await this.polkadapt.run(this.network).polkascan.chain.getBlock(block.number));
         block.finalized = true;
         block.extrinsics = new Array(block.countExtrinsics);
         block.events = new Array(block.countEvents);
