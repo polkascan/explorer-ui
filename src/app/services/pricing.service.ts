@@ -35,15 +35,26 @@ export class PricingService {
       this.interval = null;
     }
 
-    this.interval = window.setInterval(async () => {
+    try {
       const price = await this.pa.run(this.network as string).prices.getPrice(this.currency as string);
-      this.price.next(price);
-    }, 30000);
 
-    const price = await this.pa.run(this.network as string).prices.getPrice(this.currency as string);
-    if (this.interval) {
-      // Only send price if not destroyed.
-      this.price.next(price);
+      if (price !== undefined) {
+        this.interval = window.setInterval(async () => {
+          const price = await this.pa.run(this.network as string).prices.getPrice(this.currency as string);
+          this.price.next(price);
+        }, 30000);
+
+        if (this.interval) {
+          // Only send price if not destroyed.
+          this.price.next(price);
+        }
+      } else {
+        this.price.next(null);
+      }
+
+    } catch (e) {
+      this.price.next(null);
+      throw e;
     }
   }
 
