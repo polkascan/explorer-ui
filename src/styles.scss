@@ -84,7 +84,7 @@ attribute-struct {
   border-spacing: 0;
 
   th {
-    text-align: right;
+    text-align: left;
     color: #350659;
     font-weight: normal;
     font-style: italic;
@@ -96,9 +96,9 @@ attribute-struct {
     border-bottom: solid 1px #aaaaaa;
     padding: 0.5rem;
   }
+}
 
-  td {
-    width: 100%;
-  }
+.full-width-table {
+  width: 100%;
 }
 

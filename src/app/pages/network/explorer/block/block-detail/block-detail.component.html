@@ -8,7 +8,7 @@
 
       <ng-container *ngIf="block.status === 'loaded'; else loadingBlock">
 
-        <table class="detail-table">
+        <table class="detail-table full-width-table">
           <tbody>
 
           <tr>
@@ -47,85 +47,75 @@
           </tr>
 
           <ng-container *ngIf="block.finalized">
-
-            <tr>
-              <th>Finalized</th>
-              <td>{{block.finalized}}</td>
-            </tr>
-
             <tr>
               <th>Runtime version</th>
               <td><a [routerLink]="'../../runtime/' + block.specVersion">{{block.specVersion}}</a></td>
             </tr>
-
-            <tr>
-              <th>Complete</th>
-              <td>{{block.complete}}</td>
-            </tr>
-
           </ng-container>
 
           </tbody>
         </table>
 
+        <mat-divider></mat-divider>
 
         <ng-container *ngIf="block.finalized; else nonFinalBlock">
 
-          <h3>Extrinsics</h3>
+          <mat-tab-group dynamicHeight animationDuration="0ms">
+            <mat-tab label="Extrinsics">
+              <table class="full-width-table detail-table" *ngIf="extrinsics|async as extrinsics">
+                <thead>
+                <tr>
+                  <th>Extrinsic ID</th>
+                  <th>Module</th>
+                  <th>Call</th>
+                  <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <ng-container *ngFor="let ext of extrinsics">
+                  <tr>
+                    <td><a
+                      [routerLink]="'../../extrinsic/' + block.number + '-' + ext.extrinsicIdx">{{ block.number }}-{{ext.extrinsicIdx}}</a>
+                    </td>
+                    <td>{{ext.callModule}}</td>
+                    <td>{{ext.callName}}</td>
+                    <td><a [routerLink]="'../../extrinsic/' + block.number + '-' + ext.extrinsicIdx">Details</a></td>
+                  </tr>
+                </ng-container>
+                </tbody>
+              </table>
 
-          <table *ngIf="extrinsics|async as extrinsics">
-            <thead>
-            <tr>
-              <th>Extrinsic ID</th>
-              <th>Transaction Hash</th>
-              <th>Transaction From</th>
-              <th>Module</th>
-              <th>Call</th>
-              <th></th>
-            </tr>
-            </thead>
-            <tbody>
-            <ng-container *ngFor="let ext of extrinsics">
-              <tr>
-                <td><a
-                  [routerLink]="'../../extrinsic/' + block.number + '-' + ext.extrinsicIdx">{{ext.extrinsicIdx}}</a>
-                </td>
-                <td>{{ext.hash}}</td>
-                <td></td>
-                <td>{{ext.callModule}}</td>
-                <td>{{ext.callName}}</td>
-                <td><a [routerLink]="'../../extrinsic/' + block.number + '-' + ext.extrinsicIdx">Details</a></td>
-              </tr>
-            </ng-container>
-            </tbody>
-          </table>
+            </mat-tab>
 
-          <h3>Events</h3>
+            <mat-tab label="Events">
+              <table class="full-width-table detail-table" *ngIf="events|async as events">
+                <thead>
+                <tr>
+                  <th>Event ID</th>
+                  <th>Extrinsic ID</th>
+                  <th>Module</th>
+                  <th>Event</th>
+                  <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <ng-container *ngFor="let event of events">
+                  <tr>
+                    <td><a [routerLink]="'../../event/' + block.number + '-' + event.eventIdx">{{event.eventIdx}}</a>
+                    </td>
+                    <td><a
+                      [routerLink]="'../../extrinsic/' + block.number + '-' + event.extrinsicIdx">{{event.extrinsicIdx}}</a>
+                    </td>
+                    <td>{{event.eventModule}}</td>
+                    <td>{{event.eventName}}</td>
+                    <td><a [routerLink]="'../../event/' + block.number + '-' + event.eventIdx">Details</a></td>
+                  </tr>
+                </ng-container>
+                </tbody>
+              </table>
 
-          <table *ngIf="events|async as events">
-            <thead>
-            <tr>
-              <th>Event ID</th>
-              <th>Extrinsic ID</th>
-              <th>Module</th>
-              <th>Event</th>
-              <th></th>
-            </tr>
-            </thead>
-            <tbody>
-            <ng-container *ngFor="let event of events">
-              <tr>
-                <td><a [routerLink]="'../../event/' + block.number + '-' + event.eventIdx">{{event.eventIdx}}</a></td>
-                <td><a
-                  [routerLink]="'../../extrinsic/' + block.number + '-' + event.extrinsicIdx">{{event.extrinsicIdx}}</a>
-                </td>
-                <td>{{event.eventModule}}</td>
-                <td>{{event.eventName}}</td>
-                <td><a [routerLink]="'../../event/' + block.number + '-' + event.eventIdx">Details</a></td>
-              </tr>
-            </ng-container>
-            </tbody>
-          </table>
+            </mat-tab>
+          </mat-tab-group>
 
         </ng-container>
 

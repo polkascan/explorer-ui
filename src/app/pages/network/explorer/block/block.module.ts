@@ -24,6 +24,8 @@ import { BlockRoutingModule } from './block-routing.module';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatDividerModule } from '@angular/material/divider';
 
 @NgModule({
   declarations: [BlockListComponent, BlockDetailComponent],
@@ -32,7 +34,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     BlockRoutingModule,
     MatTableModule,
     MatButtonModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatTabsModule,
+    MatDividerModule
   ]
 })
 export class BlockModule { }
