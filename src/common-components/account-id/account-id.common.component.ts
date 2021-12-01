@@ -35,12 +35,23 @@ import { isHex, isU8a } from '@polkadot/util';
   selector: 'account-id',
   template: `
     <ng-container *ngIf="encoded">
-      <identicon *ngIf="!hideIdenticon" [value]="encoded" [theme]="iconTheme" [size]="iconSize" [prefix]="ss58Prefix"></identicon>
-      <a (click)="clicked.next(encoded)" href="javascript: void">
-        {{ encoded }}
-      </a>
+      <identicon *ngIf="!hideIdenticon" [value]="encoded" [theme]="iconTheme" [size]="iconSize"
+                 [prefix]="ss58Prefix"></identicon>
+      <a (click)="clicked.next(encoded)" href="javascript: void">{{ encoded }}</a>
     </ng-container>
   `,
+  styles: [`
+    account-id {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      align-items: center;
+
+      identicon {
+        margin-right: 0.3rem;
+      }
+    }
+  `],
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })

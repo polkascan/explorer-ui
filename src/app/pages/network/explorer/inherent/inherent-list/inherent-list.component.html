@@ -30,7 +30,7 @@
   <table mat-table [dataSource]="dataSource" [trackBy]="track">
 
     <ng-container matColumnDef="icon">
-      <th mat-header-cell *matHeaderCellDef></th>
+      <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
       <td mat-cell *matCellDef>
           <i class="fas fa-file-signature"></i>
       </td>
@@ -64,15 +64,8 @@
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="success">
-      <th mat-header-cell *matHeaderCellDef>Success</th>
-      <td mat-cell *matCellDef="let inherent">
-        <!-- TODO build me -->
-      </td>
-    </ng-container>
-
     <ng-container matColumnDef="details">
-      <th mat-header-cell *matHeaderCellDef></th>
+      <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
       <td mat-cell *matCellDef="let inherent">
           <a [routerLink]="inherent.blockNumber + '-' + inherent.extrinsicIdx">Details</a>
       </td>

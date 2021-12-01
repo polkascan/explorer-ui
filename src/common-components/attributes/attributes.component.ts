@@ -30,6 +30,8 @@ import { IconTheme } from '../identicon/identicon.types';
 import { Prefix } from '@polkadot/util-crypto/address/types';
 
 
+// TODO string als input werkt niet.
+
 @Component({
   selector: 'attributes',
   templateUrl: 'attributes.component.html',

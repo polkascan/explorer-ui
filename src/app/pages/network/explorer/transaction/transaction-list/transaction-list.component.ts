@@ -26,7 +26,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import {
   PaginatedListComponentBase
 } from '../../../../../components/list-base/paginated-list-component-base.directive';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { u8aToHex } from '@polkadot/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 
@@ -51,13 +51,14 @@ export class TransactionListComponent extends PaginatedListComponentBase<pst.Ext
     addressControl: this.addressControl
   });
 
-  visibleColumns = ['icon', 'transactionID', 'from', 'block', 'pallet', 'call', 'success', 'details'];
+  visibleColumns = ['icon', 'transactionID', 'from', 'block', 'pallet', 'call', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
               private rs: RuntimeService,
               private cd: ChangeDetectorRef,
-              private route: ActivatedRoute) {
+              private route: ActivatedRoute,
+              private router: Router) {
     super(ns);
   }
 
@@ -176,5 +177,10 @@ export class TransactionListComponent extends PaginatedListComponentBase<pst.Ext
 
   track(i: any, transaction: pst.Extrinsic): string {
     return `${transaction.blockNumber}-${transaction.extrinsicIdx}`;
+  }
+
+
+  routeToAccount(address: string) {
+    this.router.navigate([`../account/${address}`], { relativeTo: this.route });
   }
 }

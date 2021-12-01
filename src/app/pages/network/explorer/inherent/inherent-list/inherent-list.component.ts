@@ -43,7 +43,7 @@ export class InherentListComponent extends PaginatedListComponentBase<pst.Extrin
     callName: this.callNameControl
   });
 
-  visibleColumns = ['icon', 'inherentID', 'block', 'pallet', 'call', 'success', 'details'];
+  visibleColumns = ['icon', 'inherentID', 'block', 'pallet', 'call', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,

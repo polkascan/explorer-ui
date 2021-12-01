@@ -20,8 +20,20 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
-import { Subject } from 'rxjs';
+import {
+  filter,
+  finalize,
+  first,
+  map,
+  publishReplay, refCount,
+  share,
+  shareReplay,
+  switchMap,
+  take,
+  takeUntil,
+  tap
+} from 'rxjs/operators';
+import { BehaviorSubject, interval, Subject } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
 type psEvent = {

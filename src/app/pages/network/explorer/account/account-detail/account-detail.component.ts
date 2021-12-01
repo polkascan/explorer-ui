@@ -141,7 +141,7 @@ function polkadaptSubscriptionAsObservable(fn: (...args: any[]) => Promise<() =>
 
   return observable.pipe(
     startWith(undefined),
-    shareReplay(1),
+    shareReplay(), // TODO MEMORY LEAK?!!?!?
     finalize(() => {
       subscr.complete();
 

@@ -69,8 +69,15 @@ body, html {
 }
 
 attribute-struct {
+  display: block;
+  border: solid 1px #aaa;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+
   label {
+    display: block;
     font-style: italic;
+    font-weight: bold;
   }
 
   child-attributes,
@@ -81,6 +88,7 @@ attribute-struct {
 }
 
 .detail-table {
+  min-width: 100%;
   border-spacing: 0;
 
   th {
@@ -90,6 +98,13 @@ attribute-struct {
     font-style: italic;
     font-size: 85%;
     min-width: 8rem;
+    width: 1%;
+  }
+
+  tbody {
+    th {
+      vertical-align: top;
+    }
   }
 
   td, th {
@@ -98,7 +113,15 @@ attribute-struct {
   }
 }
 
-.full-width-table {
+.mat-table--full-width,
+.table--full-width {
   width: 100%;
 }
 
+.mat-cell--icon-cell {
+  width: 2rem;
+}
+
+.mat-cell--details-link-cell {
+  width: 1%;
+}

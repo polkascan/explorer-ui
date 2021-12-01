@@ -28,6 +28,8 @@ import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatTabsModule } from '@angular/material/tabs';
 
 
 @NgModule({
@@ -43,7 +45,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     MatTableModule,
     MatSelectModule,
     MatButtonModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatDividerModule,
+    MatTabsModule
   ]
 })
 export class TransactionModule {

@@ -8,7 +8,7 @@
 
       <ng-container *ngIf="block.status === 'loaded'; else loadingBlock">
 
-        <table class="detail-table full-width-table">
+        <table class="detail-table table--full-width">
           <tbody>
 
           <tr>
@@ -62,7 +62,7 @@
 
           <mat-tab-group dynamicHeight animationDuration="0ms">
             <mat-tab label="Extrinsics">
-              <table class="full-width-table detail-table" *ngIf="extrinsics|async as extrinsics">
+              <table class="table--full-width detail-table" *ngIf="extrinsics|async as extrinsics">
                 <thead>
                 <tr>
                   <th>Extrinsic ID</th>
@@ -88,7 +88,7 @@
             </mat-tab>
 
             <mat-tab label="Events">
-              <table class="full-width-table detail-table" *ngIf="events|async as events">
+              <table class="table--full-width detail-table" *ngIf="events|async as events">
                 <thead>
                 <tr>
                   <th>Event ID</th>

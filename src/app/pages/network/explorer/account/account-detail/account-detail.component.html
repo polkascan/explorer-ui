@@ -255,7 +255,7 @@
             <table mat-table [dataSource]="(signedExtrinsics | async) || []" [trackBy]="signedExtrinsicTrackBy">
 
               <ng-container matColumnDef="icon">
-                <th mat-header-cell *matHeaderCellDef></th>
+                <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
                 <td mat-cell *matCellDef>
                   <i class="fas fa-file-signature"></i>
                 </td>
@@ -291,7 +291,7 @@
               </ng-container>
 
               <ng-container matColumnDef="details">
-                <th mat-header-cell *matHeaderCellDef></th>
+                <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
                 <td mat-cell *matCellDef="let extrinsic">
                   <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">Details</a>
                 </td>
@@ -308,7 +308,7 @@
             <table mat-table [dataSource]="(balanceTransfers | async) || []" [trackBy]="balanceTransfersTrackBy">
 
               <ng-container matColumnDef="icon">
-                <th mat-header-cell *matHeaderCellDef></th>
+                <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
                 <td mat-cell *matCellDef>
                   <i class="fas fa-file-signature"></i>
                 </td>
@@ -351,7 +351,7 @@
               </ng-container>
 
               <ng-container matColumnDef="details">
-                <th mat-header-cell *matHeaderCellDef></th>
+                <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
                 <td mat-cell *matCellDef="let transfer">
                   <a [routerLink]="transfer.blockNumber + '-' + transfer.eventIdx">Details</a>
                 </td>

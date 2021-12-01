@@ -19,7 +19,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ReplaySubject, Subject } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkProperties, NetworkService } from '../../../../../services/network.service';
 import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
@@ -42,6 +42,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   private onDestroyCalled = false;
 
   constructor(private route: ActivatedRoute,
+              private router: Router,
               private cd: ChangeDetectorRef,
               private pa: PolkadaptService,
               private ns: NetworkService
@@ -92,6 +93,11 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
   trackEvent(i: any, event: pst.Event): string {
     return `${event.blockNumber}-${event.eventIdx}`;
+  }
+
+
+  routeToAccount(address: string) {
+    this.router.navigate([`../../account/${address}`], { relativeTo: this.route });
   }
 }
 
