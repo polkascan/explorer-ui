@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { BehaviorSubject, combineLatest, of } from 'rxjs';
+import { BehaviorSubject, combineLatest, defer } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt } from '@polkadapt/core';
 import { Header } from '@polkadot/types/interfaces';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { filter, first, timeoutWith } from 'rxjs/operators';
+import { filter, finalize, first } from 'rxjs/operators';
 
 export type Block = Partial<pst.Block> & {
   status: 'new' | 'loading' | 'loaded',
@@ -43,6 +43,7 @@ export class BlockHarvester {
   finalizedNumber = new BehaviorSubject<number>(0);
   loadedNumber = new BehaviorSubject<number>(0);
   blocks: BlockCache;
+  observedBlocks: {[nr: string]: number} = {};
   paused = false;
 
   constructor(public polkadapt: Polkadapt<AugmentedApi>, public network: string) {
@@ -64,9 +65,22 @@ export class BlockHarvester {
         const nr = parseInt(prop, 10);
         const cached = cache[nr];
         if (cached.value.status === 'new') {
-          this.loadBlock(cached.value.number).then();
+          this.loadBlock(nr);
         }
-        return cached;
+        const deferred = defer(() => {
+          if (this.observedBlocks.hasOwnProperty(nr)) {
+            this.observedBlocks[nr] += 1;
+          } else {
+            this.observedBlocks[nr] = 1;
+          }
+          return cached;
+        }).pipe(finalize(() => {
+          this.observedBlocks[nr] -= 1;
+          if (this.observedBlocks[nr] === 0) {
+            delete this.observedBlocks[nr];
+          }
+        })) as BehaviorSubject<Block>;
+        return deferred;
       }
     });
 
@@ -90,6 +104,7 @@ export class BlockHarvester {
 
   private newHeadHandler(header: Header): void {
     const newNumber = header.number.toNumber();
+    // Only update the head number if the new number is greater.
     if (newNumber > this.headNumber.value) {
       this.headNumber.next(newNumber);
       // Preload block data.
@@ -99,7 +114,7 @@ export class BlockHarvester {
       block.extrinsicsRoot = header.extrinsicsRoot.toString();
       block.stateRoot = header.stateRoot.toString();
       this.cache[newNumber].next(block);
-      this.loadBlock(newNumber).then();
+      this.loadBlock(newNumber);
     }
   }
 
@@ -108,6 +123,14 @@ export class BlockHarvester {
       return;
     }
     const newNumber = block.number;
+    // We want to update all cached blocks that haven't been finalized and still have observers listening to them.
+    Object.keys(this.observedBlocks)
+      .map(nr => this.cache[nr].value)
+      .filter(block => !block.finalized && newNumber >= block.number)
+      .forEach(block => {
+        this.loadBlock(block.number);
+      });
+    // Only update the finalized number if the new number is greater.
     if (newNumber > this.finalizedNumber.value) {
       // If a non-finalized cache entry exists for this number, update it.
       const cached = this.cache[newNumber];
@@ -126,38 +149,63 @@ export class BlockHarvester {
     }
   }
 
-  private async loadBlock(nr: number): Promise<void> {
+  private loadBlock(nr: number): void {
     const cached = this.cache[nr];
-    // We need to know what the latest numbers are.
-    const headNumber = this.headNumber.value;
-    const finalizedNumber = this.finalizedNumber.value;
-    if (headNumber || finalizedNumber) {
+    // Only continue if there is a headNumber or finalizedNumber set. If not, this block will be loaded once the first
+    // block arrives from the subscriptions.
+    combineLatest(this.headNumber, this.finalizedNumber).pipe(
+      filter(([hn, fn]) => hn > 0 || fn > 0),
+      first()  // So it stops right after we get one of the two numbers.
+    ).subscribe(async ([headNumber, finalizedNumber]) => {
       let block = Object.assign({}, cached.value);
-      if (block.number > headNumber || block.status !== 'new') {
+      if (
+        block.status === 'loading' || // It's already loading this block.
+        nr > headNumber ||  // Block doesn't exist, yet.
+        nr > finalizedNumber && block.status === 'loaded' ||  // Block can't load finalized data, yet.
+        block.finalized  // Block is already finalized.
+      ) {
+        // Do nothing.
         return;
       }
+      // Otherwise, raise the loading flag.
+      const oldStatus: 'new' | 'loaded' = block.status;
       block.status = 'loading';
       cached.next(block);
 
       if (block.number <= finalizedNumber) {
         // Load finalized data from Polkascan.
-        block = Object.assign(block, await this.polkadapt.run(this.network).polkascan.chain.getBlock(block.number));
+        let loaded;
+        try {
+          loaded = await this.polkadapt.run(this.network).polkascan.chain.getBlock(block.number);
+        }
+        catch (e) {
+          block.status = oldStatus;
+          throw new Error('Error loading block from Polkascan, will try again when possible and if necessary.');
+        }
+        block = Object.assign(block, loaded);
         block.finalized = true;
         block.extrinsics = new Array(block.countExtrinsics);
         block.events = new Array(block.countEvents);
         block.status = 'loaded';
         cached.next(block);
+        cached.complete();
       } else {
         // Load data from substrate rpc.
         if (!block.hash) {
           block.hash = (await this.polkadapt.run(this.network).rpc.chain.getBlockHash(block.number)).toString();
         }
-        const [signedBlock, allEvents, timestamp] = await Promise.all([
-          this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.getBlock(block.hash),
-          this.polkadapt.run(this.network).query.system.events.at(block.hash),
-          this.polkadapt.run(this.network).query.timestamp.now.at(block.hash)
-        ]);
-        // If finalized data is already loaded into this block, ignore data from rpc node.
+        let signedBlock, allEvents, timestamp;
+        try {
+          [signedBlock, allEvents, timestamp] = await Promise.all([
+            this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.getBlock(block.hash),
+            this.polkadapt.run(this.network).query.system.events.at(block.hash),
+            this.polkadapt.run(this.network).query.timestamp.now.at(block.hash)
+          ]);
+        } catch (e) {
+          block.status = oldStatus;
+          throw new Error('Error loading block from SubstrateRPC, will try again when possible and if necessary.');
+        }
+        // If data is already loaded into this block, ignore data from rpc node.
         if (cached.value.status !== 'loaded') {
           block.parentHash = signedBlock.block.header.parentHash.toString();
           block.extrinsicsRoot = signedBlock.block.header.extrinsicsRoot.toString();
@@ -167,12 +215,16 @@ export class BlockHarvester {
           block.events = new Array(allEvents.length);
           block.status = 'loaded';
           cached.next(block);
+          // If this block can be finalized already, do it now.
+          if (nr <= this.finalizedNumber.value) {
+            this.loadBlock(nr);
+          }
         }
       }
       if (nr > this.loadedNumber.value) {
         this.loadedNumber.next(nr);
       }
-    }
+    });
   }
 
   private unsubscribeHeads(): void {

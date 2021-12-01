@@ -1,7 +1,7 @@
 <h1>Blocks</h1>
 
 <ng-container *ngIf="(blocks | async) as dataSource">
-  <table mat-table [dataSource]="dataSource" [trackBy]="trackByNumberRpcBlock">
+  <table mat-table [dataSource]="dataSource">
 
     <ng-container matColumnDef="icon">
       <th mat-header-cell *matHeaderCellDef></th>

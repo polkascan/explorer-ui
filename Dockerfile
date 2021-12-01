@@ -67,19 +67,19 @@ ENV NGINX_CONF=$NGINX_CONF
 ARG POLKADOT_SUBSTRATE_RPC_URL_ARRAY='["wss://rpc.polkadot.io", "wss://polkadot.api.onfinality.io/public-ws"]'
 ENV POLKADOT_SUBSTRATE_RPC_URL_ARRAY=$POLKADOT_SUBSTRATE_RPC_URL_ARRAY
 
-ARG POLKADOT_POLKASCAN_WS_URL_ARRAY='["wss://explorer-35.polkascan.io/api/v2/polkadot/graphql-ws"]'
+ARG POLKADOT_POLKASCAN_WS_URL_ARRAY='["wss://explorer-11.polkascan.io/api/v2/polkadot/graphql-ws"]'
 ENV POLKADOT_POLKASCAN_WS_URL_ARRAY=$POLKADOT_POLKASCAN_WS_URL_ARRAY
 
 ARG KUSAMA_SUBSTRATE_RPC_URL_ARRAY='["wss://kusama-rpc.polkadot.io", "wss://kusama.api.onfinality.io/public-ws"]'
 ENV KUSAMA_SUBSTRATE_RPC_URL_ARRAY=$KUSAMA_SUBSTRATE_RPC_URL_ARRAY
 
-ARG KUSAMA_POLKASCAN_WS_URL_ARRAY='["wss://explorer-35.polkascan.io/api/v2/kusama/graphql-ws"]'
+ARG KUSAMA_POLKASCAN_WS_URL_ARRAY='["wss://explorer-11.polkascan.io/api/v2/kusama/graphql-ws"]'
 ENV KUSAMA_POLKASCAN_WS_URL_ARRAY=$KUSAMA_POLKASCAN_WS_URL_ARRAY
 
 ARG ROCOCO_SUBSTRATE_RPC_URL_ARRAY='["wss://rococo-rpc.polkadot.io", "wss://rococo.api.onfinality.io/public-ws"]'
 ENV ROCOCO_SUBSTRATE_RPC_URL_ARRAY=$ROCOCO_SUBSTRATE_RPC_URL_ARRAY
 
-ARG ROCOCO_POLKASCAN_WS_URL_ARRAY='["wss://explorer-35.polkascan.io/api/v2/rococo/graphql-ws"]'
+ARG ROCOCO_POLKASCAN_WS_URL_ARRAY='["wss://explorer-11.polkascan.io/api/v2/rococo/graphql-ws"]'
 ENV ROCOCO_POLKASCAN_WS_URL_ARRAY=$ROCOCO_POLKASCAN_WS_URL_ARRAY
 
 

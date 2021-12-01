@@ -20,7 +20,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/
 import { animate, group, query, stagger, style, transition, trigger } from '@angular/animations';
 import { PolkadaptService } from '../../../services/polkadapt.service';
 import { NetworkService } from '../../../services/network.service';
-import { BehaviorSubject, of, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import { catchError, distinctUntilChanged, filter, first, switchMap, takeUntil, tap, timeout } from 'rxjs/operators';
 import { Block } from '../../../services/block/block.harvester';
 import { AppConfig } from '../../../app-config';
@@ -169,10 +169,6 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       blocks.splice(latest - nr, 0, block);
     }
     this.blocks.next(blocks);
-  }
-
-  trackByNumber(index: number, item: BehaviorSubject<Block>): number {
-    return item.value.number;
   }
 
   searchValidator() {

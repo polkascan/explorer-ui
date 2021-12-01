@@ -118,10 +118,6 @@ export class BlockListComponent implements OnInit, OnDestroy {
     this.blocks.next(blocks);
   }
 
-  trackByNumberRpcBlock(index: number, item: BehaviorSubject<Block>): number {
-    return item.value.number;
-  }
-
   getPrevPage(): void {
     if (this.loadingObservable.value) {
       return;
