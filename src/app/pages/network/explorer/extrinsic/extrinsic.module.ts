@@ -23,7 +23,7 @@ import { ExtrinsicRoutingModule } from './extrinsic-routing.module';
 import { ExtrinsicListComponent } from './extrinsic-list/extrinsic-list.component';
 import { ExtrinsicDetailComponent } from './extrinsic-detail/extrinsic-detail.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { PolkascanCommonModule } from '../../../../../common-components/polkascan-common.module';
+import { PolkascanCommonModule } from '../../../../../common/polkascan-common.module';
 import { MatTableModule } from '@angular/material/table';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatButtonModule } from '@angular/material/button';

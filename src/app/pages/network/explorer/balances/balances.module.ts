@@ -22,7 +22,7 @@ import { CommonModule } from '@angular/common';
 import { BalancesRoutingModule } from './balances-routing.module';
 import { BalancesTransferListComponent } from './transfer/balances-transfer-list/balances-transfer-list.component';
 import { BalancesTransferDetailComponent } from './transfer/balances-transfer-detail/balances-transfer-detail.component';
-import { PolkascanCommonModule } from '../../../../../common-components/polkascan-common.module';
+import { PolkascanCommonModule } from '../../../../../common/polkascan-common.module';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';

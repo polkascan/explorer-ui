@@ -23,7 +23,7 @@ import { InherentRoutingModule } from './inherent-routing.module';
 import { InherentListComponent } from './inherent-list/inherent-list.component';
 import { InherentDetailComponent } from './inherent-detail/inherent-detail.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { PolkascanCommonModule } from '../../../../../common-components/polkascan-common.module';
+import { PolkascanCommonModule } from '../../../../../common/polkascan-common.module';
 import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';

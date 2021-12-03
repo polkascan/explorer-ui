@@ -22,7 +22,8 @@ import {
   EventEmitter,
   Input,
   OnChanges,
-  Output, SimpleChanges,
+  Output,
+  SimpleChanges,
   ViewEncapsulation
 } from '@angular/core';
 import { IconTheme } from '../identicon/identicon.types';

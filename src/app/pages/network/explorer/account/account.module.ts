@@ -34,7 +34,7 @@ import { AccountIdentitiesListComponent } from './identities/account-identities-
 import { AccountDetailComponent } from './account-detail/account-detail.component';
 import { AccountIndexDetailComponent } from './indices/account-index-detail/account-index-detail.component';
 import { AccountIndexListComponent } from './indices/account-index-list/account-index-list.component';
-import { PolkascanCommonModule } from '../../../../../common-components/polkascan-common.module';
+import { PolkascanCommonModule } from '../../../../../common/polkascan-common.module';
 import { MatTableModule } from '@angular/material/table';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';

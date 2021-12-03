@@ -23,7 +23,7 @@ import { EventRoutingModule } from './event-routing.module';
 import { EventListComponent } from './event-list/event-list.component';
 import { EventDetailComponent } from './event-detail/event-detail.component';
 import { ReactiveFormsModule } from '@angular/forms';
-import { PolkascanCommonModule } from '../../../../../common-components/polkascan-common.module';
+import { PolkascanCommonModule } from '../../../../../common/polkascan-common.module';
 import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';

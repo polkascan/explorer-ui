@@ -20,18 +20,8 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { ActivatedRoute, Router } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import {
-  distinctUntilChanged,
-  filter,
-  finalize,
-  first,
-  map,
-  shareReplay,
-  startWith,
-  switchMap,
-  takeUntil
-} from 'rxjs/operators';
-import { BehaviorSubject, combineLatest, Observable, of, Subject, Subscriber } from 'rxjs';
+import { distinctUntilChanged, filter, first, map, shareReplay, switchMap, takeUntil } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
 import {
   DeriveAccountFlags,
   DeriveAccountInfo,
@@ -44,6 +34,7 @@ import { AccountId, AccountIndex } from '@polkadot/types/interfaces';
 import { Codec } from '@polkadot/types/types';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { AccountInfo } from '@polkadot/types/interfaces/system/types';
+import { asObservable } from '../../../../../../common/polkadapt-rxjs';
 
 
 interface AccountBalance {
@@ -86,72 +77,6 @@ function calcBonded(stakingInfo?: DeriveStakingAccount, bonded?: boolean | BN[])
   }
 
   return [own, other];
-}
-
-
-function polkadaptSubscriptionAsObservable(fn: (...args: any[]) => Promise<() => void>, ...args: any[]) {
-  let unsubscribeFn: (() => void) | null = null;
-  let finalized = false;
-  let subscr: Subscriber<any>;
-
-  const observable: Observable<any> = new Observable((subscriber) => {
-    subscr = subscriber;
-    let callback: ((...args: any[]) => any) | null = null;
-
-    if (args) {
-      // Convert callback to emitter function.
-      args.forEach((arg, index) => {
-        if (!callback && typeof arg === 'function') {
-          callback = arg;
-          args[index] = (value: any) => {
-            if (!finalized) {
-              arg(value);
-              subscriber.next(value);
-            }
-          }
-        }
-      });
-    }
-
-    if (!callback) {
-      args.push((value: any) => {
-        subscriber.next(value);
-      })
-    }
-
-    fn(...args).then(
-      (unsub) => {
-        unsubscribeFn = () => {
-          unsub();
-        }
-
-        if (finalized) {
-          // The observable is already completed, stop the listener immediately.
-          if (typeof unsubscribeFn === 'function') {
-            unsubscribeFn();
-            unsubscribeFn = null;
-          }
-        }
-      },
-      (e) => {
-        subscriber.error(e);
-        subscriber.complete();
-      });
-  });
-
-  return observable.pipe(
-    startWith(undefined),
-    shareReplay(), // TODO MEMORY LEAK?!!?!?
-    finalize(() => {
-      subscr.complete();
-
-      finalized = true;
-      if (typeof unsubscribeFn === 'function') {
-        unsubscribeFn();
-        unsubscribeFn = null;
-      }
-    })
-  );
 }
 
 
@@ -245,12 +170,12 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     });
 
     this.account = idObservable.pipe(
-      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().query.system.account, id).pipe(takeUntil(this.destroyer))),
+      switchMap((id) => asObservable(this.pa.run().query.system.account, id).pipe(takeUntil(this.destroyer))),
       map((account) => account ? account : undefined)
     );
 
     const idAndIndexObservable = idObservable.pipe(
-      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().derive.accounts.idAndIndex, id).pipe(takeUntil(this.destroyer))),
+      switchMap((id) => asObservable(this.pa.run().derive.accounts.idAndIndex, id).pipe(takeUntil(this.destroyer))),
       shareReplay(1)
     );
 
@@ -268,37 +193,37 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
     this.indices = this.accountIndex.pipe(
       switchMap((accountIndex) => accountIndex
-        ? polkadaptSubscriptionAsObservable(this.pa.run().query.indices.accounts, accountIndex.toNumber()).pipe(takeUntil(this.destroyer))
+        ? asObservable(this.pa.run().query.indices.accounts, accountIndex.toNumber()).pipe(takeUntil(this.destroyer))
         : of(undefined)),
     )
 
     this.superOf = idObservable.pipe(
-      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().query.identity.superOf, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => asObservable(this.pa.run().query.identity.superOf, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.identity = idObservable.pipe(
-      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().query.identity.identityOf, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => asObservable(this.pa.run().query.identity.identityOf, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.subsOf = idObservable.pipe(
-      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().query.identity.subsOf, id).pipe(takeUntil(this.destroyer))),
+      switchMap((id) => asObservable(this.pa.run().query.identity.subsOf, id).pipe(takeUntil(this.destroyer))),
       shareReplay(1)
     );
 
     this.derivedAccountInfo = idObservable.pipe(
-      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().derive.accounts.info, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => asObservable(this.pa.run().derive.accounts.info, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.derivedAccountFlags = idObservable.pipe(
-      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().derive.accounts.flags, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => asObservable(this.pa.run().derive.accounts.flags, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.derivedBalancesAll = idObservable.pipe(
-      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().derive.balances.all, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => asObservable(this.pa.run().derive.balances.all, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.stakingInfo = idObservable.pipe(
-      switchMap((id) => polkadaptSubscriptionAsObservable(this.pa.run().derive.staking.account, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => asObservable(this.pa.run().derive.staking.account, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.accountBalances = combineLatest(
@@ -328,20 +253,20 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.parent = this.superOf.pipe(
       switchMap((val: any) => {
         return val && val.value && val.value[0]
-          ? polkadaptSubscriptionAsObservable(this.pa.run().query.system.account, val.value[0]).pipe(takeUntil(this.destroyer))
+          ? asObservable(this.pa.run().query.system.account, val.value[0]).pipe(takeUntil(this.destroyer))
           : of(undefined)
       })
     )
 
     this.parentIdentity = this.superOf.pipe(
       switchMap((val: any) => val && val.value && val.value[0]
-        ? polkadaptSubscriptionAsObservable(this.pa.run().query.identity.identityOf, val.value[0]).pipe(takeUntil(this.destroyer))
+        ? asObservable(this.pa.run().query.identity.identityOf, val.value[0]).pipe(takeUntil(this.destroyer))
         : of(undefined)),
     )
 
     this.parentSubsOf = this.superOf.pipe(
       switchMap((val: any) => val && val.value && val.value[0]
-        ? polkadaptSubscriptionAsObservable(this.pa.run().query.identity.subsOf, val.value[0]).pipe(takeUntil(this.destroyer))
+        ? asObservable(this.pa.run().query.identity.subsOf, val.value[0]).pipe(takeUntil(this.destroyer))
         : of(undefined)),
       shareReplay(1)
     )
@@ -357,7 +282,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       takeUntil(this.destroyer),
       switchMap(([subsOf, parentSubsOf]) => {
         const subs = subsOf && subsOf.length ? subsOf : parentSubsOf && parentSubsOf.length ? parentSubsOf : [];
-        const observables: Observable<any>[] = subs.map((sub: any) => polkadaptSubscriptionAsObservable(this.pa.run().query.identity.superOf, sub).pipe(takeUntil(this.destroyer)))
+        const observables: Observable<any>[] = subs.map((sub: any) => asObservable(this.pa.run().query.identity.superOf, sub).pipe(takeUntil(this.destroyer)))
 
         if (observables.length > 0) {
           return combineLatest(observables);
