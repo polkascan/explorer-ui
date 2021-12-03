@@ -20,7 +20,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { ActivatedRoute, Router } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { distinctUntilChanged, filter, first, map, shareReplay, switchMap, takeUntil } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, filter, first, map, startWith, switchMap, takeUntil } from 'rxjs/operators';
 import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
 import {
   DeriveAccountFlags,
@@ -170,13 +170,12 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     });
 
     this.account = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.system.account, id).pipe(takeUntil(this.destroyer))),
+      switchMap((id) => asObservable(this.pa.run().query.system.account, id).pipe(startWith(undefined), takeUntil(this.destroyer))),
       map((account) => account ? account : undefined)
     );
 
     const idAndIndexObservable = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.accounts.idAndIndex, id).pipe(takeUntil(this.destroyer))),
-      shareReplay(1)
+      switchMap((id) => asObservable(this.pa.run().derive.accounts.idAndIndex, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.accountId = idAndIndexObservable.pipe(
@@ -206,8 +205,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     );
 
     this.subsOf = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.identity.subsOf, id).pipe(takeUntil(this.destroyer))),
-      shareReplay(1)
+      switchMap((id) => asObservable(this.pa.run().query.identity.subsOf, id).pipe(takeUntil(this.destroyer)))
     );
 
     this.derivedAccountInfo = idObservable.pipe(
@@ -227,8 +225,14 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     );
 
     this.accountBalances = combineLatest(
-      this.derivedBalancesAll,
-      this.stakingInfo
+      this.derivedBalancesAll.pipe(
+        catchError(() => {
+          return of(undefined);
+        })),
+      this.stakingInfo.pipe(
+        catchError(() => {
+          return of(undefined);
+        }))
     ).pipe(
       takeUntil(this.destroyer),
       map(([derivedBalancesAll, stakingInfo]) => {
@@ -241,13 +245,12 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           balances.reserved = derivedBalancesAll.reservedBalance;
         }
         if (stakingInfo) {
-          balances.bonded = stakingInfo?.stakingLedger.active.unwrap() ?? BN_ZERO;
-          balances.redeemable = stakingInfo?.redeemable ?? BN_ZERO;
+          balances.bonded = stakingInfo.stakingLedger.active.unwrap() ?? BN_ZERO;
+          balances.redeemable = stakingInfo.redeemable ?? BN_ZERO;
           balances.unbonding = calcUnbonding(stakingInfo);
         }
         return balances;
-      }),
-      shareReplay(1)
+      })
     );
 
     this.parent = this.superOf.pipe(
@@ -267,8 +270,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.parentSubsOf = this.superOf.pipe(
       switchMap((val: any) => val && val.value && val.value[0]
         ? asObservable(this.pa.run().query.identity.subsOf, val.value[0]).pipe(takeUntil(this.destroyer))
-        : of(undefined)),
-      shareReplay(1)
+        : of(undefined))
     )
 
     this.subsNames = combineLatest(
@@ -323,8 +325,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           map.set(sub, subsNames[i]);
         })
         return map;
-      }),
-      shareReplay(1)
+      })
     )
 
     this.balanceTransfers = combineLatest(

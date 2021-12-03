@@ -66,12 +66,13 @@ export class BalancesTransferListComponent extends PaginatedListComponentBase<ps
         debounceTime(100),
         takeUntil(this.destroyer)
       )
-      .subscribe((values) => {
+      .subscribe(() => {
         this.items = [];
         this.subscribeNewItem();
         this.getItems();
       });
 
+    // TODO Create the address filter for To and From address. Convert address to hex version.
   }
 
   createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Transfer>> {
