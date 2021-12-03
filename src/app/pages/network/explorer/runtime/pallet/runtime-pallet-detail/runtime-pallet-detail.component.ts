@@ -36,7 +36,6 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
   events = new BehaviorSubject<pst.RuntimeEvent[]>([]);
   storages = new BehaviorSubject<pst.RuntimeStorage[]>([]);
   constants = new BehaviorSubject<pst.RuntimeConstant[]>([]);
-  types = new BehaviorSubject<pst.RuntimeType[]>([]);
   errors = new BehaviorSubject<pst.RuntimeErrorMessage[]>([]);
 
   visibleColumns = {
@@ -44,7 +43,6 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     events: ['icon', 'name', 'lookup', 'attributes', 'details'],
     storages: ['icon', 'name', 'type', 'details'],
     constants: ['icon', 'name', 'type', 'value', 'details'],
-    types: ['icon', 'name', 'decoderClass', 'corePrimitive', 'runtimePrimitive'],
     errors: ['icon', 'name', 'index', 'documentation']
   };
 
@@ -72,7 +70,6 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
           takeUntil(this.destroyer),
           filter(r => r !== null),
           tap((r) => {
-            console.log('getRuntime', r);
             this.rs.getRuntimePallets(network as string, specVersion as number).then(pallets => {
               const matchedPallet: pst.RuntimePallet = pallets.filter(p => p.pallet === pallet)[0];
               this.pallet.next(matchedPallet);
@@ -92,10 +89,6 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
             this.rs.getRuntimeConstants(network as string, specVersion as number).then(constants => {
               const palletConstants: pst.RuntimeConstant[] = constants.filter(c => c.pallet === pallet);
               this.constants.next(palletConstants);
-            });
-            this.rs.getRuntimeTypes(network as string, specVersion as number).then(types => {
-              const palletTypes: pst.RuntimeType[] = types.filter(t => t.pallet === pallet);
-              this.types.next(palletTypes);
             });
             this.rs.getRuntimeErrorMessages(network as string, specVersion as number).then(errors => {
               const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet === pallet);
@@ -126,10 +119,6 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
 
   trackConstant(index: number, item: pst.RuntimeConstant): string {
     return item.constantName as string;
-  }
-
-  trackType(index: number, item: pst.RuntimeType): string {
-    return item.scaleType as string;
   }
 
   trackError(index: number, item: pst.RuntimeErrorMessage): string {

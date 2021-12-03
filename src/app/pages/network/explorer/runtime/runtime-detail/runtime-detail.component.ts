@@ -34,8 +34,12 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
   runtime: Observable<pst.Runtime | null>;
   pallets = new BehaviorSubject<pst.RuntimePallet[]>([]);
+  types = new BehaviorSubject<pst.RuntimeType[]>([]);
 
-  visibleColumns = ['icon', 'name', 'events', 'calls', 'storage', 'constants', 'details']
+  visibleColumns = {
+    pallets: ['icon', 'name', 'events', 'calls', 'storage', 'constants', 'details'],
+    types: ['icon', 'name', 'decoderClass', 'corePrimitive', 'runtimePrimitive'],
+  };
 
   constructor(
     private route: ActivatedRoute,
@@ -60,6 +64,9 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
             this.rs.getRuntimePallets(network as string, specVersion as number).then(pallets => {
               this.pallets.next(pallets);
             });
+            this.rs.getRuntimeTypes(network as string, specVersion as number).then(types => {
+              this.types.next(types);
+            });
           })
         )
       )
@@ -71,7 +78,11 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
     this.destroyer.complete();
   }
 
-  track(index: number, item: pst.RuntimePallet): string {
+  trackPallet(index: number, item: pst.RuntimePallet): string {
     return item.name as string;
+  }
+
+  trackType(index: number, item: pst.RuntimeType): string {
+    return item.scaleType as string;
   }
 }

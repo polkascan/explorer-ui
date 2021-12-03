@@ -1,18 +1,22 @@
 <ng-container *ngIf="storage|async as storage; else loading">
-  <h1>Storage Function '{{storage.storageName}}'</h1>
 
-  <div>Value type: {{storage.valueScaleType}}</div>
-  <div>Default: {{storage.default}}</div>
-  <div>Modifier: {{storage.modifier}}</div>
-  <div>Key prefix pallet: {{storage.keyPrefixPallet}}</div>
-  <div>Key prefix name: {{storage.keyPrefixName}}</div>
-  <div>Key 1 type: {{storage.key1ScaleType}}</div>
-  <div>Key 1 hasher: {{storage.key1Hasher}}</div>
-  <div>Key 2 type: {{storage.key2ScaleType}}</div>
-  <div>Key 2 hasher: {{storage.key2Hasher}}</div>
-  <div>Linked: {{storage.isLinked}}</div>
-  <div>Documentation: {{storage.documentation}}</div>
+  <h2>Storage Function '{{storage.storageName}}'</h2>
 
+  <pre>{{storage.documentation}}</pre>
+
+  <table class="mat-table">
+    <tbody>
+      <tr class="mat-row"><th class="mat-header-cell">Value type</th><td class="mat-cell">{{storage.valueScaleType}}</td></tr>
+      <tr class="mat-row"><th class="mat-header-cell">Modifier</th><td class="mat-cell">{{storage.modifier}}</td></tr>
+      <tr class="mat-row"><th class="mat-header-cell">Key prefix pallet</th><td class="mat-cell">{{storage.keyPrefixPallet}}</td></tr>
+      <tr class="mat-row"><th class="mat-header-cell">Key prefix name</th><td class="mat-cell">{{storage.keyPrefixName}}</td></tr>
+      <tr class="mat-row"><th class="mat-header-cell">Key 1 type</th><td class="mat-cell">{{storage.key1ScaleType}}</td></tr>
+      <tr class="mat-row"><th class="mat-header-cell">Key 1 hasher</th><td class="mat-cell">{{storage.key1Hasher}}</td></tr>
+      <tr class="mat-row"><th class="mat-header-cell">Key 2 type</th><td class="mat-cell">{{storage.key2ScaleType}}</td></tr>
+      <tr class="mat-row"><th class="mat-header-cell">Key 2 hasher</th><td class="mat-cell">{{storage.key2Hasher}}</td></tr>
+      <tr class="mat-row"><th class="mat-header-cell">Linked</th><td class="mat-cell">{{storage.isLinked}}</td></tr>
+    </tbody>
+  </table>
 </ng-container>
 
 <ng-template #loading>

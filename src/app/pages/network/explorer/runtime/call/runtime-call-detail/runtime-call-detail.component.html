@@ -2,7 +2,9 @@
 
 <ng-container *ngIf="call|async as call; else loading">
 
-  <h2>{{$any(call).callName}}</h2>
+  <h2>{{call.callName}}</h2>
+
+  <pre>{{call.documentation}}</pre>
 
   <h3>Arguments</h3>
 
