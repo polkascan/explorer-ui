@@ -66,6 +66,6 @@ export class BalancesTransferDetailComponent implements OnInit, OnDestroy {
   }
 
   routeToAccount(address: string) {
-    this.router.navigate([`../../account/${address}`], { relativeTo: this.route });
+    this.router.navigate([`../../../account/${address}`], { relativeTo: this.route });
   }
 }

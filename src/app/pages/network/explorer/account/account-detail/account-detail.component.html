@@ -47,34 +47,34 @@
           <ng-container [ngSwitch]="!!(idn.parent)">
             <ng-container *ngSwitchCase="true">
               <tr *ngIf="idn.displayParent">
-                <th>Name</th>
+                <td class="detail-table--label-cell">Name</td>
                 <td>{{ idn.displayParent }}</td>
               </tr>
               <tr>
-                <th>Subname</th>
+                <td class="detail-table--label-cell">Subname</td>
                 <td>{{ idn.display }}</td>
               </tr>
             </ng-container>
             <ng-container *ngSwitchDefault>
               <tr *ngIf="idn.display">
-                <th>Name</th>
+                <td class="detail-table--label-cell">Name</td>
                 <td>{{ idn.display }}</td>
               </tr>
             </ng-container>
           </ng-container>
 
           <tr *ngIf="(accountIndex | async) as idx">
-            <th>Index</th>
+            <td class="detail-table--label-cell">Index</td>
             <td>{{idx}}</td>
           </tr>
 
           <tr>
-            <th>Nonce</th>
+            <td class="detail-table--label-cell">Nonce</td>
             <td>{{ (accountNonce | async) }}</td>
           </tr>
 
           <tr>
-            <th>Judgements</th>
+            <td class="detail-table--label-cell">Judgements</td>
             <td>
               <ng-container [ngSwitch]="!!(idn?.judgements?.length)">
                 <ng-container *ngSwitchCase="true">
@@ -90,43 +90,43 @@
           </tr>
 
           <tr *ngIf="idn?.legal">
-            <th>Legal</th>
+            <td class="detail-table--label-cell">Legal</td>
             <td>{{idn?.legal}}</td>
           </tr>
 
           <tr *ngIf="idn?.web">
-            <th>Web</th>
+            <td class="detail-table--label-cell">Web</td>
             <td>{{idn?.web}}</td>
           </tr>
 
           <tr *ngIf="idn?.riot">
-            <th>Riot</th>
+            <td class="detail-table--label-cell">Riot</td>
             <td>{{idn?.riot}}</td>
           </tr>
 
           <tr *ngIf="idn?.pgp">
-            <th>PGP</th>
+            <td class="detail-table--label-cell">PGP</td>
             <td>{{idn?.pgp}}</td>
           </tr>
 
           <tr *ngIf="idn?.email">
-            <th>Email</th>
+            <td class="detail-table--label-cell">Email</td>
             <td>{{idn?.email}}</td>
           </tr>
 
           <tr *ngIf="idn?.twitter">
-            <th>Twitter</th>
+            <td class="detail-table--label-cell">Twitter</td>
             <td>{{idn?.twitter}}</td>
           </tr>
 
           <tr *ngIf="idn?.image">
-            <th>Image</th>
+            <td class="detail-table--label-cell">Image</td>
             <td>{{idn?.image}}</td>
           </tr>
 
           <ng-container *ngIf="idn?.other">
             <tr *ngFor="let param of (idn.other | keyvalue)">
-              <th>{{param.key}}</th>
+              <td class="detail-table--label-cell">{{param.key}}</td>
               <td>{{param.value}}</td>
             </tr>
           </ng-container>
@@ -140,7 +140,7 @@
         <table class="detail-table">
           <tbody>
           <tr>
-            <th>Total</th>
+            <td class="detail-table--label-cell">Total</td>
             <td>
               <balance [value]="balances.total" [tokenSymbol]="props.tokenSymbol"
                        [tokenDecimals]="props.tokenDecimals"></balance>
@@ -148,7 +148,7 @@
           </tr>
 
           <tr>
-            <th>Free</th>
+            <td class="detail-table--label-cell">Free</td>
             <td>
               <balance [value]="balances.free" [tokenSymbol]="props.tokenSymbol"
                        [tokenDecimals]="props.tokenDecimals"></balance>
@@ -156,7 +156,7 @@
           </tr>
 
           <tr>
-            <th>Transferrable</th>
+            <td class="detail-table--label-cell">Transferrable</td>
             <td>
               <balance [value]="balances.transferrable" [tokenSymbol]="props.tokenSymbol"
                        [tokenDecimals]="props.tokenDecimals"></balance>
@@ -164,7 +164,7 @@
           </tr>
 
           <tr>
-            <th>Locked</th>
+            <td class="detail-table--label-cell">Locked</td>
             <td>
               <balance [value]="balances.locked" [tokenSymbol]="props.tokenSymbol"
                        [tokenDecimals]="props.tokenDecimals"></balance>
@@ -172,9 +172,9 @@
           </tr>
 
           <tr>
-            <th>
+            <td class="detail-table--label-cell">
               Reserved
-            </th>
+            </td>
             <td>
               <balance [value]="balances.reserved" [tokenSymbol]="props.tokenSymbol"
                        [tokenDecimals]="props.tokenDecimals"></balance>
@@ -182,9 +182,9 @@
           </tr>
 
           <tr>
-            <th>
+            <td class="detail-table--label-cell">
               Redeemable
-            </th>
+            </td>
             <td>
               <balance [value]="balances.redeemable" [tokenSymbol]="props.tokenSymbol"
                        [tokenDecimals]="props.tokenDecimals"></balance>
@@ -192,9 +192,9 @@
           </tr>
 
           <tr>
-            <th>
+            <td class="detail-table--label-cell">
               Bonded
-            </th>
+            </td>
             <td>
               <balance [value]="balances.bonded" [tokenSymbol]="props.tokenSymbol"
                        [tokenDecimals]="props.tokenDecimals"></balance>
@@ -202,9 +202,9 @@
           </tr>
 
           <tr>
-            <th>
+            <td class="detail-table--label-cell">
               Unbonding
-            </th>
+            </td>
             <td>
               <balance [value]="balances.unbonding" [tokenSymbol]="props.tokenSymbol"
                        [tokenDecimals]="props.tokenDecimals"></balance>

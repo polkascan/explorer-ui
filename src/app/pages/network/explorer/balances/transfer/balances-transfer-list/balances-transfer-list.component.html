@@ -22,7 +22,7 @@
         <th mat-header-cell *matHeaderCellDef>From</th>
         <td mat-cell *matCellDef="let transfer">
           <ng-container *ngIf="transfer.fromMultiAddressAccountId">
-            <account-id [address]="transfer.fromMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="64"
+            <account-id [address]="transfer.fromMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="32"
                         [ss58Prefix]="props.ss58Prefix"
                         (clicked)="routeToAccount($event)"></account-id>
           </ng-container>
@@ -33,7 +33,7 @@
         <th mat-header-cell *matHeaderCellDef>To</th>
         <td mat-cell *matCellDef="let transfer">
           <ng-container *ngIf="transfer.toMultiAddressAccountId">
-            <account-id [address]="transfer.toMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="64"
+            <account-id [address]="transfer.toMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="32"
                         [ss58Prefix]="props.ss58Prefix"
                         (clicked)="routeToAccount($event)"></account-id>
           </ng-container>
@@ -43,7 +43,7 @@
       <ng-container matColumnDef="value">
         <th mat-header-cell *matHeaderCellDef>Value</th>
         <td mat-cell *matCellDef="let transfer">
-          {{transfer.value}}
+          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol" [value]="transfer.value"></balance>
         </td>
       </ng-container>
 

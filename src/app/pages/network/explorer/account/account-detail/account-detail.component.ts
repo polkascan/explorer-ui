@@ -424,7 +424,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
 
   routeToAccount(address: string) {
-    this.router.navigate([`../../account/${address}`]);
+    this.router.navigate([`../../account/${address}`], {relativeTo: this.route});
   }
 
 

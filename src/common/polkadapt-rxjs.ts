@@ -39,7 +39,6 @@ export function asObservable(fn: (...args: any[]) => Promise<() => void>, ...arg
         (response) => {
           if (typeof response === 'function') {
             unsubscribeFn = () => {
-              console.log('unsub!!')
               response();
             }
 

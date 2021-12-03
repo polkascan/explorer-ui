@@ -9,32 +9,32 @@
       <tbody>
 
       <tr>
-        <th>Block</th>
+        <td class="detail-table--label-cell">Block</td>
         <td><a [routerLink]="'../../block/' + inherent.blockNumber">{{inherent.blockNumber}}</a></td>
       </tr>
 
       <tr>
-        <th>Timestamp</th>
+        <td class="detail-table--label-cell">Timestamp</td>
         <td>{{inherent.blockDatetime | date: 'medium'}}</td>
       </tr>
 
       <tr>
-        <th>Inherent Index</th>
+        <td class="detail-table--label-cell">Inherent Index</td>
         <td>{{inherent.extrinsicIdx}}</td>
       </tr>
 
       <tr>
-        <th>Pallet</th>
+        <td class="detail-table--label-cell">Pallet</td>
         <td>{{inherent.callModule}}</td>
       </tr>
 
       <tr>
-        <th>Call</th>
+        <td class="detail-table--label-cell">Call</td>
         <td>{{inherent.callName}}</td>
       </tr>
 
       <tr *ngIf="callArguments">
-        <th>Call Arguments</th>
+        <td class="detail-table--label-cell">Call Arguments</td>
         <td>
           <attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24"
                       [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"

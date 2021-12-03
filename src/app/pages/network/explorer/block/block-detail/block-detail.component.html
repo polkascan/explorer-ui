@@ -12,43 +12,43 @@
           <tbody>
 
           <tr>
-            <th>Timestamp</th>
+            <td class="detail-table--label-cell">Timestamp</td>
             <td>{{block.datetime|date:'medium'}}</td>
           </tr>
 
           <tr>
-            <th>Hash</th>
+            <td class="detail-table--label-cell">Hash</td>
             <td>{{block.hash}}</td>
           </tr>
 
           <tr *ngIf="block.parentHash">
-            <th>Parent hash</th>
+            <td class="detail-table--label-cell">Parent hash</td>
             <td><a [routerLink]="'../../block/' + (block.number - 1)">{{block.parentHash}}</a></td>
           </tr>
 
           <tr>
-            <th>State root</th>
+            <td class="detail-table--label-cell">State root</td>
             <td>{{block.stateRoot}}</td>
           </tr>
 
           <tr>
-            <th>Extrinsics root</th>
+            <td class="detail-table--label-cell">Extrinsics root</td>
             <td>{{block.extrinsicsRoot}}</td>
           </tr>
 
           <tr>
-            <th>Extrinsics count</th>
+            <td class="detail-table--label-cell">Extrinsics count</td>
             <td>{{block.extrinsics.length}}</td>
           </tr>
 
           <tr>
-            <th>Events count</th>
+            <td class="detail-table--label-cell">Events count</td>
             <td>{{block.events.length}}</td>
           </tr>
 
           <ng-container *ngIf="block.finalized">
             <tr>
-              <th>Runtime version</th>
+              <td class="detail-table--label-cell">Runtime version</td>
               <td><a [routerLink]="'../../runtime/' + block.specVersion">{{block.specVersion}}</a></td>
             </tr>
           </ng-container>
@@ -68,7 +68,7 @@
                   <th>Extrinsic ID</th>
                   <th>Module</th>
                   <th>Call</th>
-                  <th></th>
+                  <th class="detail-table--details-link-cell"></th>
                 </tr>
                 </thead>
                 <tbody>
@@ -95,7 +95,7 @@
                   <th>Extrinsic ID</th>
                   <th>Module</th>
                   <th>Event</th>
-                  <th></th>
+                  <th class="detail-table--details-link-cell"></th>
                 </tr>
                 </thead>
                 <tbody>

@@ -55,18 +55,24 @@ export class AttributesComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['attributes']) {
       let attrs = [];
-      if (changes['attributes'].currentValue) {
-        if (typeof changes['attributes'].currentValue === 'string') {
+      const currentValue = changes['attributes'].currentValue;
+
+      if (currentValue) {
+        if (typeof currentValue === 'string') {
           try {
-            const parsed = JSON.parse(changes['attributes'].currentValue);
+            const parsed = JSON.parse(currentValue);
             if (Array.isArray(parsed)) {
               attrs = parsed;
+            } else if (typeof parsed === 'object' && Object.keys(parsed).length) {
+              attrs = [parsed];
             }
           } catch (e) {
             // Do nothing
           }
-        } else if (Array.isArray(changes['attributes'].currentValue)) {
-          attrs = changes['attributes'].currentValue;
+        } else if (Array.isArray(currentValue)) {
+          attrs = currentValue;
+        } else if (typeof currentValue === 'object') {
+          attrs = [currentValue];
         }
       }
 

@@ -106,6 +106,6 @@ export class BalancesTransferListComponent extends PaginatedListComponentBase<ps
 
 
   routeToAccount(address: string) {
-    this.router.navigate([`../../account/${address}`]);
+    this.router.navigate([`../../account/${address}`], {relativeTo: this.route});
   }
 }

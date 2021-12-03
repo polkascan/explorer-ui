@@ -91,14 +91,14 @@ attribute-struct {
   min-width: 100%;
   border-spacing: 0;
 
-  th {
-    text-align: left;
-    color: #350659;
-    font-weight: normal;
-    font-style: italic;
-    font-size: 85%;
-    min-width: 8rem;
-    width: 1%;
+  thead {
+    th {
+      text-align: left;
+      color: rgba(0, 0, 0, 0.54);;
+      font-size: 12px;
+      font-weight: 500;
+      border-bottom-color: rgba(0, 0, 0, 0.12);
+    }
   }
 
   tbody {
@@ -108,9 +108,25 @@ attribute-struct {
   }
 
   td, th {
-    border-bottom: solid 1px #aaaaaa;
+    border-bottom: solid 1px rgba(0, 0, 0, 0.12);
     padding: 0.5rem;
   }
+}
+
+.detail-table--label-cell {
+  text-align: left;
+  color: rgba(0, 0, 0, 0.75);
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 8rem;
+  vertical-align: top;
+  width: 1%;
+  line-height: 24px;
+}
+
+.detail-table--details-link-cell {
+  min-width: auto;
+  width: 1%;
 }
 
 .mat-table--full-width,

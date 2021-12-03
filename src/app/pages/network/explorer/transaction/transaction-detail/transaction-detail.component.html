@@ -9,37 +9,37 @@
       <tbody>
 
       <tr>
-        <th>Block</th>
+        <td class="detail-table--label-cell">Block</td>
         <td><a [routerLink]="'../../block/' + transaction.blockNumber">{{transaction.blockNumber}}</a></td>
       </tr>
 
       <tr>
-        <th>Timestamp</th>
+        <td class="detail-table--label-cell">Timestamp</td>
         <td>{{transaction.blockDatetime | date: 'medium'}}</td>
       </tr>
 
       <tr>
-        <th>Transaction Index</th>
+        <td class="detail-table--label-cell">Transaction Index</td>
         <td>{{transaction.extrinsicIdx}}</td>
       </tr>
 
       <tr>
-        <th>Transaction hash</th>
+        <td class="detail-table--label-cell">Transaction hash</td>
         <td>{{transaction.hash}}</td>
       </tr>
 
       <tr>
-        <th>Pallet</th>
+        <td class="detail-table--label-cell">Pallet</td>
         <td>{{transaction.callModule}}</td>
       </tr>
 
       <tr>
-        <th>Call</th>
+        <td class="detail-table--label-cell">Call</td>
         <td>{{transaction.callName}}</td>
       </tr>
 
       <tr>
-        <th>Address</th>
+        <td class="detail-table--label-cell">Address</td>
         <td>
           <ng-container *ngIf="transaction.multiAddressAccountId">
             <account-id [ss58Prefix]="props.ss58Prefix" [address]="transaction.multiAddressAccountId"
@@ -49,17 +49,17 @@
       </tr>
 
       <tr>
-        <th>Nonce</th>
+        <td class="detail-table--label-cell">Nonce</td>
         <td>{{transaction.nonce}}</td>
       </tr>
 
       <tr>
-        <th>Signature</th>
+        <td class="detail-table--label-cell">Signature</td>
         <td>{{transaction.signature}}</td>
       </tr>
 
       <tr *ngIf="callArguments">
-        <th>Call arguments</th>
+        <td class="detail-table--label-cell">Call arguments</td>
         <td>
           <attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24"
                       [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"

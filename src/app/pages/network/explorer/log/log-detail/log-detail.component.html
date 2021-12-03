@@ -9,22 +9,22 @@
       <tbody>
 
       <tr>
-        <th>Block</th>
+        <td class="detail-table--label-cell">Block</td>
         <td><a [routerLink]="'../../block/' + log.blockNumber">{{log.blockNumber}}</a></td>
       </tr>
 
       <tr>
-        <th>Log Index</th>
+        <td class="detail-table--label-cell">Log Index</td>
         <td>{{log.logIdx}}</td>
       </tr>
 
       <tr>
-        <th>Type</th>
+        <td class="detail-table--label-cell">Type</td>
         <td>{{log.typeName}}</td>
       </tr>
 
       <tr *ngIf="log.data">
-        <th>Data</th>
+        <td class="detail-table--label-cell">Data</td>
         <td>
           <attribute-struct [attribute]="log.data" [iconTheme]="'polkadot'" [iconSize]="24"
                             [tokenDecimals]="props.tokenDecimals"

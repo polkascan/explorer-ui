@@ -9,17 +9,17 @@
       <tbody>
 
       <tr>
-        <th>Block</th>
+        <td class="detail-table--label-cell">Block</td>
         <td><a [routerLink]="'../../../block/' + transfer.blockNumber">{{transfer.blockNumber}}</a></td>
       </tr>
 
       <tr>
-        <th>Event Index</th>
+        <td class="detail-table--label-cell">Event Index</td>
         <td>{{transfer.eventIdx}}</td>
       </tr>
 
       <tr *ngIf="transfer.fromMultiAddressAccountId as accountId">
-        <th>From</th>
+        <td class="detail-table--label-cell">From</td>
         <td>
           <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Prefix"
                   (clicked)="routeToAccount($event)"></account-id>
@@ -27,7 +27,7 @@
       </tr>
 
       <tr *ngIf="transfer.toMultiAddressAccountId as accountId">
-        <th>To</th>
+        <td class="detail-table--label-cell">To</td>
         <td>
           <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Prefix"
                   (clicked)="routeToAccount($event)"></account-id>
@@ -35,7 +35,7 @@
       </tr>
 
       <tr>
-        <th>Value</th>
+        <td class="detail-table--label-cell">Value</td>
         <td><balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol" [value]="transfer.value"></balance></td>
       </tr>
 

@@ -8,52 +8,52 @@
     <table class="detail-table">
       <tbody>
       <tr>
-        <th>Block</th>
+        <td class="detail-table--label-cell">Block</td>
         <td><a [routerLink]="'../../block/' + extrinsic.blockNumber">{{extrinsic.blockNumber}}</a></td>
       </tr>
 
       <tr>
-        <th>Timestamp</th>
+        <td class="detail-table--label-cell">Timestamp</td>
         <td>{{extrinsic.blockDatetime | date: 'medium'}}</td>
       </tr>
 
       <tr>
-        <th>Extrinsic Index</th>
+        <td class="detail-table--label-cell">Extrinsic Index</td>
         <td>{{extrinsic.extrinsicIdx}}</td>
       </tr>
 
       <tr>
-        <th>Extrinsic Hash</th>
+        <td class="detail-table--label-cell">Extrinsic Hash</td>
         <td>{{extrinsic.hash}}</td>
       </tr>
 
       <tr>
-        <th>Pallet</th>
+        <td class="detail-table--label-cell">Pallet</td>
         <td>{{extrinsic.callModule}}</td>
       </tr>
 
       <tr>
-        <th>Call</th>
+        <td class="detail-table--label-cell">Call</td>
         <td>{{extrinsic.callName}}</td>
       </tr>
 
       <tr>
-        <th>Address</th>
+        <td class="detail-table--label-cell">Address</td>
         <td>{{extrinsic.blockHash}}</td>
       </tr>
 
       <tr>
-        <th>Nonce</th>
+        <td class="detail-table--label-cell">Nonce</td>
         <td>{{extrinsic.nonce}}</td>
       </tr>
 
       <tr>
-        <th>Signature</th>
+        <td class="detail-table--label-cell">Signature</td>
         <td>{{extrinsic.signature}}</td>
       </tr>
 
       <tr *ngIf="callArguments">
-        <th>Call Arguments</th>
+        <td class="detail-table--label-cell">Call Arguments</td>
         <td>
           <attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24"
                       [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"

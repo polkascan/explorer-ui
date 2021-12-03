@@ -25,6 +25,11 @@ import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, Vi
       {{ convertedValue }} {{ tokenSymbol }}
     </ng-container>
   `,
+  styles: [`
+    balance {
+      white-space: nowrap;
+    }
+  `],
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
