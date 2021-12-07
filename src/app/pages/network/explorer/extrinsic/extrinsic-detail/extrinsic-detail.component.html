@@ -39,7 +39,11 @@
 
       <tr>
         <td class="detail-table--label-cell">Address</td>
-        <td>{{extrinsic.blockHash}}</td>
+        <td>
+          <account-id *ngIf="extrinsic.multiAddressAccountId" [address]="extrinsic.multiAddressAccountId"
+                      [iconSize]="16" [iconTheme]="'polkadot'" [ss58Prefix]="props.ss58Prefix"
+                      (clicked)="routeToAccount($event)"></account-id>
+        </td>
       </tr>
 
       <tr>

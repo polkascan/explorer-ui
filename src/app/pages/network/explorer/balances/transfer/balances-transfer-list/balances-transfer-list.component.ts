@@ -25,7 +25,9 @@ import {
 } from '../../../../../../components/list-base/paginated-list-component-base.directive';
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
-import { FormControl } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
+import { u8aToHex } from '@polkadot/util';
+import { decodeAddress } from '@polkadot/util-crypto';
 
 
 @Component({
@@ -38,7 +40,12 @@ export class BalancesTransferListComponent extends PaginatedListComponentBase<ps
   listSize = 100;
   visibleColumns = ['icon', 'block', 'from', 'to', 'value', 'details'];
 
-  addressControl: FormControl = new FormControl('');
+  toAddressControl: FormControl = new FormControl('');
+  fromAddressControl: FormControl = new FormControl('');
+  filtersFormGroup: FormGroup = new FormGroup({
+    toMultiAddressAccountId: this.toAddressControl,
+    fromMultiAddressAccountId: this.fromAddressControl
+  })
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
@@ -52,16 +59,30 @@ export class BalancesTransferListComponent extends PaginatedListComponentBase<ps
     // Set address if already in route query params;
     this.route.queryParamMap.pipe(
       takeUntil(this.destroyer),
-      map((params) => params.get('address') || ''),
+      map((params) => params.get('toAddress') || ''),
       distinctUntilChanged()
     ).subscribe((address) => {
-      this.addressControl.setValue(address)
+      if (address) {
+        address = u8aToHex(decodeAddress(address));
+      }
+      this.toAddressControl.setValue(address);
+    });
+
+    this.route.queryParamMap.pipe(
+      takeUntil(this.destroyer),
+      map((params) => params.get('fromAddress') || ''),
+      distinctUntilChanged()
+    ).subscribe((address) => {
+      if (address) {
+        address = u8aToHex(decodeAddress(address));
+      }
+      this.fromAddressControl.setValue(address);
     });
 
     // Initialize and get items
     super.ngOnInit();
 
-    this.addressControl.valueChanges
+    this.filtersFormGroup.valueChanges
       .pipe(
         debounceTime(100),
         takeUntil(this.destroyer)
@@ -71,13 +92,11 @@ export class BalancesTransferListComponent extends PaginatedListComponentBase<ps
         this.subscribeNewItem();
         this.getItems();
       });
-
-    // TODO Create the address filter for To and From address. Convert address to hex version.
   }
 
   createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Transfer>> {
     return this.pa.run(this.network).polkascan.chain.getTransfers(
-      {},
+      this.filters,
       this.listSize,
       pageKey
     );
@@ -86,6 +105,7 @@ export class BalancesTransferListComponent extends PaginatedListComponentBase<ps
 
   createNewItemSubscription(handleItemFn: (item: pst.Transfer) => void): Promise<() => void> {
     return this.pa.run(this.network).polkascan.chain.subscribeNewTransfer(
+      this.filters,
       handleItemFn
     );
   }
@@ -103,6 +123,20 @@ export class BalancesTransferListComponent extends PaginatedListComponentBase<ps
 
   track(i: any, transfer: pst.Transfer): string {
     return `${transfer.blockNumber}-${transfer.eventIdx}`;
+  }
+
+
+  get filters(): any {
+    const filters: any = {};
+    if (this.toAddressControl.value) {
+      // If true, singed only is being set. There is no need for a not signed check.
+      filters.toMultiAddressAccountId = this.toAddressControl.value;
+    }
+    if (this.fromAddressControl.value) {
+      filters.fromMultiAddressAccountId = this.fromAddressControl.value;
+    }
+
+    return filters;
   }
 
 

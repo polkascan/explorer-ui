@@ -114,8 +114,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   balanceTransfers: Observable<pst.Transfer[]>;
   signedExtrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
 
-  fromBalanceTransferColumns = ['icon', 'block', 'to', 'value', 'details']
-  toBalanceTransferColumns = ['icon', 'block', 'from', 'to', 'value', 'details']
+  balanceTransferColumns = ['icon', 'block', 'from', 'to', 'value', 'details']
   signedExtrinsicsColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'details'];
 
   private listsSize = 50;
@@ -333,7 +332,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       this.fromBalanceTransfers
     ).pipe(
       takeUntil(this.destroyer),
-      map(([to, from]) => to.concat(from)
+      map(([to, from]) => [...to, ...from]
         .sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx)
         .slice(0, this.listsSize))
     )
@@ -346,20 +345,23 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         signed: 1,
         multiAddressAccountId: idHex
       }, this.listsSize);
+
     this.signedExtrinsics.next(extrinsics.objects);
+
     const signedExtrinsicsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewExtrinsic(
       {
         signed: 1,
         multiAddressAccountId: idHex
       },
-      (extrinsic) => {
+      (extrinsic: pst.Extrinsic) => {
         const extrisics = this.signedExtrinsics.value;
-        if (extrisics) {
-          const result = extrisics
-            .filter((e) => e.blockNumber !== extrinsic.blockNumber && e.extrinsicIdx !== extrinsic.extrinsicIdx)
-            .splice(0, 0, extrinsic);
-
-          this.signedExtrinsics.next(result);
+        if (extrisics && extrisics.some((e) => e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx) === false) {
+          const merged = [extrinsic, ...extrisics];
+          merged.sort((a: pst.Extrinsic, b: pst.Extrinsic) => {
+            return b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx;
+          });
+          merged.length = this.listsSize;
+          this.signedExtrinsics.next([extrinsic].concat(extrisics));
         }
       });
 
@@ -377,13 +379,14 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       {
         fromMultiAddressAccountId: idHex
       },
-      (transfer) => {
+      (transfer: pst.Transfer) => {
         const transfers = this.fromBalanceTransfers.value;
-        if (transfers) {
-          const result = transfers
-            .filter((t) => t.blockNumber !== transfer.blockNumber && t.eventIdx !== transfer.eventIdx)
-            .splice(0, 0, transfer);
-
+        if (transfers && transfers.some((t) => t.blockNumber !== transfer.blockNumber && t.eventIdx !== transfer.eventIdx) === false) {
+          const result = [transfer,  ...transfers];
+          result.sort((a: pst.Transfer, b: pst.Transfer) => {
+            return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
+          });
+          result.length = this.listsSize
           this.fromBalanceTransfers.next(result);
         }
       });
@@ -401,13 +404,14 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       {
         toMultiAddressAccountId: idHex
       },
-      (transfer) => {
+      (transfer: pst.Transfer) => {
         const transfers = this.toBalanceTransfers.value;
-        if (transfers) {
-          const result = transfers
-            .filter((t) => t.blockNumber !== transfer.blockNumber && t.eventIdx !== transfer.eventIdx)
-            .splice(0, 0, transfer);
-
+        if (transfers && transfers.some((t) => t.blockNumber !== transfer.blockNumber && t.eventIdx !== transfer.eventIdx) === false) {
+          const result = [transfer, ...transfers];
+          result.sort((a: pst.Transfer, b: pst.Transfer) => {
+            return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
+          });
+          result.length = this.listsSize
           this.toBalanceTransfers.next(result);
         }
       });

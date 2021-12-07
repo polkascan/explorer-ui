@@ -69,7 +69,7 @@
         aria-label="Previous" (click)="getPrevPage()">
   Previous
 </button>
-<button [disabled]="(((loadingObservable | async) || 0) > 0) || !pageNext" mat-stroked-button aria-label="Next"
-        (click)="getNextPage()">
+<button [disabled]="(((loadingObservable | async) || 0) > 0) || !pageNext" mat-stroked-button
+        aria-label="Next" (click)="getNextPage()">
   Next
 </button>

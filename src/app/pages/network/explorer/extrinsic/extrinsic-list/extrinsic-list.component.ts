@@ -19,10 +19,13 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { takeUntil } from 'rxjs/operators';
+import { distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
+import { u8aToHex } from '@polkadot/util';
+import { decodeAddress } from '@polkadot/util-crypto';
+import { ActivatedRoute } from '@angular/router';
 
 
 @Component({
@@ -35,29 +38,43 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
   listSize = 100;
 
   signedControl: FormControl = new FormControl(true);
+  addressControl: FormControl = new FormControl('');
   filtersFormGroup: FormGroup = new FormGroup({
     signed: this.signedControl,
+    multiAddressAccountId: this.addressControl
   });
 
   visibleColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'signed', 'details'];
 
   constructor(private ns: NetworkService,
-              private pa: PolkadaptService) {
+              private pa: PolkadaptService,
+              private route: ActivatedRoute) {
     super(ns);
   }
 
   ngOnInit(): void {
-    super.ngOnInit();
+    this.route.queryParamMap.pipe(
+      takeUntil(this.destroyer),
+      map((params) => params.get('address') || ''),
+      distinctUntilChanged()
+    ).subscribe((address) => {
+      if (address) {
+        address = u8aToHex(decodeAddress(address));
+      }
+      this.addressControl.setValue(address);
+    });
 
     this.filtersFormGroup.valueChanges
       .pipe(
         takeUntil(this.destroyer)
       )
-      .subscribe((values) => {
+      .subscribe(() => {
         this.items = [];
         this.subscribeNewItem();
         this.getItems();
       });
+
+    super.ngOnInit();
   }
 
 
@@ -94,6 +111,10 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
       // If true, singed only is being set. There is no need for a not signed check.
       filters.signed = 1;
     }
+    if (this.addressControl.value) {
+      filters.multiAddressAccountId = this.addressControl.value;
+    }
+
     return filters;
   }
 

@@ -39,6 +39,8 @@ import { MatTableModule } from '@angular/material/table';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatButtonModule } from '@angular/material/button';
 
 
 @NgModule({
@@ -52,7 +54,9 @@ import { MatTabsModule } from '@angular/material/tabs';
     MatTableModule,
     MatListModule,
     MatDividerModule,
-    MatTabsModule
+    MatTabsModule,
+    MatToolbarModule,
+    MatButtonModule
   ]
 })
 export class AccountModule {

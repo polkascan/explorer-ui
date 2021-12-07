@@ -41,10 +41,8 @@
       <tr>
         <td class="detail-table--label-cell">Address</td>
         <td>
-          <ng-container *ngIf="transaction.multiAddressAccountId">
-            <account-id [ss58Prefix]="props.ss58Prefix" [address]="transaction.multiAddressAccountId"
+            <account-id *ngIf="transaction.multiAddressAccountId" [ss58Prefix]="props.ss58Prefix" [address]="transaction.multiAddressAccountId"
                         [iconTheme]="'polkadot'" [iconSize]="32" (clicked)="routeToAccount($event)"></account-id>
-          </ng-container>
         </td>
       </tr>
 
