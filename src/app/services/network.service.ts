@@ -24,6 +24,7 @@ import { BlockService } from './block/block.service';
 import { RuntimeService } from './runtime/runtime.service';
 import { PricingService } from './pricing.service';
 import { VariablesService } from './variables.service';
+import { ChainProperties } from '@polkadot/types/interfaces';
 
 
 export interface NetworkProperties {
@@ -40,6 +41,12 @@ export class NetworkService {
   currentNetwork = new BehaviorSubject<string>('');
   currentNetworkProperties = new BehaviorSubject<NetworkProperties | undefined>(undefined);
   blockHarvester: BlockHarvester
+
+  private defaultProps = {
+    ss58Prefix: 42,
+    tokenSymbol: 'UNIT',
+    tokenDecimals: 12
+  }
 
   constructor(private pa: PolkadaptService,
               private bs: BlockService,
@@ -88,16 +95,37 @@ export class NetworkService {
       this.rs.initialize(network);
 
       try {
-        const props = await this.pa.run(network).rpc.system.properties();
+        const properties: ChainProperties = await this.pa.run(network).rpc.system.properties();
+
+        let ss58Prefix: number = this.defaultProps.ss58Prefix;
+        if (properties.ss58Format || (properties as any).ss58Prefix) {
+          if ((properties.ss58Format || (properties as any).ss58Prefix).isSome) {
+            ss58Prefix = (properties.ss58Format || (properties as any).ss58Prefix).toJSON() as number;
+          }
+        }
+
+        let tokenSymbol: string = this.defaultProps.tokenSymbol;
+        if (properties.tokenSymbol && properties.tokenSymbol.isSome) {
+          const symbol = properties.tokenSymbol.toJSON();
+          tokenSymbol = (Array.isArray(symbol) ? symbol[0] : typeof symbol === 'string' ? symbol : this.defaultProps.tokenSymbol) as string;
+        }
+
+        let tokenDecimals: number = this.defaultProps.tokenDecimals;
+        if (properties.tokenDecimals && properties.tokenDecimals.isSome) {
+          const decimals = properties.tokenDecimals.toJSON();
+          tokenDecimals = (Array.isArray(decimals) ? decimals[0] : typeof decimals === 'string' ? decimals : this.defaultProps.tokenDecimals) as number;
+        }
 
         this.currentNetworkProperties.next({
-          ss58Prefix: props.ss58Format.toJSON() as number,
-          tokenSymbol: (props.tokenSymbol.toJSON() as string[])[0] || '',
-          tokenDecimals: (props.tokenDecimals.toJSON() as number[])[0] || 0
+          ss58Prefix: ss58Prefix,
+          tokenSymbol: tokenSymbol,
+          tokenDecimals: tokenDecimals
         })
       } catch (e) {
         console.error(e);
         if (this.currentNetworkProperties.value) {
+          this.currentNetworkProperties.next(this.defaultProps);
+        } else {
           this.currentNetworkProperties.next(undefined);
         }
       }
