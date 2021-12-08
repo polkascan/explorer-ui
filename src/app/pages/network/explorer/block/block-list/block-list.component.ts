@@ -176,5 +176,6 @@ export class BlockListComponent implements OnInit, OnDestroy {
       blocks.push(block);
     }
     this.blocks.next(blocks);
+    window.scrollTo(0, 0);
   }
 }

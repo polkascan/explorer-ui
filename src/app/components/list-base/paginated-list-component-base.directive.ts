@@ -223,6 +223,7 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
     } else if (this.pageNext) {
       await this.getItems(this.pageNext);
     }
+    window.scrollTo(0, 0);
   }
 
 
