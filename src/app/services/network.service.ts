@@ -116,9 +116,9 @@ export class NetworkService {
       }
 
       try {
-        systemName = await this.pa.run(network).rpc.system.name().toString();
-        specName = await this.pa.run(network).runtimeVersion.specName.toString();
-        systemVersion = await this.pa.run(network).rpc.system.version().toString()
+        systemName = (await this.pa.run(network).rpc.system.name())?.toString();
+        specName = (await this.pa.run(network).runtimeVersion.specName)?.toString();
+        systemVersion = (await this.pa.run(network).rpc.system.version())?.toString()
       } catch (e) {
         console.error(e);
       }
@@ -126,15 +126,15 @@ export class NetworkService {
       try {
         properties = await this.pa.run(network).rpc.system.properties();
         if (properties) {
-          chainSS58 = chainSS58 ?? (properties.ss58Format || (properties as any).ss58Prefix).isSome
+          chainSS58 = chainSS58 ?? ((properties.ss58Format || (properties as any).ss58Prefix).isSome
             ? (properties.ss58Format || (properties as any).ss58Prefix).toJSON() as number
-            : undefined;
-          chainTokens = chainTokens ?? (properties.tokenSymbol && properties.tokenSymbol.isSome)
+            : undefined);
+          chainTokens = chainTokens ?? ((properties.tokenSymbol && properties.tokenSymbol.isSome)
             ? properties.tokenSymbol.toJSON() as string[]
-            : undefined;
-          chainDecimals = chainDecimals ?? (properties.tokenDecimals && properties.tokenDecimals.isSome)
+            : undefined);
+          chainDecimals = chainDecimals ?? ((properties.tokenDecimals && properties.tokenDecimals.isSome)
             ? properties.tokenDecimals.toJSON() as number[]
-            : undefined
+            : undefined);
         }
 
       } catch (e) {
