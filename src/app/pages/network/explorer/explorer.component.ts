@@ -1,3 +1,4 @@
+
 /*
  * Polkascan Explorer UI
  * Copyright (C) 2018-2021 Polkascan Foundation (NL)
@@ -190,7 +191,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
         if (validAddress) {
           // Check if address belongs to this network/chain.
           try {
-            validateAddress(value, false, ns.ss58Prefix);
+            validateAddress(value, false, ns.currentNetworkProperties.value?.ss58Format);
             return null;
           } catch (e) {
             return {wrongNetwork: {value}};
@@ -212,7 +213,8 @@ export class ExplorerComponent implements OnInit, OnDestroy {
         } else {
           let validAddress: boolean;
           try {
-            validAddress = validateAddress(value, false, this.ns.ss58Prefix)
+            validAddress = validateAddress(value, false,
+              this.ns.currentNetworkProperties.value?.ss58Format);
           } catch (e) {
             validAddress = false;
           }

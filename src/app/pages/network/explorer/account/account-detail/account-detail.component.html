@@ -6,7 +6,7 @@
     <div *ngIf="(id | async) as address">
       <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
         <div class="account-address-identicon">
-          <identicon [value]="address" [theme]="'polkadot'" [size]="64" [prefix]="props.ss58Prefix"></identicon>
+          <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format"></identicon>
         </div>
         <div class="account-address-readable">{{ address }}</div>
       </div>
@@ -18,7 +18,7 @@
 
       <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
         <div class="account-address-identicon">
-          <identicon [value]="address" [theme]="'polkadot'" [size]="64" [prefix]="props.ss58Prefix"></identicon>
+          <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format"></identicon>
         </div>
 
         <div class="account-address-readable">
@@ -226,8 +226,8 @@
               <div mat-subheader>Parent</div>
               <mat-list-item>
                 <div mat-line>
-                  <identicon [value]="$any(dai.identity.parent)" [theme]="'polkadot'" [size]="16"
-                             [prefix]="props.ss58Prefix"></identicon>
+                  <identicon [value]="$any(dai.identity.parent)" [theme]="props.iconTheme" [size]="16"
+                             [prefix]="props.ss58Format"></identicon>
                   <a [routerLink]="'../' + dai.identity?.parent?.toHuman()">{{ dai.identity.parent }}</a>
                   <ng-container *ngIf="dai.identity.displayParent"><b> {{ dai.identity.displayParent}}</b>
                   </ng-container>
@@ -238,8 +238,8 @@
             <div mat-subheader *ngIf="subsMap.length">Subs</div>
             <mat-list-item *ngFor="let sub of (subsMap); let i = index">
               <div mat-line>
-                <identicon [value]="$any(sub.key)" [theme]="'polkadot'" [size]="16"
-                           [prefix]="props.ss58Prefix"></identicon>
+                <identicon [value]="$any(sub.key)" [theme]="props.iconTheme" [size]="16"
+                           [prefix]="props.ss58Format"></identicon>
                 <a [routerLink]="'../' + $any(sub.key).toHuman()">{{ $any(sub.key).toHuman() }}</a>
                 <ng-container *ngIf="sub.value"><b> {{sub.value}}</b></ng-container>
               </div>
@@ -349,7 +349,7 @@
           <td mat-cell *matCellDef="let transfer">
             <ng-container *ngIf="transfer.fromMultiAddressAccountId">
               <account-id [address]="transfer.fromMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="16"
-                          [ss58Prefix]="props.ss58Prefix"
+                          [ss58Prefix]="props.ss58Format"
                           (clicked)="routeToAccount($event)"></account-id>
             </ng-container>
           </td>
@@ -360,7 +360,7 @@
           <td mat-cell *matCellDef="let transfer">
             <ng-container *ngIf="transfer.toMultiAddressAccountId">
               <account-id [address]="transfer.toMultiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="16"
-                          [ss58Prefix]="props.ss58Prefix"
+                          [ss58Prefix]="props.ss58Format"
                           (clicked)="routeToAccount($event)"></account-id>
             </ng-container>
           </td>

@@ -25,12 +25,19 @@ import { RuntimeService } from './runtime/runtime.service';
 import { PricingService } from './pricing.service';
 import { VariablesService } from './variables.service';
 import { ChainProperties } from '@polkadot/types/interfaces';
+import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
+import { IconTheme } from '../../common/identicon/identicon.types';
+import { getSystemIcon } from '../../common/identicon/polkadot-js';
 
 
 export interface NetworkProperties {
-  ss58Prefix: number;
+  ss58Format: number;
   tokenSymbol: string;
   tokenDecimals: number;
+  systemName?: string;
+  specName?: string;
+  systemVersion?: string;
+  iconTheme?: IconTheme;
 }
 
 
@@ -42,11 +49,9 @@ export class NetworkService {
   currentNetworkProperties = new BehaviorSubject<NetworkProperties | undefined>(undefined);
   blockHarvester: BlockHarvester
 
-  private defaultProps = {
-    ss58Prefix: 42,
-    tokenSymbol: 'UNIT',
-    tokenDecimals: 12
-  }
+  private defaultDecimals = 12;
+  private defaultSS58 = addressDefaults.prefix;
+  private defaultSymbol = 'UNIT';
 
   constructor(private pa: PolkadaptService,
               private bs: BlockService,
@@ -94,41 +99,62 @@ export class NetworkService {
       this.ps.initialize(network, this.vs.currency.value);
       this.rs.initialize(network);
 
+      let chainSS58: number | undefined;
+      let chainDecimals: number[] | undefined;
+      let chainTokens: string[] | undefined;
+      let systemName: string | undefined;
+      let specName: string | undefined;
+      let systemVersion: string | undefined;
+      let properties: ChainProperties | undefined;
+
       try {
-        const properties: ChainProperties = await this.pa.run(network).rpc.system.properties();
-
-        let ss58Prefix: number = this.defaultProps.ss58Prefix;
-        if (properties.ss58Format || (properties as any).ss58Prefix) {
-          if ((properties.ss58Format || (properties as any).ss58Prefix).isSome) {
-            ss58Prefix = (properties.ss58Format || (properties as any).ss58Prefix).toJSON() as number;
-          }
-        }
-
-        let tokenSymbol: string = this.defaultProps.tokenSymbol;
-        if (properties.tokenSymbol && properties.tokenSymbol.isSome) {
-          const symbol = properties.tokenSymbol.toJSON();
-          tokenSymbol = (Array.isArray(symbol) ? symbol[0] : typeof symbol === 'string' ? symbol : this.defaultProps.tokenSymbol) as string;
-        }
-
-        let tokenDecimals: number = this.defaultProps.tokenDecimals;
-        if (properties.tokenDecimals && properties.tokenDecimals.isSome) {
-          const decimals = properties.tokenDecimals.toJSON();
-          tokenDecimals = (Array.isArray(decimals) ? decimals[0] : typeof decimals === 'string' ? decimals : this.defaultProps.tokenDecimals) as number;
-        }
-
-        this.currentNetworkProperties.next({
-          ss58Prefix: ss58Prefix,
-          tokenSymbol: tokenSymbol,
-          tokenDecimals: tokenDecimals
-        })
+        chainSS58 = await this.pa.run(network).registry.chainSS58;
+        chainDecimals = await this.pa.run(network).registry.chainDecimals;
+        chainTokens = await this.pa.run(network).registry.chainTokens;
       } catch (e) {
         console.error(e);
-        if (this.currentNetworkProperties.value) {
-          this.currentNetworkProperties.next(this.defaultProps);
-        } else {
-          this.currentNetworkProperties.next(undefined);
-        }
       }
+
+      try {
+        systemName = await this.pa.run(network).rpc.system.name().toString();
+        specName = await this.pa.run(network).runtimeVersion.specName.toString();
+        systemVersion = await this.pa.run(network).rpc.system.version().toString()
+      } catch (e) {
+        console.error(e);
+      }
+
+      try {
+        properties = await this.pa.run(network).rpc.system.properties();
+        if (properties) {
+          chainSS58 = chainSS58 ?? (properties.ss58Format || (properties as any).ss58Prefix).isSome
+            ? (properties.ss58Format || (properties as any).ss58Prefix).toJSON() as number
+            : undefined;
+          chainTokens = chainTokens ?? (properties.tokenSymbol && properties.tokenSymbol.isSome)
+            ? properties.tokenSymbol.toJSON() as string[]
+            : undefined;
+          chainDecimals = chainDecimals ?? (properties.tokenDecimals && properties.tokenDecimals.isSome)
+            ? properties.tokenDecimals.toJSON() as number[]
+            : undefined
+        }
+
+      } catch (e) {
+        console.error(e);
+      }
+
+      const ss58Format: number = chainSS58 ?? this.defaultSS58;
+      const tokenSymbol: string = (chainTokens && chainTokens[0]) ?? this.defaultSymbol;
+      const tokenDecimals: number = (chainDecimals && chainDecimals[0]) ?? this.defaultDecimals;
+      const iconTheme: string | undefined = systemName && specName && getSystemIcon(systemName, specName) || undefined;
+
+      this.currentNetworkProperties.next({
+        ss58Format: ss58Format,
+        tokenSymbol: tokenSymbol,
+        tokenDecimals: tokenDecimals,
+        systemName: systemName,
+        specName: specName,
+        systemVersion: systemVersion,
+        iconTheme: iconTheme as 'substrate'
+      });
     }
 
     this.currentNetwork.next(network);
@@ -139,17 +165,5 @@ export class NetworkService {
     this.pa.clearNetwork();
     this.currentNetwork.next('');
     this.settingNetwork = '';
-  }
-
-  get ss58Prefix(): number | undefined {
-    return this.currentNetworkProperties.value?.ss58Prefix;
-  }
-
-  get tokenSymbol(): string | undefined {
-    return this.currentNetworkProperties.value?.tokenSymbol;
-  }
-
-  get tokenDecimals(): number | undefined {
-    return this.currentNetworkProperties.value?.tokenDecimals;
   }
 }
