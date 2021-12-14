@@ -15,7 +15,7 @@
 
       <!--  <div>Referenced Transaction: <a [routerLink]="'../../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a></div>-->
 
-      <tr>
+      <tr *ngIf="event.extrinsicIdx !== null">
         <td class="detail-table--label-cell">Extrinsic</td>
         <td>
           <a [routerLink]="'../../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">
