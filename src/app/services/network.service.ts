@@ -117,8 +117,8 @@ export class NetworkService {
 
       try {
         systemName = (await this.pa.run(network).rpc.system.name())?.toString();
-        specName = (await this.pa.run(network).runtimeVersion.specName)?.toString();
-        systemVersion = (await this.pa.run(network).rpc.system.version())?.toString()
+        specName = await this.pa.run(network).runtimeVersion.specName?.toString();
+        systemVersion = (await this.pa.run(network).rpc.system.version())?.toString();
       } catch (e) {
         console.error(e);
       }
