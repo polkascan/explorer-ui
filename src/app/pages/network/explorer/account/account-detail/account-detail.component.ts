@@ -20,7 +20,9 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/
 import { ActivatedRoute, Router } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { catchError, distinctUntilChanged, filter, first, map, startWith, switchMap, takeUntil } from 'rxjs/operators';
+import {
+  catchError, distinctUntilChanged, filter, first, map, shareReplay, startWith, switchMap, takeUntil
+} from 'rxjs/operators';
 import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
 import {
   DeriveAccountFlags,
@@ -32,7 +34,7 @@ import { BN, BN_ZERO, u8aToHex, u8aToString } from '@polkadot/util';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { AccountId, AccountIndex } from '@polkadot/types/interfaces';
 import { Codec } from '@polkadot/types/types';
-import { decodeAddress } from '@polkadot/util-crypto';
+import { decodeAddress, validateAddress } from '@polkadot/util-crypto';
 import { AccountInfo } from '@polkadot/types/interfaces/system/types';
 import { asObservable } from '../../../../../../common/polkadapt-rxjs';
 
@@ -87,7 +89,7 @@ function calcBonded(stakingInfo?: DeriveStakingAccount, bonded?: boolean | BN[])
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AccountDetailComponent implements OnInit, OnDestroy {
-  id: Observable<string>;
+  id: Observable<string | null>;
   account: Observable<AccountInfo>;
   subs: Observable<any>;
   identity: Observable<any>;
@@ -106,6 +108,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   derivedBalancesAll: Observable<DeriveBalancesAll>;
   stakingInfo: Observable<DeriveStakingAccount>;
   accountBalances: Observable<Partial<AccountBalance>>;
+  errors = new BehaviorSubject<string | null>(null);
 
   networkProperties = this.ns.currentNetworkProperties;
 
@@ -150,6 +153,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
     // Remove all active subscriptions when id changes.
     idObservable.subscribe((id) => {
+      this.errors.next(null);
       // Try to create the hex for accountId manually.
       this.unsubscribeFns.forEach((unsub) => unsub());
       this.unsubscribeFns.clear();
@@ -158,13 +162,36 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       this.toBalanceTransfers.next([]);
       this.signedExtrinsics.next([]);
 
-      try {
-        const accountIdHex = u8aToHex(decodeAddress(id));
-        this.fetchAndSubscribeFromTransfers(accountIdHex);
-        this.fetchAndSubscribeToTransfers(accountIdHex);
-        this.fetchAndSubscribeExtrinsics(accountIdHex);
-      } catch (e) {
-        // TODO We ignore all errors for now...
+      if (id) {
+        let validAddress: boolean;
+        try {
+          validAddress = validateAddress(id);
+        } catch (e) {
+          validAddress = false;
+        }
+        if (validAddress) {
+          // Check if address belongs to this network/chain.
+          try {
+            validateAddress(id, false, this.networkProperties.value?.ss58Format);
+          } catch (e) {
+            validAddress = false;
+          }
+        }
+        if (validAddress) {
+          try {
+            const accountIdHex = u8aToHex(decodeAddress(id));
+            this.fetchAndSubscribeFromTransfers(accountIdHex);
+            this.fetchAndSubscribeToTransfers(accountIdHex);
+            this.fetchAndSubscribeExtrinsics(accountIdHex);
+          } catch (e) {
+          }
+        } else {
+          // Not a valid address.
+          this.errors.next('Not a valid address.');
+        }
+      } else {
+        // Account not found.
+        this.errors.next('Account not found.');
       }
     });
 

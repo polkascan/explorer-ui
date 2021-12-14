@@ -2,6 +2,10 @@
 
 <ng-container *ngIf="(networkProperties | async) as props">
 
+  <ng-container *ngIf="(errors | async) !== null">
+    <p>{{errors|async}}</p>
+  </ng-container>
+
   <ng-template #noAccount>
     <div *ngIf="(id | async) as address">
       <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
@@ -252,7 +256,9 @@
     </ng-container>
   </ng-template>
 
-  <ng-container *ngIf="(account | async); then hasAccount; else noAccount"></ng-container>
+  <ng-container *ngIf="(errors | async) === null">
+    <ng-container *ngIf="(account | async); then hasAccount; else noAccount"></ng-container>
+  </ng-container>
 
   <mat-divider></mat-divider>
 
