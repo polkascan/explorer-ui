@@ -80,6 +80,10 @@ attribute-struct {
     font-weight: bold;
   }
 
+  > div {
+    word-break: break-word;
+  }
+
   child-attributes,
   attribute-struct {
     margin-left: 8px;
