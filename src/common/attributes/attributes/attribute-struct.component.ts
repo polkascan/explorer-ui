@@ -34,14 +34,25 @@ import { IconTheme } from '../../identicon/identicon.types';
     <ng-container [ngSwitch]="attributeIsObject">
       <ng-container *ngSwitchCase="true">
         <ng-container *ngFor="let item of parsedAttribute | keyvalue">
-          <ng-container *ngIf="{ isObject: isObject(item.value), hasType: $any(item.value)?.type } as itemCheck">
+          <ng-container *ngIf="{ isObject: isObject(item.value), isArray: isArray(item.value), hasType: $any(item.value)?.type } as itemCheck">
             <label>{{ itemCheck.isObject && itemCheck.hasType ? $any(item.value).name : item.key }}</label>
 
-            <ng-container [ngSwitch]="itemCheck.isObject">
+            <ng-container [ngSwitch]="itemCheck.isObject || itemCheck.isArray">
               <ng-container *ngSwitchCase="true">
                 <ng-container [ngSwitch]="itemCheck.hasType">
                   <attributes *ngSwitchCase="true" [attributes]="$any(item.value)" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></attributes>
-                  <attribute-struct *ngSwitchDefault [attribute]="item.value" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></attribute-struct>
+                  <ng-container *ngSwitchDefault>
+                    <ng-container [ngSwitch]="itemCheck.isArray">
+                      <ng-container *ngSwitchCase="true">
+                        <attribute-struct *ngFor="let subItem of $any(item.value)"
+                                          [attribute]="subItem" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></attribute-struct>
+                      </ng-container>
+                      <ng-container *ngSwitchDefault>
+                        <attribute-struct [attribute]="item.value" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></attribute-struct>
+                      </ng-container>
+                    </ng-container>
+
+                  </ng-container>
                 </ng-container>
               </ng-container>
 
@@ -93,5 +104,10 @@ export class AttributeStructComponent implements OnChanges {
 
   isObject(attribute: any): boolean {
     return Object.prototype.toString.call(attribute) === '[object Object]';
+  }
+
+
+  isArray(attribute: any): boolean {
+    return Array.isArray(attribute);
   }
 }
