@@ -18,11 +18,11 @@
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { ReplaySubject, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { NetworkProperties, NetworkService } from '../../../../../services/network.service';
-import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { NetworkService } from '../../../../../services/network.service';
+import { filter, first, map, switchMap, takeUntil} from 'rxjs/operators';
 
 @Component({
   selector: 'app-transaction-detail',

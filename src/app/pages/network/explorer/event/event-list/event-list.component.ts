@@ -57,7 +57,7 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
 
     this.filtersFormGroup.valueChanges
       .pipe(
-        debounceTime(100),  // Also to make sure eventNameControl reset has taken place
+        debounceTime(100),  // To make sure eventNameControl reset has taken place
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {

@@ -77,7 +77,7 @@ export class TransactionListComponent extends PaginatedListComponentBase<pst.Ext
 
     this.filtersFormGroup.valueChanges
       .pipe(
-        debounceTime(100),  // Also to make sure eventControl reset has taken place
+        debounceTime(100),  // To make sure eventControl reset has taken place
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {

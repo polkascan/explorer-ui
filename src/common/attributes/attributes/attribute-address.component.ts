@@ -17,19 +17,14 @@
  */
 
 import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Input,
-  OnChanges,
-  Output, SimpleChanges,
-  ViewEncapsulation
+  ChangeDetectionStrategy, Component, Input, OnChanges, OnInit, SimpleChanges, ViewEncapsulation
 } from '@angular/core';
 import { IconTheme } from '../../identicon/identicon.types';
 import { Prefix } from '@polkadot/util-crypto/address/types';
 import { encodeAddress } from '@polkadot/util-crypto';
 import { HexString } from '@polkadot/util/types';
 import { isHex, isU8a } from '@polkadot/util';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'attribute-address',
@@ -44,7 +39,7 @@ import { isHex, isU8a } from '@polkadot/util';
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AttributeAddressComponent implements OnChanges {
+export class AttributeAddressComponent implements OnInit, OnChanges {
   @Input() attribute: { type: string, value: HexString | Uint8Array | string };
   @Input() iconTheme: IconTheme;
   @Input() iconSize: number;
@@ -54,6 +49,14 @@ export class AttributeAddressComponent implements OnChanges {
   @Output() clicked = new EventEmitter();
 
   encoded: string;
+  relativeToRoute: ActivatedRoute | undefined;
+
+  constructor(private route: ActivatedRoute) {
+  }
+
+  ngOnInit(): void {
+    this.relativeToRoute = this.route.pathFromRoot.find(routePart => routePart.snapshot.url[0]?.path === 'explorer');
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['attribute']) {
@@ -68,8 +71,5 @@ export class AttributeAddressComponent implements OnChanges {
 
       this.encoded = address;
     }
-  }
-
-  constructor() {
   }
 }

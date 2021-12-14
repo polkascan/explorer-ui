@@ -22,19 +22,12 @@ import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import {
   filter,
-  finalize,
   first,
   map,
-  publishReplay, refCount,
-  share,
-  shareReplay,
   switchMap,
-  take,
-  takeUntil,
-  tap
+  takeUntil
 } from 'rxjs/operators';
-import { BehaviorSubject, interval, Subject } from 'rxjs';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { Subject } from 'rxjs';
 
 type psEvent = {
   blockNumber: number; // combined primary key blockNumber, eventIdx

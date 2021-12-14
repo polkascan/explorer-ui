@@ -31,11 +31,17 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AttributeEthereumAddressComponent {
+export class AttributeEthereumAddressComponent implements OnInit {
   @Input() attribute: { type: string, value: string };
   @Input() iconSize: number;
   @Output() clicked = new EventEmitter();
 
-  constructor() {
+  relativeToRoute: ActivatedRoute | undefined;
+
+  constructor(private route: ActivatedRoute) {
+  }
+
+  ngOnInit(): void {
+    this.relativeToRoute = this.route.pathFromRoot.find(routePart => routePart.snapshot.url[0]?.path === 'explorer');
   }
 }

@@ -23,7 +23,6 @@ import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { catchError, distinctUntilChanged, filter, first, switchMap, takeUntil, tap, timeout } from 'rxjs/operators';
 import { Block } from '../../../../../services/block/block.harvester';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
 @Component({
   selector: 'app-block-list',
@@ -50,7 +49,7 @@ export class BlockListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Watch for changes to network, latest block number and last block data.
+    // Watch for changes to network, the latest block number and last block data.
     this.ns.currentNetwork.pipe(
       // Keep it running until this component is destroyed.
       takeUntil(this.destroyer),
@@ -69,7 +68,7 @@ export class BlockListComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer),
         filter(nr => nr > 0),
         first(),
-        // Start pre-loading the latest 100 blocks.
+        // Start preloading the latest 100 blocks.
         tap(() => {
           // We won't wait for the result, but the function will mark the blocks to load,
           // so other (lazy) block loading mechanics won't kick in.

@@ -21,7 +21,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/
 import { animate, group, query, stagger, style, transition, trigger } from '@angular/animations';
 import { PolkadaptService } from '../../../services/polkadapt.service';
 import { NetworkService } from '../../../services/network.service';
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
+import { BehaviorSubject, of, Subject } from 'rxjs';
 import { catchError, distinctUntilChanged, filter, first, switchMap, takeUntil, tap, timeout } from 'rxjs/operators';
 import { Block } from '../../../services/block/block.harvester';
 import { AppConfig } from '../../../app-config';
@@ -94,7 +94,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Watch for changes to network, latest block number and last block data.
+    // Watch for changes to network, the latest block number and last block data.
     this.ns.currentNetwork.pipe(
       // Keep it running until this component is destroyed.
       takeUntil(this.destroyer),
@@ -114,7 +114,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer),
         filter(nr => nr > 0),
         first(),
-        // Start pre-loading the latest blocks.
+        // Start preloading the latest blocks.
         tap(() => {
           // We won't wait for the result, but the function will mark the blocks to load,
           // so other (lazy) block loading mechanics won't kick in.

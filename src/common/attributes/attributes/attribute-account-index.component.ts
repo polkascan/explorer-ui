@@ -30,7 +30,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AttributeAccountIndexComponent {
+export class AttributeAccountIndexComponent implements OnInit {
   @Input() attribute: { type: string, value: number };
   @Output() clicked = new EventEmitter();
 

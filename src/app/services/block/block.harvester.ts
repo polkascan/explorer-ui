@@ -67,7 +67,7 @@ export class BlockHarvester {
         if (cached.value.status === 'new') {
           this.loadBlock(nr);
         }
-        const deferred = defer(() => {
+        return defer(() => {
           if (this.observedBlocks.hasOwnProperty(nr)) {
             this.observedBlocks[nr] += 1;
           } else {
@@ -80,7 +80,6 @@ export class BlockHarvester {
             delete this.observedBlocks[nr];
           }
         })) as BehaviorSubject<Block>;
-        return deferred;
       }
     });
 

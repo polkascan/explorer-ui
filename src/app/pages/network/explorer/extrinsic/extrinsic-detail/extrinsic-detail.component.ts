@@ -21,7 +21,7 @@ import { Subject } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil} from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
 

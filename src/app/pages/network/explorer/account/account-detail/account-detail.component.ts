@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
@@ -354,14 +354,14 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         multiAddressAccountId: idHex
       },
       (extrinsic: pst.Extrinsic) => {
-        const extrisics = this.signedExtrinsics.value;
-        if (extrisics && extrisics.some((e) => e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx) === false) {
-          const merged = [extrinsic, ...extrisics];
+        const extrinsics = this.signedExtrinsics.value;
+        if (extrinsics && extrinsics.some((e) => e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx) === false) {
+          const merged = [extrinsic, ...extrinsics];
           merged.sort((a: pst.Extrinsic, b: pst.Extrinsic) => {
             return b.blockNumber - a.blockNumber || b.extrinsicIdx - a.extrinsicIdx;
           });
           merged.length = this.listsSize;
-          this.signedExtrinsics.next([extrinsic].concat(extrisics));
+          this.signedExtrinsics.next([extrinsic].concat(extrinsics));
         }
       });
 

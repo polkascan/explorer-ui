@@ -16,16 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Input,
-  OnChanges,
-  Output,
-  SimpleChanges,
-  ViewEncapsulation
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, ViewEncapsulation } from '@angular/core';
 import { IconTheme } from '../../identicon/identicon.types';
 
 @Component({
@@ -40,15 +31,15 @@ import { IconTheme } from '../../identicon/identicon.types';
             <ng-container [ngSwitch]="itemCheck.isObject || itemCheck.isArray">
               <ng-container *ngSwitchCase="true">
                 <ng-container [ngSwitch]="itemCheck.hasType">
-                  <attributes *ngSwitchCase="true" [attributes]="$any(item.value)" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></attributes>
+                  <attributes *ngSwitchCase="true" [attributes]="$any(item.value)" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></attributes>
                   <ng-container *ngSwitchDefault>
                     <ng-container [ngSwitch]="itemCheck.isArray">
                       <ng-container *ngSwitchCase="true">
                         <attribute-struct *ngFor="let subItem of $any(item.value)"
-                                          [attribute]="subItem" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></attribute-struct>
+                                          [attribute]="subItem" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></attribute-struct>
                       </ng-container>
                       <ng-container *ngSwitchDefault>
-                        <attribute-struct [attribute]="item.value" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol" (clicked)="clicked.next($event)"></attribute-struct>
+                        <attribute-struct [attribute]="item.value" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></attribute-struct>
                       </ng-container>
                     </ng-container>
 
@@ -77,7 +68,6 @@ export class AttributeStructComponent implements OnChanges {
   @Input() iconSize: number;
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
-  @Output() clicked = new EventEmitter();
 
   parsedAttribute: any;
   attributeIsObject: boolean;

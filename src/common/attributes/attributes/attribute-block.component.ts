@@ -30,10 +30,16 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AttributeBlockComponent {
+export class AttributeBlockComponent implements OnInit {
   @Input() attribute: { type: string, value: number };
   @Output() clicked = new EventEmitter();
 
-  constructor() {
+  relativeToRoute: ActivatedRoute | undefined;
+
+  constructor(private route: ActivatedRoute) {
+  }
+
+  ngOnInit(): void {
+    this.relativeToRoute = this.route.pathFromRoot.find(routePart => routePart.snapshot.url[0]?.path === 'explorer');
   }
 }
