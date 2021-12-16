@@ -1,16 +1,17 @@
 
 .explorer-menu__container {
-  height: 4.25rem;
-  padding: 0 2rem;
+  height: 50px;
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
+  align-items: baseline;
   border-bottom: solid 1px #aaaaaa;
   background: #fff;
 }
 
 .explorer-menu__network-name {
-  line-height: 4.25rem;
+  line-height: 50px;
   padding-right: 2rem;
+  color: #666;
 }
 

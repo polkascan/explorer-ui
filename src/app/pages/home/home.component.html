@@ -10,11 +10,16 @@
     </svg>
   </h1>
 
-  <div class="home-buttons width-container">
-    <mat-card *ngFor="let network of networks" [routerLink]="'/n/' + network" tabindex="0"
-       matRipple
-       class="home-button home-button--{{ network }}">
-      {{network}}
-    </mat-card>
+  <div class="width-container">
+    <h2 class="home-buttons-heading">Choose your network</h2>
+
+    <div class="home-buttons">
+      <mat-card *ngFor="let network of networks" [routerLink]="'/n/' + network" tabindex="0"
+         matRipple
+         class="home-button home-button--{{ network }}">
+        {{network}}
+      </mat-card>
+    </div>
   </div>
+
 </div>

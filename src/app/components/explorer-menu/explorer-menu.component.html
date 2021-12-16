@@ -1,6 +1,6 @@
 <nav *ngIf="(network | async) as name" class="explorer-menu__container">
 
-  <div class="explorer-menu__network-name"><i>{{ name }}</i></div>
+  <div class="explorer-menu__network-name">{{ name }}</div>
 
   <button mat-flat-button routerLink="explorer">Dashboard</button>
 

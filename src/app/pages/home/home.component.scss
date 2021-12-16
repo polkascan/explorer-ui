@@ -66,6 +66,17 @@
   }
 }
 
+@keyframes sunrise-planet {
+  from {
+    background-color: #643d70;
+    background-position: center 0;
+  }
+  to {
+    background-color: #ff6482;
+    background-position: center 150px;
+  }
+}
+
 .home-header {
   position: relative;
   margin: 0;
@@ -101,13 +112,26 @@
 
 }
 
+.home-buttons-heading {
+  margin: 24px 0 10px 20%;
+  font-size: 3em;
+  font-weight: bold;
+  text-indent: -10%;
+  line-height: 1;
+}
+
 .home-buttons {
   display: flex;
   flex-flow: row wrap;
-  justify-content: space-between;
+  justify-content: space-around;
+  gap: 16px;
   padding: 24px 0;
 }
 .home {
+  background: #ff6482 linear-gradient(#fa7878 50px, #fa787800 150px);
+  color: #fff;
+  animation: sunrise-planet 5s ease-out forwards;
+
   .home-button {
     display: block;
     flex: 0 0 auto;
@@ -116,6 +140,7 @@
     background-size: 148px auto;
     background-repeat: no-repeat;
     background-position: 50% 20px;
+    background-color: rgba(255,255,255,.5);
     color: #000;
     font-weight: bold;
     text-align: center;

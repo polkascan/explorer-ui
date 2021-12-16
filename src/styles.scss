@@ -68,6 +68,10 @@ body, html {
   height: 100%;
 }
 
+a {
+  color: inherit;
+}
+
 attribute-struct {
   display: block;
   border: solid 1px #aaa;
