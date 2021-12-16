@@ -94,11 +94,6 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   trackEvent(i: any, event: pst.Event): string {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
-
-
-  routeToAccount(address: string) {
-    this.router.navigate([`../../account/${address}`], { relativeTo: this.route });
-  }
 }
 
 

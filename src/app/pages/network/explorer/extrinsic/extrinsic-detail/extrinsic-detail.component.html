@@ -41,8 +41,7 @@
         <td class="detail-table--label-cell">Address</td>
         <td>
           <account-id *ngIf="extrinsic.multiAddressAccountId" [address]="extrinsic.multiAddressAccountId"
-                      [iconSize]="16" [iconTheme]="'polkadot'" [ss58Prefix]="props.ss58Format"
-                      (clicked)="routeToAccount($event)"></account-id>
+                      [iconSize]="16" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
         </td>
       </tr>
 

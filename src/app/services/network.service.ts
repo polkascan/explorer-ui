@@ -37,7 +37,7 @@ export interface NetworkProperties {
   systemName?: string;
   specName?: string;
   systemVersion?: string;
-  iconTheme?: IconTheme;
+  iconTheme: IconTheme;
 }
 
 
@@ -144,7 +144,7 @@ export class NetworkService {
       const ss58Format: number = chainSS58 ?? this.defaultSS58;
       const tokenSymbol: string = (chainTokens && chainTokens[0]) ?? this.defaultSymbol;
       const tokenDecimals: number = (chainDecimals && chainDecimals[0]) ?? this.defaultDecimals;
-      const iconTheme: string | undefined = systemName && specName && getSystemIcon(systemName, specName) || undefined;
+      const iconTheme: IconTheme = systemName && specName && getSystemIcon(systemName, specName) || 'substrate';
 
       this.currentNetworkProperties.next({
         ss58Format: ss58Format,
@@ -153,7 +153,7 @@ export class NetworkService {
         systemName: systemName,
         specName: specName,
         systemVersion: systemVersion,
-        iconTheme: iconTheme as 'substrate'
+        iconTheme: iconTheme
       });
     }
 

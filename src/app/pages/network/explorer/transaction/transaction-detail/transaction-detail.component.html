@@ -42,7 +42,7 @@
         <td class="detail-table--label-cell">Address</td>
         <td>
             <account-id *ngIf="transaction.multiAddressAccountId" [ss58Prefix]="props.ss58Format" [address]="transaction.multiAddressAccountId"
-                        [iconTheme]="'polkadot'" [iconSize]="32" (clicked)="routeToAccount($event)"></account-id>
+                        [iconTheme]="props.iconTheme" [iconSize]="32"></account-id>
         </td>
       </tr>
 
@@ -59,7 +59,7 @@
       <tr *ngIf="callArguments">
         <td class="detail-table--label-cell">Call arguments</td>
         <td>
-          <attributes [attributes]="$any(callArguments)" [iconTheme]="'polkadot'" [iconSize]="24"
+          <attributes [attributes]="$any(callArguments)" [iconTheme]="props.iconTheme" [iconSize]="24"
                       [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
                       [ss58Prefix]="props.ss58Format"></attributes>
         </td>

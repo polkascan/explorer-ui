@@ -16,13 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, ViewEncapsulation } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'attribute-account-index',
   template: `
     <ng-container *ngIf="attribute">
-      <a (click)="clicked.next(attribute.value)">
+      <a [routerLink]="'account/' + attribute.value" [relativeTo]="relativeToRoute">
         Account index {{ attribute.value }}
       </a>
     </ng-container>
@@ -32,8 +33,13 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
 })
 export class AttributeAccountIndexComponent implements OnInit {
   @Input() attribute: { type: string, value: number };
-  @Output() clicked = new EventEmitter();
 
-  constructor() {
+  relativeToRoute: ActivatedRoute | undefined;
+
+  constructor(private route: ActivatedRoute) {
+  }
+
+  ngOnInit(): void {
+    this.relativeToRoute = this.route.pathFromRoot.find(routePart => routePart.snapshot.url[0]?.path === 'explorer');
   }
 }

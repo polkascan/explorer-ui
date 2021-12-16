@@ -30,8 +30,8 @@ import { ActivatedRoute } from '@angular/router';
   selector: 'attribute-address',
   template: `
     <ng-container *ngIf="encoded">
-      <a (click)="clicked.next(encoded)">
-        <identicon [value]="encoded" [theme]="iconTheme" [size]="iconSize" [prefix]="ss58Prefix"></identicon>
+      <identicon [value]="encoded" [theme]="iconTheme" [size]="iconSize" [prefix]="ss58Prefix"></identicon>
+      <a [routerLink]="'account/' + encoded" [relativeTo]="relativeToRoute">
         {{ encoded }}
       </a>
     </ng-container>
@@ -46,7 +46,6 @@ export class AttributeAddressComponent implements OnInit, OnChanges {
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
   @Input() ss58Prefix: Prefix;
-  @Output() clicked = new EventEmitter();
 
   encoded: string;
   relativeToRoute: ActivatedRoute | undefined;

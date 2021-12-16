@@ -27,9 +27,6 @@ import {
 import { IconTheme } from '../identicon/identicon.types';
 import { Prefix } from '@polkadot/util-crypto/address/types';
 
-
-// TODO string als input werkt niet.
-
 @Component({
   selector: 'attributes',
   templateUrl: 'attributes.component.html',
@@ -43,7 +40,6 @@ export class AttributesComponent implements OnChanges {
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
   @Input() ss58Prefix: Prefix;
-  @Output() clicked = new EventEmitter();
 
   parsedAttributes: any[] = [];
 

@@ -19,10 +19,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  EventEmitter,
+  OnInit,
   Input,
   OnChanges,
-  Output,
   SimpleChanges,
   ViewEncapsulation
 } from '@angular/core';
@@ -31,6 +30,7 @@ import { Prefix } from '@polkadot/util-crypto/address/types';
 import { encodeAddress } from '@polkadot/util-crypto';
 import { HexString } from '@polkadot/util/types';
 import { isHex, isU8a } from '@polkadot/util';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'account-id',
@@ -38,7 +38,7 @@ import { isHex, isU8a } from '@polkadot/util';
     <ng-container *ngIf="encoded">
       <identicon *ngIf="!hideIdenticon" [value]="encoded" [theme]="iconTheme" [size]="iconSize"
                  [prefix]="ss58Prefix"></identicon>
-      <a (click)="clicked.next(encoded)" href="javascript: void">{{ encoded }}</a>
+      <a [routerLink]="'account/' + encoded" [relativeTo]="relativeToRoute">{{ encoded }}</a>
     </ng-container>
   `,
   styles: [`
@@ -56,15 +56,22 @@ import { isHex, isU8a } from '@polkadot/util';
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AccountIdCommonComponent implements OnChanges {
+export class AccountIdCommonComponent implements OnInit, OnChanges {
   @Input() address: HexString | Uint8Array | string;
   @Input() hideIdenticon?: boolean;
   @Input() iconTheme?: IconTheme;
   @Input() iconSize?: number;
   @Input() ss58Prefix?: Prefix;
-  @Output() clicked = new EventEmitter();
 
+  relativeToRoute: ActivatedRoute | undefined;
   encoded: string;
+
+  constructor(private route: ActivatedRoute) {
+  }
+
+  ngOnInit(): void {
+    this.relativeToRoute = this.route.pathFromRoot.find(routePart => routePart.snapshot.url[0]?.path === 'explorer');
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['address']) {
@@ -79,8 +86,5 @@ export class AccountIdCommonComponent implements OnChanges {
 
       this.encoded = address;
     }
-  }
-
-  constructor() {
   }
 }

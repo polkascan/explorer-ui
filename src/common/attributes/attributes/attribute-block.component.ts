@@ -16,14 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnInit, ViewEncapsulation } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'attribute-block',
   template: `
     <ng-container *ngIf="attribute">
-      <a (click)="clicked.next(attribute.value)">
-        Block #{{ attribute.value }}}}
+      <a [routerLink]="'/block/' + attribute.value" [relativeTo]="relativeToRoute">
+        Block {{ attribute.value }}}}
       </a>
     </ng-container>
   `,
@@ -32,7 +33,6 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
 })
 export class AttributeBlockComponent implements OnInit {
   @Input() attribute: { type: string, value: number };
-  @Output() clicked = new EventEmitter();
 
   relativeToRoute: ActivatedRoute | undefined;
 

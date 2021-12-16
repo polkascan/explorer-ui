@@ -16,15 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation } from '@angular/core';
 
 @Component({
   selector: 'attribute-session',
   template: `
     <ng-container *ngIf="attribute">
-      <a (click)="clicked.next(attribute.value)">
-        Session #{{ attribute.value }}
-      </a>
+      Session {{ attribute.value }}
     </ng-container>
   `,
   encapsulation: ViewEncapsulation.None,
@@ -32,7 +30,6 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
 })
 export class AttributeSessionComponent {
   @Input() attribute: { type: string, value: number };
-  @Output() clicked = new EventEmitter();
 
   constructor() {
   }

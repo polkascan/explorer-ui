@@ -93,7 +93,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   account: Observable<AccountInfo>;
   subs: Observable<any>;
   identity: Observable<any>;
-  indices: Observable<number>;
+  indices: Observable<any[]>;
   accountIndex: Observable<AccountIndex | undefined>;
   accountId: Observable<AccountId | undefined>;
   accountNonce: Observable<number | undefined>
@@ -129,8 +129,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private ns: NetworkService,
-    private pa: PolkadaptService,
-    private cd: ChangeDetectorRef
+    private pa: PolkadaptService
   ) {
   }
 
@@ -148,7 +147,27 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       )),
       map(params => params['id']),
       filter(id => !!id),
-      distinctUntilChanged()
+      distinctUntilChanged(),
+      switchMap((id: string) => {
+        const n = parseInt(id, 10);
+        if (id === n.toString() && Number.isInteger(n)) {
+          return asObservable(this.pa.run().query.indices.accounts, n).pipe(
+            takeUntil(this.destroyer),
+            map((indices) => {
+              if (indices && indices.isSome) {
+                indices = indices.toJSON();
+                if (indices && indices[0]) {
+                  return indices[0] as string; // This is the ss58.
+                }
+              }
+              return null;
+            })
+          )
+        } else {
+          return of(id);
+        }
+      }),
+      shareReplay(1)
     );
 
     // Remove all active subscriptions when id changes.
@@ -452,11 +471,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.unsubscribeFns.clear();
     this.destroyer.next(undefined);
     this.destroyer.complete();
-  }
-
-
-  routeToAccount(address: string) {
-    this.router.navigate([`../../account/${address}`], {relativeTo: this.route});
   }
 
 

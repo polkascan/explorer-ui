@@ -21,16 +21,14 @@
       <tr *ngIf="transfer.fromMultiAddressAccountId as accountId">
         <td class="detail-table--label-cell">From</td>
         <td>
-          <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Format"
-                  (clicked)="routeToAccount($event)"></account-id>
+          <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Format"></account-id>
         </td>
       </tr>
 
       <tr *ngIf="transfer.toMultiAddressAccountId as accountId">
         <td class="detail-table--label-cell">To</td>
         <td>
-          <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Format"
-                  (clicked)="routeToAccount($event)"></account-id>
+          <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Format"></account-id>
         </td>
       </tr>
 

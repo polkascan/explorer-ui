@@ -49,8 +49,8 @@
       <ng-container matColumnDef="from">
         <th mat-header-cell *matHeaderCellDef>From</th>
         <td mat-cell *matCellDef="let transaction">
-          <account-id [address]="transaction.multiAddressAccountId" [iconTheme]="'polkadot'" [iconSize]="16"
-                      [ss58Prefix]="props.ss58Format" (clicked)="routeToAccount($event)"></account-id>
+          <account-id [address]="transaction.multiAddressAccountId" [iconTheme]="props.iconTheme" [iconSize]="16"
+                      [ss58Prefix]="props.ss58Format"></account-id>
         </td>
       </ng-container>
 

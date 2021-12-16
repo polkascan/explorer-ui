@@ -16,14 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, Input, OnInit, ViewEncapsulation
+} from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'attribute-ethereum-address',
   template: `
     <ng-container *ngIf="attribute">
-      <a (click)="clicked.next(attribute.value)">
-        <identicon [value]="attribute.value" [theme]="'ethereum'" [size]="iconSize"></identicon>
+      <identicon [value]="attribute.value" [theme]="'ethereum'" [size]="iconSize"></identicon>
+      <a [routerLink]="'account/' + attribute.value" [relativeTo]="relativeToRoute">
         {{ attribute.value }}
       </a>
     </ng-container>
@@ -34,7 +37,6 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewEn
 export class AttributeEthereumAddressComponent implements OnInit {
   @Input() attribute: { type: string, value: string };
   @Input() iconSize: number;
-  @Output() clicked = new EventEmitter();
 
   relativeToRoute: ActivatedRoute | undefined;
 

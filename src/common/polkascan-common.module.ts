@@ -35,6 +35,7 @@ import { AttributeStructComponent } from './attributes/attributes/attribute-stru
 import { AccountIdCommonComponent } from './account-id/account-id.common.component';
 import { BalanceCommonComponent } from './balance/balance.common.component';
 import { AttributesComponent } from './attributes/attributes.component';
+import { RouterModule } from '@angular/router';
 
 @NgModule({
   declarations: [
@@ -58,6 +59,7 @@ import { AttributesComponent } from './attributes/attributes.component';
   ],
   imports: [
     CommonModule,
+    RouterModule
   ],
   exports: [
     IdenticonComponent,
