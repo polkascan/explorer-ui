@@ -22,7 +22,7 @@ import { NetworkService } from '../../../../../services/network.service';
 import { distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
+import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { u8aToHex } from '@polkadot/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { ActivatedRoute } from '@angular/router';

@@ -1,9 +1,9 @@
 import { Directive, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
-import { NetworkService } from '../../services/network.service';
+import { NetworkService } from '../../app/services/network.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { ListResponse } from '../../../../polkadapt/projects/polkascan/src/lib/polkascan.types';
+import { ListResponse } from '../../../polkadapt/projects/polkascan/src/lib/polkascan.types';
 
 
 @Directive()

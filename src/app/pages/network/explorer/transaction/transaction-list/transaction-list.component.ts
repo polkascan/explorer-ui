@@ -25,7 +25,7 @@ import { debounceTime, distinctUntilChanged, filter, first, map, takeUntil } fro
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import {
   PaginatedListComponentBase
-} from '../../../../../components/list-base/paginated-list-component-base.directive';
+} from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { ActivatedRoute } from '@angular/router';
 import { u8aToHex } from '@polkadot/util';
 import { decodeAddress } from '@polkadot/util-crypto';

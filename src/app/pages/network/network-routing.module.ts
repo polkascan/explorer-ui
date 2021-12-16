@@ -33,14 +33,6 @@ const routes: Routes = [
       {
         path: 'explorer',
         loadChildren: () => import('./explorer/explorer.module').then(m => m.ExplorerModule)
-      },
-      {
-        path: 'harvester',
-        loadChildren: () => import('./harvester/harvester.module').then(m => m.HarvesterModule)
-      },
-      {
-        path: 'analytics',
-        loadChildren: () => import('./analytics/analytics.module').then(m => m.AnalyticsModule)
       }
     ]
   }

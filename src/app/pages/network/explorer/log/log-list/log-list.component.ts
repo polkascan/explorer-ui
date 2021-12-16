@@ -20,7 +20,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
+import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 
 @Component({
   selector: 'app-log-list',

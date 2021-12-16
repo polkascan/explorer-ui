@@ -23,7 +23,7 @@ import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
+import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 
 
 @Component({

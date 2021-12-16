@@ -22,7 +22,7 @@ import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import {
   PaginatedListComponentBase
-} from '../../../../../../components/list-base/paginated-list-component-base.directive';
+} from '../../../../../../../common/list-base/paginated-list-component-base.directive';
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';

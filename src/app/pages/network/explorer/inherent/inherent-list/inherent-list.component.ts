@@ -23,7 +23,7 @@ import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { PaginatedListComponentBase } from '../../../../../components/list-base/paginated-list-component-base.directive';
+import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 
 
 @Component({
