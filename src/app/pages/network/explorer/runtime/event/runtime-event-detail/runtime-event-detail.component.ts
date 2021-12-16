@@ -22,7 +22,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
-import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 
 @Component({
@@ -32,6 +32,8 @@ import { PolkadaptService } from '../../../../../../services/polkadapt.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
+  version: number;
+  pallet: string;
   event = new BehaviorSubject<pst.RuntimeEvent | null>(null);
   eventAttributes = new BehaviorSubject<pst.RuntimeEventAttribute[]>([]);
 
@@ -44,7 +46,8 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
     private ns: NetworkService,
     private rs: RuntimeService,
     private pa: PolkadaptService
-  ) { }
+  ) {
+  }
 
   ngOnInit(): void {
     // Get the network.
@@ -55,7 +58,11 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, params['specVersion'], params['pallet'], params['eventName']])
+        map(params => [network, params['specVersion'], params['pallet'], params['eventName']]),
+        tap(([network, version, pallet]) => {
+          this.version = version;
+          this.pallet = pallet;
+        })
       )),
       switchMap(([network, specVersion, pallet, eventName]) =>
         this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(

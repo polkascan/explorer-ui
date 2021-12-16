@@ -54,9 +54,9 @@ import { IconTheme } from '../../identicon/identicon.types';
         </ng-container>
       </ng-container>
 
-      <ng-container *ngSwitchDefault>
+      <div *ngSwitchDefault>
         {{ parsedAttribute }}
-      </ng-container>
+      </div>
     </ng-container>
   `,
   encapsulation: ViewEncapsulation.None,

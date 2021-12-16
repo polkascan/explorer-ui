@@ -1,6 +1,11 @@
+<button mat-button *ngIf="version >= 0" [routerLink]="'../../../..'"><i class="fas fa-chevron-left"></i> Runtime {{ version }}</button>
+<button mat-button *ngIf="pallet" [routerLink]="'../..'"><i class="fas fa-chevron-left"></i> {{pallet}}</button>
+
+<h1>Storage Function</h1>
+
 <ng-container *ngIf="storage|async as storage; else loading">
 
-  <h2>Storage Function '{{storage.storageName}}'</h2>
+  <h2>{{storage.storageName}}</h2>
 
   <pre>{{storage.documentation}}</pre>
 

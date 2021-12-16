@@ -1,6 +1,9 @@
-<a routerLink="..">Back to list</a>
+<button mat-button [routerLink]="'..'"><i class="fas fa-chevron-left"></i> Blocks</button>
+
 <ng-container *ngIf="block|async as block; else initializing">
-  <h1>Block {{block.number}}</h1>
+  <h1>Block</h1>
+
+  <h2>{{block.number}}</h2>
 
   <ng-container *ngIf="headNumber|async as headNumber; else initializing">
 

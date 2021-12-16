@@ -1,3 +1,6 @@
+<button mat-button *ngIf="version >= 0" [routerLink]="'../../../..'"><i class="fas fa-chevron-left"></i> Runtime {{ version }}</button>
+<button mat-button *ngIf="pallet" [routerLink]="'../..'"><i class="fas fa-chevron-left"></i> {{pallet}}</button>
+
 <h1>Call Function</h1>
 
 <ng-container *ngIf="call|async as call; else loading">

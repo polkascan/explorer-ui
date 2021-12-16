@@ -22,7 +22,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
-import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-runtime-storage-detail',
@@ -31,8 +31,11 @@ import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
+  version: number;
+  pallet: string;
   storage = new BehaviorSubject<pst.RuntimeStorage | null>(null);
+
+  private destroyer: Subject<undefined> = new Subject();
 
   constructor(
     private route: ActivatedRoute,
@@ -49,7 +52,11 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, params['specVersion'], params['pallet'], params['storageName']])
+        map(params => [network, params['specVersion'], params['pallet'], params['storageName']]),
+        tap(([network, version, pallet]) => {
+          this.version = version;
+          this.pallet = pallet;
+        })
       )),
       switchMap(([network, specVersion, pallet, storageName]) =>
         this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(

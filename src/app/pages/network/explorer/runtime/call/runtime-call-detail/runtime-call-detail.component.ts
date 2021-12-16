@@ -23,7 +23,7 @@ import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
-import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-runtime-call-detail',
@@ -32,6 +32,8 @@ import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
+  version: number;
+  pallet: string;
   call = new BehaviorSubject<pst.RuntimeCall | null>(null);
   callArguments = new BehaviorSubject<pst.RuntimeCallArgument[]>([]);
 
@@ -44,7 +46,8 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
     private ns: NetworkService,
     private rs: RuntimeService,
     private pa: PolkadaptService
-  ) { }
+  ) {
+  }
 
   ngOnInit(): void {
     // Get the network.
@@ -55,7 +58,11 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, params['specVersion'], params['pallet'], params['callName']])
+        map(params => [network, params['specVersion'], params['pallet'], params['callName']]),
+        tap(([network, version, pallet]) => {
+          this.version = version;
+          this.pallet = pallet;
+        })
       )),
       switchMap(([network, specVersion, pallet, callName]) =>
         this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(

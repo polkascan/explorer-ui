@@ -58,30 +58,6 @@ const routes: Routes = [
     loadChildren: () => import('./account/account.module').then(m => m.AccountModule)
   },
   {
-    path: 'contracts',
-    loadChildren: () => import('./contracts/contracts.module').then(m => m.ContractsModule)
-  },
-  {
-    path: 'session',
-    loadChildren: () => import('./session/session.module').then(m => m.SessionModule)
-  },
-  {
-    path: 'democracy',
-    loadChildren: () => import('./democracy/democracy.module').then(m => m.DemocracyModule)
-  },
-  {
-    path: 'council',
-    loadChildren: () => import('./council/council.module').then(m => m.CouncilModule)
-  },
-  {
-    path: 'technical-committee',
-    loadChildren: () => import('./technical-committee/technical-committee.module').then(m => m.TechnicalCommitteeModule)
-  },
-  {
-    path: 'treasury',
-    loadChildren: () => import('./treasury/treasury.module').then(m => m.TreasuryModule)
-  },
-  {
     path: 'balances',
     loadChildren: () => import('./balances/balances.module').then(m => m.BalancesModule)
   }

@@ -22,7 +22,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
-import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-runtime-constant-detail',
@@ -31,14 +31,18 @@ import { filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
+  version: number;
+  pallet: string;
   constant = new BehaviorSubject<pst.RuntimeConstant | null>(null);
+
+  private destroyer: Subject<undefined> = new Subject();
 
   constructor(
     private route: ActivatedRoute,
     private ns: NetworkService,
     private rs: RuntimeService,
-  ) { }
+  ) {
+  }
 
   ngOnInit(): void {
     // Get the network.
@@ -49,7 +53,11 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, params['specVersion'], params['pallet'], params['constantName']])
+        map(params => [network, params['specVersion'], params['pallet'], params['constantName']]),
+        tap(([network, version, pallet]) => {
+          this.version = version;
+          this.pallet = pallet;
+        })
       )),
       switchMap(([network, specVersion, pallet, constantName]) =>
         this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(

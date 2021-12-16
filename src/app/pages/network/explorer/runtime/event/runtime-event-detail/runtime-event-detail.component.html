@@ -1,3 +1,6 @@
+<button mat-button *ngIf="version >= 0" [routerLink]="'../../../..'"><i class="fas fa-chevron-left"></i> Runtime {{ version }}</button>
+<button mat-button *ngIf="pallet" [routerLink]="'../..'"><i class="fas fa-chevron-left"></i> {{pallet}}</button>
+
 <h1>Event</h1>
 
 <ng-container *ngIf="event|async as event; else loading">

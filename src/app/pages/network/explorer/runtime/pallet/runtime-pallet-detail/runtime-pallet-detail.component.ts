@@ -31,6 +31,7 @@ import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
+  version: number;
   pallet = new BehaviorSubject<pst.RuntimePallet | null>(null);
   calls = new BehaviorSubject<pst.RuntimeCall[]>([]);
   events = new BehaviorSubject<pst.RuntimeEvent[]>([]);
@@ -52,7 +53,8 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private ns: NetworkService,
     private rs: RuntimeService
-  ) { }
+  ) {
+  }
 
   ngOnInit(): void {
     // Get the network.
@@ -63,7 +65,10 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, parseInt(params['specVersion'], 10), params['pallet']])
+        map(params => [network, parseInt(params['specVersion'], 10), params['pallet']]),
+        tap(([network, version, pallet]) => {
+          this.version = version;
+        })
       )),
       switchMap(([network, specVersion, pallet]) =>
         this.rs.getRuntime(network as string, specVersion as number).pipe(

@@ -29,18 +29,20 @@ import { RuntimeStorageDetailComponent } from './storage/runtime-storage-detail/
 import { RuntimeConstantDetailComponent } from './constant/runtime-constant-detail/runtime-constant-detail.component';
 import { RouterModule } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
+import { MatButtonModule } from '@angular/material/button';
 
 
 @NgModule({
   declarations: [RuntimeListComponent, RuntimeDetailComponent, RuntimePalletDetailComponent,
     RuntimeCallDetailComponent, RuntimeEventDetailComponent, RuntimeStorageDetailComponent, RuntimeConstantDetailComponent,
   ],
-  imports: [
-    CommonModule,
-    RuntimeRoutingModule,
-    RouterModule,
-    MatTableModule
-  ]
+    imports: [
+        CommonModule,
+        RuntimeRoutingModule,
+        RouterModule,
+        MatTableModule,
+        MatButtonModule
+    ]
 })
 export class RuntimePallet {
 }

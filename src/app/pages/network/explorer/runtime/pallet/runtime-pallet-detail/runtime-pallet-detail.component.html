@@ -1,3 +1,5 @@
+<button mat-button *ngIf="version >= 0" [routerLink]="'../..'"><i class="fas fa-chevron-left"></i> Runtime {{ version }}</button>
+
 <h1>Pallet</h1>
 
 <ng-container *ngIf="pallet|async as pallet; else loading">

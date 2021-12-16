@@ -31,10 +31,11 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeDetailComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
   runtime: Observable<pst.Runtime | null>;
   pallets = new BehaviorSubject<pst.RuntimePallet[]>([]);
   types = new BehaviorSubject<pst.RuntimeType[]>([]);
+
+  private destroyer: Subject<undefined> = new Subject();
 
   visibleColumns = {
     pallets: ['icon', 'name', 'events', 'calls', 'storage', 'constants', 'details'],
