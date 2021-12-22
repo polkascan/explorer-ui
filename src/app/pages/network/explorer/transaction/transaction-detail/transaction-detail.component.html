@@ -2,7 +2,7 @@
 
 <h1>Transaction</h1>
 
-<ng-container *ngIf="transaction">
+<ng-container *ngIf="(transaction | async) as transaction; else loadingOrError">
   <ng-container *ngIf="(networkProperties | async) as props">
 
     <h2>{{ transaction.blockNumber + '-' + transaction.extrinsicIdx}}</h2>
@@ -43,8 +43,9 @@
       <tr>
         <td class="detail-table--label-cell">Address</td>
         <td>
-            <account-id *ngIf="transaction.multiAddressAccountId" [ss58Prefix]="props.ss58Format" [address]="transaction.multiAddressAccountId"
-                        [iconTheme]="props.iconTheme" [iconSize]="32"></account-id>
+          <account-id *ngIf="transaction.multiAddressAccountId" [ss58Prefix]="props.ss58Format"
+                      [address]="transaction.multiAddressAccountId"
+                      [iconTheme]="props.iconTheme" [iconSize]="32"></account-id>
         </td>
       </tr>
 
@@ -58,7 +59,7 @@
         <td>{{transaction.signature}}</td>
       </tr>
 
-      <tr *ngIf="callArguments">
+      <tr *ngIf="(callArguments | async) as callArguments">
         <td class="detail-table--label-cell">Call arguments</td>
         <td>
           <attributes [attributes]="$any(callArguments)" [iconTheme]="props.iconTheme" [iconSize]="24"
@@ -75,7 +76,7 @@
     <mat-tab-group dynamicHeight animationDuration="0ms">
       <mat-tab label="Events">
 
-        <table mat-table [dataSource]="events" [trackBy]="trackEvent" class="mat-table--full-width">
+        <table mat-table [dataSource]="(events | async) || []" [trackBy]="trackEvent" class="mat-table--full-width">
 
           <ng-container matColumnDef="eventId">
             <th mat-header-cell *matHeaderCellDef>Event ID</th>
@@ -111,9 +112,21 @@
 
         </table>
 
+        <ng-container *ngIf="(fetchEventsStatus | async) as status">
+          <p *ngIf="status === 'loading'">Loading...</p>
+          <p *ngIf="status === 'error'">Could not fetch transaction events.</p>
+        </ng-container>
+
       </mat-tab>
     </mat-tab-group>
 
 
   </ng-container>
 </ng-container>
+
+<ng-template #loadingOrError>
+  <ng-container *ngIf="(fetchTransactionStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch transaction.</p>
+  </ng-container>
+</ng-template>

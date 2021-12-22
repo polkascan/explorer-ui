@@ -18,11 +18,11 @@
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { filter, first, map, switchMap, takeUntil} from 'rxjs/operators';
+import { catchError, filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-transaction-detail',
@@ -31,12 +31,14 @@ import { filter, first, map, switchMap, takeUntil} from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TransactionDetailComponent implements OnInit, OnDestroy {
-  transaction: pst.Extrinsic;
-  callArguments: any;
-  events: pst.Event[];
+  transaction: Observable<pst.Extrinsic | null>;
+  events: Observable<(pst.Event)[] | null>;
+  callArguments: Observable<string | null>;
   networkProperties = this.ns.currentNetworkProperties;
+  fetchTransactionStatus: BehaviorSubject<any> = new BehaviorSubject(null);
+  fetchEventsStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-  visibleColumns = ['eventId', 'pallet', 'event', 'details']
+  visibleColumns = ['eventId', 'pallet', 'event', 'details'];
 
   private destroyer: Subject<undefined> = new Subject();
   private onDestroyCalled = false;
@@ -50,7 +52,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.ns.currentNetwork.pipe(
+    const observable = this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
       // Network must be set.
       filter(network => !!network),
@@ -60,29 +62,58 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
         map(params => params['id'].split('-').map((v: string) => parseInt(v, 10)))
-      ))
-    ).subscribe(async ([blockNr, extrinsicIdx]) => {
-      try {
-        const transaction: pst.Extrinsic =
-          await this.pa.run().polkascan.chain.getExtrinsic(blockNr, extrinsicIdx);
-        const eventsResponse: pst.ListResponse<pst.Event> =
-          await this.pa.run().polkascan.chain.getEvents({blockNumber: blockNr});
-        const events = eventsResponse.objects.filter(event => event.extrinsicIdx === extrinsicIdx);
-        if (!this.onDestroyCalled) {
-          this.transaction = transaction;
-          this.events = events;
-          this.callArguments = null;
-          try {
-            this.callArguments = JSON.parse(transaction.callArguments as string);
-          } catch (e) {
-            // TODO what to do?
+      )));
+
+    this.transaction = observable.pipe(
+      tap(() => this.fetchTransactionStatus.next('loading')),
+      switchMap(([blockNr, extrinsicIdx]) => {
+        const subject = new Subject<pst.Extrinsic>();
+        this.pa.run().polkascan.chain.getExtrinsic(blockNr, extrinsicIdx).then(
+          (transaction) => {
+            subject.next(transaction)
+            this.fetchTransactionStatus.next(null);
+          },
+          (e) => {
+            subject.error(e);
+          })
+        return subject.pipe(takeUntil(this.destroyer));
+      }),
+      catchError((e) => {
+        this.fetchTransactionStatus.next('error');
+        return of(null);
+      })
+    )
+
+    this.callArguments = this.transaction.pipe(
+      map((transaction) => {
+        return transaction && transaction.callArguments || null;
+      })
+    )
+
+    this.events = observable.pipe(
+      tap(() => this.fetchEventsStatus.next('loading')),
+      switchMap(([blockNr, extrinsicIdx]) => {
+        const subject = new Subject<pst.Event[]>();
+        this.pa.run().polkascan.chain.getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}).then(
+          (events) => {
+            if (events.objects) {
+              subject.next(events.objects);
+              this.fetchEventsStatus.next(null)
+            } else {
+              subject.error('Error parsing events array.');
+            }
+          },
+          (e) => {
+            subject.error(e);
           }
-          this.cd.markForCheck();
-        }
-      } catch (e) {
-        // TODO: What to do if transaction does not exist?
-      }
-    });
+        )
+        return subject.pipe(takeUntil(this.destroyer));
+      }),
+      catchError((e) => {
+        this.fetchEventsStatus.next('error');
+        return of(null);
+      })
+    );
   }
 
   ngOnDestroy(): void {

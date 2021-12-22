@@ -1,9 +1,9 @@
-<button mat-button *ngIf="version >= 0" [routerLink]="'../../../..'"><i class="fas fa-chevron-left"></i> Runtime {{ version }}</button>
-<button mat-button *ngIf="pallet" [routerLink]="'../..'"><i class="fas fa-chevron-left"></i> {{pallet}}</button>
+<button mat-button *ngIf="(version | async) as version" [routerLink]="'../../../..'"><i class="fas fa-chevron-left"></i> Runtime {{ version }}</button>
+<button mat-button *ngIf="(pallet | async) as pallet" [routerLink]="'../..'"><i class="fas fa-chevron-left"></i> {{pallet}}</button>
 
 <h1>Storage Function</h1>
 
-<ng-container *ngIf="storage|async as storage; else loading">
+<ng-container *ngIf="storage|async as storage; else loadingOrError">
 
   <h2>{{storage.storageName}}</h2>
 
@@ -24,6 +24,9 @@
   </table>
 </ng-container>
 
-<ng-template #loading>
-  Loading...
+<ng-template #loadingOrError>
+  <ng-container *ngIf="(fetchStorageStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch runtime pallet storage function.</p>
+  </ng-container>
 </ng-template>

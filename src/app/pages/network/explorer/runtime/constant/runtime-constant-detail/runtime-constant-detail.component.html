@@ -3,7 +3,7 @@
 
 <h1>Constant</h1>
 
-<ng-container *ngIf="constant|async as constant; else loading">
+<ng-container *ngIf="constant|async as constant; else loadingOrError">
 
   <h2>{{constant.constantName}}</h2>
 
@@ -26,6 +26,9 @@
   </table>
 </ng-container>
 
-<ng-template #loading>
-  Loading...
+<ng-template #loadingOrError>
+  <ng-container *ngIf="(fetchConstantStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch runtime pallet constant.</p>
+  </ng-container>
 </ng-template>

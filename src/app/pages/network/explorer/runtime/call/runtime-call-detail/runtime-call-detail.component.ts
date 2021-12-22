@@ -17,13 +17,13 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
-import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { catchError, filter, first, map, shareReplay, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-runtime-call-detail',
@@ -34,8 +34,10 @@ import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
   version: number;
   pallet: string;
-  call = new BehaviorSubject<pst.RuntimeCall | null>(null);
-  callArguments = new BehaviorSubject<pst.RuntimeCallArgument[]>([]);
+  call: Observable<pst.RuntimeCall | null>;
+  callArguments: Observable<pst.RuntimeCallArgument[]>;
+  fetchCallStatus: BehaviorSubject<any> = new BehaviorSubject(null);
+  fetchCallAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
   visibleColumns = ['icon', 'name', 'type'];
 
@@ -51,7 +53,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Get the network.
-    this.ns.currentNetwork.pipe(
+    const runtimeObservable = this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
       filter(network => !!network),
       first(),
@@ -67,22 +69,67 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
       switchMap(([network, specVersion, pallet, callName]) =>
         this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(
           takeUntil(this.destroyer),
-          filter(r => r !== null),
-          first(),
           map(runtime => [network, runtime as pst.Runtime, pallet, callName])
         )
-      )
-    ).subscribe(async ([network, runtime, pallet, callName]) => {
-      this.rs.getRuntimeCalls(network, runtime.specVersion).then(calls => {
-        const palletCalls: pst.RuntimeCall[] = calls.filter(c =>
-          c.pallet === pallet && c.callName === callName
-        );
-        this.call.next(palletCalls[0]);
-      });
-      const response: pst.ListResponse<pst.RuntimeCallArgument> =
-        await this.pa.run().polkascan.state.getRuntimeCallArguments(runtime.specName, runtime.specVersion, pallet, callName);
-      this.callArguments.next(response.objects);
-    });
+      ),
+      shareReplay(1)
+    )
+
+    this.call = runtimeObservable.pipe(
+      tap(() => this.fetchCallStatus.next('loading')),
+      switchMap(([network, runtime, pallet, callName]) => {
+        const subject: Subject<pst.RuntimeCall | null> = new Subject();
+        if (runtime) {
+          this.rs.getRuntimeCalls(network, runtime.specVersion).then(
+            (calls) => {
+              const palletCall: pst.RuntimeCall = calls.filter(c =>
+                c.pallet === pallet && c.callName === callName
+              )[0];
+
+              if (palletCall) {
+                subject.next(palletCall);
+                this.fetchCallStatus.next(null);
+              } else {
+                subject.error('Runtime call not found.');
+              }
+            },
+            (e) => {
+              subject.error(e);
+            });
+        }
+        return subject.pipe(takeUntil(this.destroyer));
+      }),
+      catchError((e) => {
+        this.fetchCallStatus.next('error');
+        return of(null);
+      })
+    );
+
+    this.callArguments = runtimeObservable.pipe(
+      tap(() => this.fetchCallAttributesStatus.next('loading')),
+      switchMap(([network, runtime, pallet, callName]) => {
+        const subject: Subject<pst.RuntimeCallArgument[]> = new Subject();
+        if (runtime) {
+          this.pa.run().polkascan.state.getRuntimeCallArguments(runtime.specName, runtime.specVersion, pallet, callName).then(
+            (response) => {
+              if (Array.isArray(response.objects)) {
+                subject.next(response.objects);
+                this.fetchCallAttributesStatus.next(null);
+              } else {
+                subject.error('Invalid response.')
+              }
+            },
+            (e) => {
+              subject.error(e);
+            });
+        }
+        return subject.pipe(takeUntil(this.destroyer));
+      }),
+      catchError((e) => {
+        this.fetchCallAttributesStatus.next('error');
+        return of([]);
+      })
+    );
   }
 
   ngOnDestroy(): void {

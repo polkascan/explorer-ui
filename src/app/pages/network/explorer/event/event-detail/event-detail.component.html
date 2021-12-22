@@ -2,11 +2,10 @@
 
 <h1>Event</h1>
 
-<ng-container *ngIf="event">
+<ng-container *ngIf="(event | async) as event; else loadingOrError">
   <ng-container *ngIf="(networkProperties | async) as props">
 
     <h2>{{event.blockNumber}}-{{event.eventIdx}}</h2>
-
 
     <table class="detail-table">
       <tbody>
@@ -15,7 +14,10 @@
         <td><a [routerLink]="'../../block/' + event.blockNumber">{{event.blockNumber}}</a></td>
       </tr>
 
-      <!--  <div>Referenced Transaction: <a [routerLink]="'../../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a></div>-->
+      <tr>
+        <td class="detail-table--label-cell">Referenced Transaction</td>
+        <td><a [routerLink]="'../../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a></td>
+      </tr>
 
       <tr *ngIf="event.extrinsicIdx !== null">
         <td class="detail-table--label-cell">Extrinsic</td>
@@ -56,3 +58,10 @@
 
   </ng-container>
 </ng-container>
+
+<ng-template #loadingOrError>
+  <ng-container *ngIf="(fetchEventStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch event.</p>
+  </ng-container>
+</ng-template>

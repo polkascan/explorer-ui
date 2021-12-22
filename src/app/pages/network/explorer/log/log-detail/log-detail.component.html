@@ -2,7 +2,7 @@
 
 <h1>Log</h1>
 
-<ng-container *ngIf="log">
+<ng-container *ngIf="(log | async) as log; else loadingOrError">
   <ng-container *ngIf="(networkProperties | async) as props">
 
     <h2>{{log.blockNumber + '-' + log.logIdx}}</h2>
@@ -28,7 +28,7 @@
       <tr *ngIf="log.data">
         <td class="detail-table--label-cell">Data</td>
         <td>
-          <attribute-struct [attribute]="log.data" [iconTheme]="'polkadot'" [iconSize]="24"
+          <attribute-struct [attribute]="log.data" [iconTheme]="props.iconTheme" [iconSize]="24"
                             [tokenDecimals]="props.tokenDecimals"
                             [tokenSymbol]="props.tokenSymbol"></attribute-struct>
         </td>
@@ -39,3 +39,10 @@
 
   </ng-container>
 </ng-container>
+
+<ng-template #loadingOrError>
+  <ng-container *ngIf="(fetchLogStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch log.</p>
+  </ng-container>
+</ng-template>

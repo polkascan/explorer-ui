@@ -3,7 +3,7 @@
 
 <h1>Call Function</h1>
 
-<ng-container *ngIf="call|async as call; else loading">
+<ng-container *ngIf="call|async as call; else loadingOrError">
 
   <h2>{{call.callName}}</h2>
 
@@ -39,9 +39,18 @@
       <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
 
     </table>
+
+    <ng-container *ngIf="(fetchCallAttributesStatus | async) as status">
+      <p *ngIf="status === 'loading'">Loading...</p>
+      <p *ngIf="status === 'error'">Could not fetch runtime pallet call attributes.</p>
+    </ng-container>
+
   </ng-container>
 </ng-container>
 
-<ng-template #loading>
-  Loading...
+<ng-template #loadingOrError>
+  <ng-container *ngIf="(fetchCallStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch runtime pallet call.</p>
+  </ng-container>
 </ng-template>

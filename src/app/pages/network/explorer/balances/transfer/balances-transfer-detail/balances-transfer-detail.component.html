@@ -2,7 +2,7 @@
 
 <h1>Balance transfer</h1>
 
-<ng-container *ngIf="$any(transfer) as transfer">
+<ng-container *ngIf="(transfer | async) as transfer; else loadingOrError">
   <ng-container *ngIf="(networkProperties | async) as props">
 
     <h2>{{transfer.blockNumber}}-{{transfer.eventIdx}}</h2>
@@ -23,20 +23,20 @@
       <tr *ngIf="transfer.fromMultiAddressAccountId as accountId">
         <td class="detail-table--label-cell">From</td>
         <td>
-          <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Format"></account-id>
+          <account-id [address]="accountId" [iconTheme]="props.iconTheme" [iconSize]="64" [ss58Prefix]="props.ss58Format"></account-id>
         </td>
       </tr>
 
       <tr *ngIf="transfer.toMultiAddressAccountId as accountId">
         <td class="detail-table--label-cell">To</td>
         <td>
-          <account-id [address]="accountId" [iconTheme]="'polkadot'" [iconSize]="64" [ss58Prefix]="props.ss58Format"></account-id>
+          <account-id [address]="accountId" [iconTheme]="props.iconTheme" [iconSize]="64" [ss58Prefix]="props.ss58Format"></account-id>
         </td>
       </tr>
 
       <tr>
         <td class="detail-table--label-cell">Value</td>
-        <td><balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol" [value]="transfer.value"></balance></td>
+        <td><balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol" [value]="$any(transfer.value)"></balance></td>
       </tr>
 
       </tbody>
@@ -44,3 +44,10 @@
 
   </ng-container>
 </ng-container>
+
+<ng-template #loadingOrError>
+  <ng-container *ngIf="(fetchTransferStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch balance transfer.</p>
+  </ng-container>
+</ng-template>

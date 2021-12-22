@@ -21,13 +21,15 @@ import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import {
+  catchError,
   filter,
   first,
   map,
   switchMap,
   takeUntil
 } from 'rxjs/operators';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
+import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
 type psEvent = {
   blockNumber: number; // combined primary key blockNumber, eventIdx
@@ -48,8 +50,9 @@ type psEvent = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EventDetailComponent implements OnInit, OnDestroy {
-  event: psEvent;
+  event: Observable<psEvent | null>;
   networkProperties = this.ns.currentNetworkProperties;
+  fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
   private destroyer: Subject<undefined> = new Subject();
   private onDestroyCalled = false;
@@ -62,7 +65,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.ns.currentNetwork.pipe(
+    const paramsObservable = this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
       // Network must be set.
       filter(network => !!network),
@@ -73,13 +76,32 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer),
         map(params => params['id'].split('-').map((v: string) => parseInt(v, 10)))
       ))
-    ).subscribe(async ([blockNr, eventIdx]) => {
-      const event = await this.pa.run().polkascan.chain.getEvent(blockNr, eventIdx);
-      if (!this.onDestroyCalled) {
-        this.event = event;
-        this.cd.markForCheck();
-      }
-    });
+    )
+
+    this.event = paramsObservable.pipe(
+      tap(() => this.fetchEventStatus.next('loading')),
+      switchMap(([blockNr, eventIdx]) => {
+        const subject = new Subject<pst.Event>();
+        this.pa.run().polkascan.chain.getEvent(blockNr, eventIdx).then(
+          (event) => {
+            if (event) {
+              subject.next(event);
+              this.fetchEventStatus.next(null);
+            } else {
+              subject.error('Event not found.');
+            }
+          },
+          (e) => {
+            subject.error(e);
+          }
+        );
+        return subject.pipe(takeUntil(this.destroyer))
+      }),
+      catchError((e) => {
+        this.fetchEventStatus.next('error');
+        return of(null);
+      })
+    );
   }
 
   ngOnDestroy(): void {

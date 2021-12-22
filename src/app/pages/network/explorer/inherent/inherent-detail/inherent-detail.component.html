@@ -2,7 +2,7 @@
 
 <h1>Inherent</h1>
 
-<ng-container *ngIf="inherent">
+<ng-container *ngIf="(inherent | async) as inherent; else loadingOrError">
   <ng-container *ngIf="(networkProperties | async) as props">
 
     <h2>{{inherent.blockNumber}}-{{inherent.extrinsicIdx}}</h2>
@@ -35,15 +35,14 @@
         <td>{{inherent.callName}}</td>
       </tr>
 
-      <tr *ngIf="callArguments">
+      <tr *ngIf="(callArguments | async) as arguments">
         <td class="detail-table--label-cell">Call Arguments</td>
         <td>
-          <attributes [attributes]="$any(callArguments)" [iconTheme]="props.iconTheme" [iconSize]="24"
+          <attributes [attributes]="arguments" [iconTheme]="props.iconTheme" [iconSize]="24"
                       [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
                       [ss58Prefix]="props.ss58Format"></attributes>
         </td>
       </tr>
-
 
       </tbody>
     </table>
@@ -53,7 +52,7 @@
     <mat-tab-group dynamicHeight animationDuration="0ms">
       <mat-tab label="Events">
 
-        <table mat-table [dataSource]="events" [trackBy]="trackEvent" class="mat-table--full-width">
+        <table mat-table [dataSource]="$any((events | async))" [trackBy]="trackEvent" class="mat-table--full-width">
 
           <ng-container matColumnDef="eventId">
             <th mat-header-cell *matHeaderCellDef>Event ID</th>
@@ -89,7 +88,19 @@
 
         </table>
 
+        <ng-container *ngIf="(fetchEventsStatus | async) as status">
+          <p *ngIf="status === 'loading'">Loading...</p>
+          <p *ngIf="status === 'error'">Could not fetch inherent events.</p>
+        </ng-container>
+
       </mat-tab>
     </mat-tab-group>
   </ng-container>
 </ng-container>
+
+<ng-template #loadingOrError>
+  <ng-container *ngIf="(fetchInherentStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch inherent.</p>
+  </ng-container>
+</ng-template>

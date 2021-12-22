@@ -17,12 +17,12 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
-import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { catchError, filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-runtime-constant-detail',
@@ -33,7 +33,8 @@ import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
   version: number;
   pallet: string;
-  constant = new BehaviorSubject<pst.RuntimeConstant | null>(null);
+  constant: Observable<pst.RuntimeConstant | null>;
+  fetchConstantStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
   private destroyer: Subject<undefined> = new Subject();
 
@@ -46,7 +47,7 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Get the network.
-    this.ns.currentNetwork.pipe(
+    const runtimeObservable = this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
       filter(network => !!network),
       first(),
@@ -62,19 +63,38 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
       switchMap(([network, specVersion, pallet, constantName]) =>
         this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(
           takeUntil(this.destroyer),
-          filter(r => r !== null),
-          first(),
           map(runtime => [network, runtime as pst.Runtime, pallet, constantName])
-        )
-      )
-    ).subscribe(async ([network, runtime, pallet, constantName]) => {
-      this.rs.getRuntimeConstants(network, runtime.specVersion).then(constants => {
-        const palletConstants: pst.RuntimeConstant[] = constants.filter(s =>
-          s.pallet === pallet && s.constantName === constantName
-        );
-        this.constant.next(palletConstants[0]);
-      });
-    });
+        ))
+    );
+
+    this.constant = runtimeObservable.pipe(
+      tap(() => this.fetchConstantStatus.next(null)),
+      switchMap(([network, runtime, pallet, constantName]) => {
+        const subject: Subject<pst.RuntimeConstant | null> = new Subject();
+        if (runtime) {
+          this.rs.getRuntimeConstants(network, runtime.specVersion).then(
+            (constants) => {
+              const palletConstant: pst.RuntimeConstant = constants.filter(s =>
+                s.pallet === pallet && s.constantName === constantName
+              )[0];
+              if (palletConstant) {
+                subject.next(palletConstant);
+                this.fetchConstantStatus.next(null)
+              } else {
+                subject.error('Runtime constant not found.')
+              }
+            },
+            (e) => {
+              subject.error(e);
+          });
+        }
+        return subject.pipe(takeUntil(this.destroyer));
+      }),
+      catchError((e) => {
+        this.fetchConstantStatus.next('error');
+        return of(null);
+      })
+    );
   }
 
   ngOnDestroy(): void {

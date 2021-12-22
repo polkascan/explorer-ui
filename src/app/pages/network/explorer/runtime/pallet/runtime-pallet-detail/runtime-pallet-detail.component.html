@@ -1,8 +1,8 @@
-<button mat-button *ngIf="version >= 0" [routerLink]="'../..'"><i class="fas fa-chevron-left"></i> Runtime {{ version }}</button>
+<button mat-button *ngIf="(version | async) as version" [routerLink]="'../..'"><i class="fas fa-chevron-left"></i> Runtime {{ version }}</button>
 
 <h1>Pallet</h1>
 
-<ng-container *ngIf="pallet|async as pallet; else loading">
+<ng-container *ngIf="(pallet | async) as pallet; else loadingOrError">
 
   <h2>{{ $any(pallet).pallet }}</h2>
 
@@ -52,6 +52,12 @@
     </table>
   </ng-container>
 
+  <ng-container *ngIf="(fetchCallsStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch runtime pallet call functions.</p>
+  </ng-container>
+
+
   <h3>Events</h3>
 
   <ng-container *ngIf="(events | async) as dataSource">
@@ -98,6 +104,11 @@
     </table>
   </ng-container>
 
+  <ng-container *ngIf="(fetchEventsStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch runtime pallet events.</p>
+  </ng-container>
+
 
   <h3>Storage Functions</h3>
 
@@ -136,6 +147,11 @@
       <tr mat-row *matRowDef="let myRowData; columns: visibleColumns.storages"></tr>
 
     </table>
+  </ng-container>
+
+  <ng-container *ngIf="(fetchStoragesStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch runtime pallet storage functions.</p>
   </ng-container>
 
 
@@ -185,9 +201,15 @@
     </table>
   </ng-container>
 
+  <ng-container *ngIf="(fetchConstantsStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch runtime pallet constants.</p>
+  </ng-container>
+
+
   <h3>Error Messages</h3>
 
-  <ng-container *ngIf="(errors | async) as dataSource">
+  <ng-container *ngIf="(errorsMessages | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="trackError">
 
       <ng-container matColumnDef="icon">
@@ -224,8 +246,16 @@
     </table>
   </ng-container>
 
+  <ng-container *ngIf="(fetchErrorMessagesStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch runtime pallet error-messages.</p>
+  </ng-container>
 </ng-container>
 
-<ng-template #loading>
-  Loading...
+
+<ng-template #loadingOrError>
+  <ng-container *ngIf="(fetchPalletStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch runtime pallet.</p>
+  </ng-container>
 </ng-template>

@@ -1,9 +1,10 @@
-<button mat-button *ngIf="version >= 0" [routerLink]="'../../../..'"><i class="fas fa-chevron-left"></i> Runtime {{ version }}</button>
+<button mat-button *ngIf="version >= 0" [routerLink]="'../../../..'"><i class="fas fa-chevron-left"></i>
+  Runtime {{ version }}</button>
 <button mat-button *ngIf="pallet" [routerLink]="'../..'"><i class="fas fa-chevron-left"></i> {{pallet}}</button>
 
 <h1>Event</h1>
 
-<ng-container *ngIf="event|async as event; else loading">
+<ng-container *ngIf="event|async as event; else loadingOrError">
 
   <h2>{{ event.eventName }}</h2>
 
@@ -32,9 +33,18 @@
       <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
 
     </table>
+
+    <ng-container *ngIf="(fetchEventAttributesStatus | async) as status">
+      <p *ngIf="status === 'loading'">Loading...</p>
+      <p *ngIf="status === 'error'">Could not fetch runtime pallet event attributes.</p>
+    </ng-container>
+
   </ng-container>
 </ng-container>
 
-<ng-template #loading>
-  Loading...
+<ng-template #loadingOrError>
+  <ng-container *ngIf="(fetchEventStatus | async) as status">
+    <p *ngIf="status === 'loading'">Loading...</p>
+    <p *ngIf="status === 'error'">Could not fetch runtime pallet event.</p>
+  </ng-container>
 </ng-template>

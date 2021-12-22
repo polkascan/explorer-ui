@@ -17,12 +17,12 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
-import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { catchError, filter, first, map, shareReplay, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 
 @Component({
@@ -34,8 +34,10 @@ import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
   version: number;
   pallet: string;
-  event = new BehaviorSubject<pst.RuntimeEvent | null>(null);
-  eventAttributes = new BehaviorSubject<pst.RuntimeEventAttribute[]>([]);
+  event: Observable<pst.RuntimeEvent | null>;
+  eventAttributes: Observable<pst.RuntimeEventAttribute[]>;
+  fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
+  fetchEventAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
   visibleColumns = ['icon', 'type'];
 
@@ -51,7 +53,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Get the network.
-    this.ns.currentNetwork.pipe(
+    const runtimeObservable = this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
       filter(network => !!network),
       first(),
@@ -67,22 +69,62 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
       switchMap(([network, specVersion, pallet, eventName]) =>
         this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(
           takeUntil(this.destroyer),
-          filter(r => r !== null),
-          first(),
           map(runtime => [network, runtime as pst.Runtime, pallet, eventName])
         )
-      )
-    ).subscribe(async ([network, runtime, pallet, eventName]) => {
-      this.rs.getRuntimeEvents(network, runtime.specVersion).then(events => {
-        const palletEvents: pst.RuntimeEvent[] = events.filter(e =>
-          e.pallet === pallet && e.eventName === eventName
-        );
-        this.event.next(palletEvents[0]);
-      });
-      const response: pst.ListResponse<pst.RuntimeEventAttribute> =
-        await this.pa.run().polkascan.state.getRuntimeEventAttributes(runtime.specName, runtime.specVersion, pallet, eventName);
-      this.eventAttributes.next(response.objects);
-    });
+      ),
+      shareReplay(1)
+    );
+
+    this.event = runtimeObservable.pipe(
+      tap(() => this.fetchEventStatus.next('loading')),
+      switchMap(([network, runtime, pallet, eventName]) => {
+        const subject: Subject<pst.RuntimeEvent | null> = new Subject();
+        if (runtime) {
+          this.rs.getRuntimeEvents(network, runtime.specVersion).then(
+            (events) => {
+              const matchedEvent: pst.RuntimeEvent = events.filter(e => e.pallet === pallet && e.eventName === eventName)[0];
+              if (matchedEvent) {
+                subject.next(matchedEvent);
+                this.fetchEventStatus.next(null);
+              } else {
+                subject.error('Runtime event not found.');
+              }
+            },
+            (e) => {
+              subject.error(e);
+            });
+        }
+        return subject.pipe(takeUntil(this.destroyer));
+      }),
+      catchError((e) => {
+        this.fetchEventStatus.next('error');
+        return of(null);
+      })
+    )
+
+    this.eventAttributes = runtimeObservable.pipe(
+      tap(() => this.fetchEventAttributesStatus.next('loading')),
+      switchMap(([network, runtime, pallet, eventName]) => {
+        const subject: Subject<pst.RuntimeEventAttribute[]> = new Subject();
+        this.pa.run().polkascan.state.getRuntimeEventAttributes(runtime.specName, runtime.specVersion, pallet, eventName).then(
+          (response) => {
+            if (Array.isArray(response.objects)) {
+              subject.next(response.objects);
+              this.fetchEventAttributesStatus.next(null);
+            } else {
+              subject.error('Invalid response.')
+            }
+          },
+          (e) => {
+            subject.error(e);
+          });
+        return subject.pipe(takeUntil(this.destroyer));
+      }),
+      catchError((e) => {
+        this.fetchEventAttributesStatus.next('error');
+        return of([]);
+      })
+    )
   }
 
   ngOnDestroy(): void {

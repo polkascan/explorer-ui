@@ -17,10 +17,10 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { catchError, filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { NetworkService } from '../../../../../services/network.service';
 import { ActivatedRoute } from '@angular/router';
-import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
@@ -32,8 +32,11 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 })
 export class RuntimeDetailComponent implements OnInit, OnDestroy {
   runtime: Observable<pst.Runtime | null>;
-  pallets = new BehaviorSubject<pst.RuntimePallet[]>([]);
-  types = new BehaviorSubject<pst.RuntimeType[]>([]);
+  pallets: Observable<pst.RuntimePallet[]>;
+  types: Observable<pst.RuntimeType[]>;
+  fetchRuntimeStatus = new BehaviorSubject<any>(null);
+  fetchPalletsStatus = new BehaviorSubject<any>(null);
+  fetchTypesStatus = new BehaviorSubject<any>(null);
 
   private destroyer: Subject<undefined> = new Subject();
 
@@ -46,32 +49,74 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private ns: NetworkService,
     private rs: RuntimeService
-  ) { }
+  ) {
+  }
 
   ngOnInit(): void {
-    this.runtime = this.ns.currentNetwork.pipe(
+    const observable = this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
       filter(network => network !== ''),
       first(),
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
         map(params => [network, parseInt(params['specVersion'], 10)])
-      )),
-      switchMap(([network, specVersion]) =>
-        this.rs.getRuntime(network as string, specVersion as number).pipe(
-          takeUntil(this.destroyer),
-          filter(r => r !== null),
-          tap(() => {
-            this.rs.getRuntimePallets(network as string, specVersion as number).then(pallets => {
-              this.pallets.next(pallets);
-            });
-            this.rs.getRuntimeTypes(network as string, specVersion as number).then(types => {
-              this.types.next(types);
-            });
-          })
-        )
-      )
+      ))
+    )
+
+    this.runtime = observable.pipe(
+      tap((runtime) => this.fetchRuntimeStatus.next('loading')),
+      switchMap(([network, specVersion]) => {
+          return this.rs.getRuntime(network as string, specVersion as number).pipe(
+            tap(() => this.fetchRuntimeStatus.next(null)),
+            takeUntil(this.destroyer),
+          )
+        }
+      ),
+      catchError((e) => {
+        this.fetchRuntimeStatus.next('error');
+        return of(null);
+      })
     );
+
+    this.pallets = observable.pipe(
+      tap((runtime) => this.fetchPalletsStatus.next('loading')),
+      switchMap(([network, specVersion]) => {
+        const subject = new Subject<pst.RuntimePallet[]>();
+        this.rs.getRuntimePallets(network as string, specVersion as number).then(
+          (pallets) => {
+            subject.next(pallets);
+            this.fetchPalletsStatus.next(null)
+          },
+          (e) => {
+            subject.error(e)
+          })
+        return subject.pipe(takeUntil(this.destroyer));
+      }),
+      catchError((e) => {
+        this.fetchPalletsStatus.next('error');
+        return of([]);
+      })
+    )
+
+    this.types = observable.pipe(
+      tap((runtime) => this.fetchTypesStatus.next('loading')),
+      switchMap(([network, specVersion]) => {
+        const subject = new Subject<pst.RuntimeType[]>();
+        this.rs.getRuntimeTypes(network as string, specVersion as number).then(
+          (types) => {
+            subject.next(types);
+            this.fetchTypesStatus.next(null)
+          },
+          (e) => {
+            subject.error(e)
+          })
+        return subject.pipe(takeUntil(this.destroyer));
+      }),
+      catchError((e) => {
+        this.fetchTypesStatus.next('error');
+        return of([]);
+      })
+    )
   }
 
   ngOnDestroy(): void {

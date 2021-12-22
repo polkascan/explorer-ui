@@ -124,10 +124,14 @@ export class RuntimeService {
         map((r: pst.Runtime | null): string => (r as pst.Runtime).specName),
         first()
       ).subscribe(async (specName) => {
-        const runtime = await this.pa.run().polkascan.state.getRuntime(specName, specVersion);
-        if (!cachedRuntime.value) {
-          // Only update cache if it's still empty.
-          cachedRuntime.next(runtime);
+        try {
+          const runtime = await this.pa.run().polkascan.state.getRuntime(specName, specVersion);
+          if (!cachedRuntime.value) {
+            // Only update cache if it's still empty.
+            cachedRuntime.next(runtime);
+          }
+        } catch (e) {
+          cachedRuntime.error(e);
         }
       });
 

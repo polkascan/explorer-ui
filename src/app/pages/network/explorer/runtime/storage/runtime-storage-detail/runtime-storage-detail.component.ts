@@ -17,12 +17,12 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
-import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { catchError, filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-runtime-storage-detail',
@@ -31,9 +31,10 @@ import { filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
-  version: number;
-  pallet: string;
-  storage = new BehaviorSubject<pst.RuntimeStorage | null>(null);
+  version: Observable<string>;
+  pallet: Observable<string>;
+  storage: Observable<pst.RuntimeStorage | null>;
+  fetchStorageStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
   private destroyer: Subject<undefined> = new Subject();
 
@@ -41,23 +42,33 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private ns: NetworkService,
     private rs: RuntimeService,
-  ) { }
+  ) {
+  }
 
   ngOnInit(): void {
     // Get the network.
-    this.ns.currentNetwork.pipe(
+    const observable = this.ns.currentNetwork.pipe(
       takeUntil(this.destroyer),
       filter(network => !!network),
       first(),
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
-        takeUntil(this.destroyer),
-        map(params => [network, params['specVersion'], params['pallet'], params['storageName']]),
-        tap(([network, version, pallet]) => {
-          this.version = version;
-          this.pallet = pallet;
-        })
-      )),
+          takeUntil(this.destroyer),
+          map(params => [network, params['specVersion'], params['pallet'], params['storageName']])
+        )
+      )
+    )
+
+    this.version = observable.pipe(
+      map(([network, version, pallet]) => version)
+    )
+
+    this.pallet = observable.pipe(
+      map(([network, version, pallet]) => pallet)
+    );
+
+    this.storage = observable.pipe(
+      tap(() => this.fetchStorageStatus.next('loading')),
       switchMap(([network, specVersion, pallet, storageName]) =>
         this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(
           takeUntil(this.destroyer),
@@ -65,15 +76,32 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
           first(),
           map(runtime => [network, runtime as pst.Runtime, pallet, storageName])
         )
-      )
-    ).subscribe(async ([network, runtime, pallet, storageName]) => {
-      this.rs.getRuntimeStorages(network, runtime.specVersion).then(storages => {
-        const palletStorages: pst.RuntimeStorage[] = storages.filter(s =>
-          s.pallet === pallet && s.storageName === storageName
-        );
-        this.storage.next(palletStorages[0]);
-      });
-    });
+      ),
+      switchMap(([network, runtime, pallet, storageName]) => {
+        const subject = new Subject<pst.RuntimeStorage>();
+        this.rs.getRuntimeStorages(network, runtime.specVersion).then(
+          (storages) => {
+            const palletStorages: pst.RuntimeStorage[] = storages.filter(s =>
+              s.pallet === pallet && s.storageName === storageName
+            );
+            const storage = palletStorages[0];
+            if (storage) {
+              subject.next(storage);
+              this.fetchStorageStatus.next(null)
+            } else {
+              subject.error('Storage function not found.');
+            }
+          },
+          (e) => {
+            subject.error(e);
+          });
+        return subject.pipe(takeUntil(this.destroyer));
+      }),
+      catchError((e) => {
+        this.fetchStorageStatus.next('error');
+        return of(null);
+      })
+    );
   }
 
   ngOnDestroy(): void {
