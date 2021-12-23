@@ -211,7 +211,7 @@ export class BlockHarvester {
           block.stateRoot = signedBlock.block.header.stateRoot.toString();
           block.datetime = timestamp.toString();
           block.extrinsics = new Array(signedBlock.block.extrinsics.length);
-          block.events = new Array(allEvents.length);
+          block.events = new Array((allEvents as any).length);  // temporary 'as any' fix until polkadot-js types are fixed.
           block.status = 'loaded';
           cached.next(block);
           // If this block can be finalized already, do it now.
