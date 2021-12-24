@@ -1,7 +1,6 @@
 # STAGE 1: layered build of PolkADAPT submodule and Polkascan application.
 
-FROM node:14-alpine as builder
-RUN npm update -g yarn
+FROM node:lts-alpine as builder
 
 # The application depends on PolkADAPT, so we have to install and build PolkADAPT first.
 
@@ -10,39 +9,39 @@ WORKDIR /app/polkadapt
 # Copy all PolkADAPT package.json files and install packages.
 
 COPY polkadapt/package.json .
-RUN yarn
+RUN npm i
 
 COPY polkadapt/projects/core/package.json projects/core/package.json
-RUN cd projects/core && yarn
+RUN cd projects/core && npm i
 
 # We build the core libary first, because PolkADAPT adapters depend on it.
 
 COPY polkadapt/angular.json polkadapt/tsconfig.json polkadapt/tslint.json ./
 COPY polkadapt/projects/core projects/core
-RUN yarn exec ng build -- --configuration production core
+RUN npm exec ng build -- --configuration production core
 
 COPY polkadapt/projects/substrate-rpc/package.json projects/substrate-rpc/package.json
-RUN cd projects/substrate-rpc && yarn
+RUN cd projects/substrate-rpc && npm i
 
 COPY polkadapt/projects/polkascan/package.json projects/polkascan/package.json
-RUN cd projects/polkascan && yarn
+RUN cd projects/polkascan && npm i
 
 COPY polkadapt/projects/coingecko/package.json projects/coingecko/package.json
-RUN cd projects/coingecko && yarn
+RUN cd projects/coingecko && npm i
 
 # Copy the rest of the files and build all PolkADAPT libraries.
 
 COPY polkadapt .
-RUN yarn exec ng build -- --configuration production substrate-rpc
-RUN yarn exec ng build -- --configuration production polkascan
-RUN yarn exec ng build -- --configuration production coingecko
+RUN npm exec ng build -- --configuration production substrate-rpc
+RUN npm exec ng build -- --configuration production polkascan
+RUN npm exec ng build -- --configuration production coingecko
 
 # Install the application dependencies.
 
 WORKDIR /app
 
 COPY package.json .
-RUN yarn
+RUN npm i
 
 # Copy the rest of the files and build the application.
 COPY . .
@@ -50,7 +49,7 @@ COPY . .
 ARG ENV_CONFIG=production
 ENV ENV_CONFIG=$ENV_CONFIG
 
-RUN yarn exec ng build -- --configuration ${ENV_CONFIG}
+RUN npm exec ng build -- --configuration ${ENV_CONFIG}
 
 
 # STAGE 2: Nginx setup to serve the application.
@@ -99,4 +98,4 @@ COPY docker-run.sh .
 
 EXPOSE 80
 
-CMD ["/bin/sh",  "-c",  "envsubst < /usr/share/nginx/html/assets/config.template.json > /usr/share/nginx/html/assets/config.json && exec nginx -g 'daemon off;'"]
+CMD ["/bin/sh",  "-c",  "envsubst < /usr/share/nginx/html/assets/config.json.template > /usr/share/nginx/html/assets/config.json && exec nginx -g 'daemon off;'"]
