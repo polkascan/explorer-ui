@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2021 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2022 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,24 +17,26 @@
  */
 
 import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
-import { PageNotFoundComponent } from './pages/page-not-found/page-not-found.component';
+import { MatCardModule } from '@angular/material/card';
+import { MatRippleModule } from '@angular/material/core';
+import { HomeComponent } from './home.component';
 
 const routes: Routes = [
-  {
-    path: 'n/:network',
-    loadChildren: () => import('./pages/network/network.module').then(m => m.NetworkModule)
-  },
-  {
-    path: '',
-    loadChildren: () => import('./pages/home/home.module').then(m => m.HomeModule),
-  },
-  {path: '**', component: PageNotFoundComponent}
-];
+  {path: '', component: HomeComponent, pathMatch: 'full'}
+]
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  declarations: [
+    HomeComponent,
+  ],
+  imports: [
+    CommonModule,
+    RouterModule.forChild(routes),
+    MatRippleModule,
+    MatCardModule,
+  ]
 })
-export class AppRoutingModule {
+export class HomeModule {
 }

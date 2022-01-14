@@ -26,14 +26,10 @@ import { CommonModule } from '@angular/common';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppConfig, initConfig } from './app-config';
 import { HttpClientModule } from '@angular/common/http';
-import { HomeComponent } from './pages/home/home.component';
-import { MatRippleModule } from '@angular/material/core';
-import { MatCardModule } from '@angular/material/card';
 
 @NgModule({
   declarations: [
     AppComponent,
-    HomeComponent,
     PageNotFoundComponent
   ],
   imports: [
@@ -42,8 +38,6 @@ import { MatCardModule } from '@angular/material/card';
     AppRoutingModule,
     CommonModule,
     HttpClientModule,
-    MatRippleModule,
-    MatCardModule,
   ],
   providers: [
     AppConfig,
