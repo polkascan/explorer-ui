@@ -220,39 +220,43 @@
         </table>
       </ng-container>
 
-
-      <ng-container *ngIf="((subs | async) | keyvalue) as subsMap">
-        <ng-container *ngIf="subsMap.length">
+      <ng-container [ngSwitch]="!!dai?.identity?.parent">
+        <ng-container *ngSwitchCase="true">
           <h3>Accounts</h3>
-
           <mat-list>
-            <ng-container *ngIf="dai?.identity?.parent">
-              <div mat-subheader>Parent</div>
-              <mat-list-item>
-                <div mat-line>
-                  <identicon [value]="$any(dai.identity.parent)" [theme]="props.iconTheme" [size]="16"
-                             [prefix]="props.ss58Format"></identicon>
-                  <a [routerLink]="'../' + dai.identity?.parent?.toHuman()">{{ dai.identity.parent }}</a>
-                  <ng-container *ngIf="dai.identity.displayParent"><b> {{ dai.identity.displayParent}}</b>
-                  </ng-container>
-                </div>
-              </mat-list-item>
-              <mat-divider></mat-divider>
-            </ng-container>
-            <div mat-subheader *ngIf="subsMap.length">Subs</div>
-            <mat-list-item *ngFor="let sub of (subsMap); let i = index">
+            <div mat-subheader>Parent</div>
+            <mat-list-item>
               <div mat-line>
-                <identicon [value]="$any(sub.key)" [theme]="props.iconTheme" [size]="16"
+                <identicon [value]="$any(dai.identity.parent)" [theme]="props.iconTheme" [size]="16"
                            [prefix]="props.ss58Format"></identicon>
-                <a [routerLink]="'../' + $any(sub.key).toHuman()">{{ $any(sub.key).toHuman() }}</a>
-                <ng-container *ngIf="sub.value"><b> {{sub.value}}</b></ng-container>
+                <a [routerLink]="'../' + dai.identity?.parent?.toHuman()">{{ dai.identity.parent }}</a>
+                <ng-container *ngIf="dai.identity.displayParent"><b> {{ dai.identity.displayParent}}</b>
+                </ng-container>
               </div>
             </mat-list-item>
           </mat-list>
-
         </ng-container>
-      </ng-container>
 
+        <ng-container *ngSwitchDefault>
+          <ng-container *ngIf="((subs | async) | keyvalue) as subsMap">
+            <ng-container *ngIf="subsMap.length">
+              <h3>Accounts</h3>
+              <mat-list>
+                <div mat-subheader *ngIf="subsMap.length">Subs</div>
+                <mat-list-item *ngFor="let sub of (subsMap); let i = index">
+                  <div mat-line>
+                    <identicon [value]="$any(sub.key)" [theme]="props.iconTheme" [size]="16"
+                               [prefix]="props.ss58Format"></identicon>
+                    <a [routerLink]="'../' + $any(sub.key).toHuman()">{{ $any(sub.key).toHuman() }}</a>
+                    <ng-container *ngIf="sub.value"><b> {{sub.value}}</b></ng-container>
+                  </div>
+                </mat-list-item>
+              </mat-list>
+            </ng-container>
+          </ng-container>
+        </ng-container>
+
+      </ng-container>
     </ng-container>
   </ng-template>
 
