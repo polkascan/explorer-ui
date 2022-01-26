@@ -49,10 +49,10 @@
             <td>{{block.events.length}}</td>
           </tr>
 
-          <ng-container *ngIf="block.finalized">
+          <ng-container *ngIf="block.specName">
             <tr>
-              <td class="detail-table--label-cell">Runtime version</td>
-              <td><a [routerLink]="'../../runtime/' + block.specVersion">{{block.specVersion}}</a></td>
+              <td class="detail-table--label-cell">Runtime</td>
+              <td><a [routerLink]="'../../runtime/' + block.specName + '-' + block.specVersion">{{block.specName}}-{{block.specVersion}}</a></td>
             </tr>
           </ng-container>
 

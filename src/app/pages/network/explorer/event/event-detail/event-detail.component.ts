@@ -31,18 +31,6 @@ import {
 import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 
-type psEvent = {
-  blockNumber: number; // combined primary key blockNumber, eventIdx
-  eventIdx: number; // combined primary key blockNumber, eventIdx
-  extrinsicIdx: number | null;
-  event: string | null;
-  eventModule: string | null;
-  eventName: string | null;
-  blockHash: string;
-  attributes: string | null;
-};
-
-
 @Component({
   selector: 'app-event-detail',
   templateUrl: './event-detail.component.html',
@@ -50,7 +38,7 @@ type psEvent = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EventDetailComponent implements OnInit, OnDestroy {
-  event: Observable<psEvent | null>;
+  event: Observable<pst.Event | null>;
   networkProperties = this.ns.currentNetworkProperties;
   fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 

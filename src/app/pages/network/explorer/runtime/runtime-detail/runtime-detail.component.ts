@@ -59,14 +59,17 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
       first(),
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, parseInt(params['specVersion'], 10)])
+        map(params => {
+          const [specName, specVersion] = params['runtime'].split('-');
+          return [specName, parseInt(specVersion, 10)];
+        })
       ))
     )
 
     this.runtime = observable.pipe(
       tap((runtime) => this.fetchRuntimeStatus.next('loading')),
-      switchMap(([network, specVersion]) => {
-          return this.rs.getRuntime(network as string, specVersion as number).pipe(
+      switchMap(([specName, specVersion]) => {
+          return this.rs.getRuntime(specName as string, specVersion as number).pipe(
             tap(() => this.fetchRuntimeStatus.next(null)),
             takeUntil(this.destroyer),
           )
@@ -78,11 +81,16 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
       })
     );
 
-    this.pallets = observable.pipe(
+    this.pallets = this.runtime.pipe(
       tap((runtime) => this.fetchPalletsStatus.next('loading')),
-      switchMap(([network, specVersion]) => {
+      switchMap((runtime) => {
+        if (!runtime) {
+          throw new Error('Runtime not available');
+        }
+
         const subject = new Subject<pst.RuntimePallet[]>();
-        this.rs.getRuntimePallets(network as string, specVersion as number).then(
+
+        this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).then(
           (pallets) => {
             subject.next(pallets);
             this.fetchPalletsStatus.next(null)
@@ -98,11 +106,15 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
       })
     )
 
-    this.types = observable.pipe(
+    this.types = this.runtime.pipe(
       tap((runtime) => this.fetchTypesStatus.next('loading')),
-      switchMap(([network, specVersion]) => {
+      switchMap((runtime) => {
+        if (!runtime) {
+          throw new Error('Runtime not available');
+        }
+
         const subject = new Subject<pst.RuntimeType[]>();
-        this.rs.getRuntimeTypes(network as string, specVersion as number).then(
+        this.rs.getRuntimeTypes(runtime.specName as string, runtime.specVersion as number).then(
           (types) => {
             subject.next(types);
             this.fetchTypesStatus.next(null)

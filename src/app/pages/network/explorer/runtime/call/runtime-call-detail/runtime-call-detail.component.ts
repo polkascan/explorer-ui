@@ -32,7 +32,7 @@ import { catchError, filter, first, map, shareReplay, switchMap, takeUntil, tap 
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
-  version: number;
+  runtime: string;
   pallet: string;
   call: Observable<pst.RuntimeCall | null>;
   callArguments: Observable<pst.RuntimeCallArgument[]>;
@@ -60,16 +60,19 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, params['specVersion'], params['pallet'], params['callName']]),
-        tap(([network, version, pallet]) => {
-          this.version = version;
+        map(params => {
+          const [specName, specVersion] = params['runtime'].split('-');
+          return [specName, parseInt(specVersion, 10), params['pallet'], params['callName']]
+        }),
+        tap(([specName, specVersion, pallet]) => {
+          this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
         })
       )),
-      switchMap(([network, specVersion, pallet, callName]) =>
-        this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(
+      switchMap(([specName, specVersion, pallet, callName]) =>
+        this.rs.getRuntime(specName, specVersion).pipe(
           takeUntil(this.destroyer),
-          map(runtime => [network, runtime as pst.Runtime, pallet, callName])
+          map(runtime => [runtime as pst.Runtime, pallet, callName])
         )
       ),
       shareReplay(1)
@@ -77,10 +80,10 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
 
     this.call = runtimeObservable.pipe(
       tap(() => this.fetchCallStatus.next('loading')),
-      switchMap(([network, runtime, pallet, callName]) => {
+      switchMap(([runtime, pallet, callName]) => {
         const subject: Subject<pst.RuntimeCall | null> = new Subject();
         if (runtime) {
-          this.rs.getRuntimeCalls(network, runtime.specVersion).then(
+          this.rs.getRuntimeCalls(runtime.specName, runtime.specVersion).then(
             (calls) => {
               const palletCall: pst.RuntimeCall = calls.filter(c =>
                 c.pallet === pallet && c.callName === callName
@@ -107,7 +110,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
 
     this.callArguments = runtimeObservable.pipe(
       tap(() => this.fetchCallAttributesStatus.next('loading')),
-      switchMap(([network, runtime, pallet, callName]) => {
+      switchMap(([runtime, pallet, callName]) => {
         const subject: Subject<pst.RuntimeCallArgument[]> = new Subject();
         if (runtime) {
           this.pa.run().polkascan.state.getRuntimeCallArguments(runtime.specName, runtime.specVersion, pallet, callName).then(

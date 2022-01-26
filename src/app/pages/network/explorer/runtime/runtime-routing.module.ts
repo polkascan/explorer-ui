@@ -32,27 +32,27 @@ const routes: Routes = [
     component: RuntimeListComponent
   },
   {
-    path: ':specVersion',
+    path: ':runtime',
     component: RuntimeDetailComponent
   },
   {
-    path: ':specVersion/pallet/:pallet',
+    path: ':runtime/pallet/:pallet',
     component: RuntimePalletDetailComponent
   },
   {
-    path: ':specVersion/pallet/:pallet/call/:callName',
+    path: ':runtime/pallet/:pallet/call/:callName',
     component: RuntimeCallDetailComponent
   },
   {
-    path: ':specVersion/pallet/:pallet/event/:eventName',
+    path: ':runtime/pallet/:pallet/event/:eventName',
     component: RuntimeEventDetailComponent
   },
   {
-    path: ':specVersion/pallet/:pallet/storage/:storageName',
+    path: ':runtime/pallet/:pallet/storage/:storageName',
     component: RuntimeStorageDetailComponent
   },
   {
-    path: ':specVersion/pallet/:pallet/constant/:constantName',
+    path: ':runtime/pallet/:pallet/constant/:constantName',
     component: RuntimeConstantDetailComponent
   }
 ];

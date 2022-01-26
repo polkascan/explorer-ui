@@ -35,6 +35,11 @@
         <td>{{inherent.callName}}</td>
       </tr>
 
+      <tr>
+        <td class="detail-table--label-cell">Runtime</td>
+        <td><a [routerLink]="'../../runtime/' + inherent.specName + '-' + inherent.specVersion">{{inherent.specName}}-{{inherent.specVersion}}</a></td>
+      </tr>
+
       <tr *ngIf="(callArguments | async) as arguments">
         <td class="detail-table--label-cell">Call Arguments</td>
         <td>

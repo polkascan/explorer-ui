@@ -20,17 +20,17 @@
         <td>{{transfer.eventIdx}}</td>
       </tr>
 
-      <tr *ngIf="transfer.fromMultiAddressAccountId as accountId">
+      <tr *ngIf="transfer.fromMultiAddressAccountId as fromAccountId">
         <td class="detail-table--label-cell">From</td>
         <td>
-          <account-id [address]="accountId" [iconTheme]="props.iconTheme" [iconSize]="64" [ss58Prefix]="props.ss58Format"></account-id>
+          <account-id [address]="fromAccountId" [iconTheme]="props.iconTheme" [iconSize]="64" [ss58Prefix]="props.ss58Format"></account-id>
         </td>
       </tr>
 
-      <tr *ngIf="transfer.toMultiAddressAccountId as accountId">
+      <tr *ngIf="transfer.toMultiAddressAccountId as toAccountId">
         <td class="detail-table--label-cell">To</td>
         <td>
-          <account-id [address]="accountId" [iconTheme]="props.iconTheme" [iconSize]="64" [ss58Prefix]="props.ss58Format"></account-id>
+          <account-id [address]="toAccountId" [iconTheme]="props.iconTheme" [iconSize]="64" [ss58Prefix]="props.ss58Format"></account-id>
         </td>
       </tr>
 

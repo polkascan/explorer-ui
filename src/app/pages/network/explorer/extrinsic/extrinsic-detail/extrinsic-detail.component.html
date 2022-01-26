@@ -40,6 +40,11 @@
       </tr>
 
       <tr>
+        <td class="detail-table--label-cell">Runtime</td>
+        <td><a [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion">{{extrinsic.specName}}-{{extrinsic.specVersion}}</a></td>
+      </tr>
+
+      <tr>
         <td class="detail-table--label-cell">Address</td>
         <td>
           <account-id *ngIf="extrinsic.multiAddressAccountId" [address]="extrinsic.multiAddressAccountId"

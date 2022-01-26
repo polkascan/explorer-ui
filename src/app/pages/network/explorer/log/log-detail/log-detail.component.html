@@ -25,6 +25,11 @@
         <td>{{log.typeName}}</td>
       </tr>
 
+      <tr>
+        <td class="detail-table--label-cell">Runtime</td>
+        <td><a [routerLink]="'../../runtime/' + log.specName + '-' + log.specVersion">{{log.specName}}-{{log.specVersion}}</a></td>
+      </tr>
+
       <tr *ngIf="log.data">
         <td class="detail-table--label-cell">Data</td>
         <td>

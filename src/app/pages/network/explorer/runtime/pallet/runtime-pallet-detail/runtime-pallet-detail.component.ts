@@ -31,7 +31,7 @@ import { catchError, filter, first, map, switchMap, takeUntil, tap } from 'rxjs/
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
-  version: Observable<string>;
+  runtime: Observable<string>;
   pallet: Observable<pst.RuntimePallet | null>;
   calls: Observable<pst.RuntimeCall[]>;
   events: Observable<pst.RuntimeEvent[]>;
@@ -73,17 +73,20 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, parseInt(params['specVersion'], 10), params['pallet']])
+        map(params => {
+          const [specName, specVersion] = params['runtime'].split('-');
+          return [specName, parseInt(specVersion, 10), params['pallet']];
+        })
       ))
     )
 
-    this.version = paramsObservable.pipe(
-      map(([n, version, p]) => version)
+    this.runtime = paramsObservable.pipe(
+      map(([specName, specVersion]) => `${specName}-${specVersion}`)
     )
 
     const runtimeObservable = paramsObservable.pipe(
-      switchMap(([network, specVersion, p]) => {
-        return this.rs.getRuntime(network as string, specVersion as number).pipe(
+      switchMap(([specName, specVersion]) => {
+        return this.rs.getRuntime(specName as string, specVersion as number).pipe(
           takeUntil(this.destroyer)
         )
       }),
@@ -100,12 +103,13 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
 
     this.pallet = paramsAndRuntimeObservable.pipe(
       tap(() => this.fetchPalletStatus.next('loading')),
-      filter(([p, r]) => !!r),
-      switchMap(([[network, specVersion, pallet], runtime]) => {
+      filter(([n, r]) => !!r),
+      switchMap(([[specName, specVersion, pallet], runtime]) => {
         const subject: Subject<pst.RuntimePallet | null> = new Subject();
         if (runtime) {
-          this.rs.getRuntimePallets(network as string, specVersion as number).then(
+          this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).then(
             (pallets) => {
+              console.log(pallets, pallet);
               const matchedPallet: pst.RuntimePallet = pallets.filter(p => p.pallet === pallet)[0];
               if (matchedPallet) {
                 subject.next(matchedPallet);
@@ -130,10 +134,10 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     this.calls = paramsAndRuntimeObservable.pipe(
       tap(() => this.fetchCallsStatus.next('loading')),
       filter(([p, r]) => !!r),
-      switchMap(([[network, specVersion, pallet], runtime]) => {
+      switchMap(([[specName, specVersion, pallet], runtime]) => {
         const subject: Subject<pst.RuntimeCall[]> = new Subject();
         if (runtime) {
-          this.rs.getRuntimeCalls(network as string, specVersion as number).then(
+          this.rs.getRuntimeCalls(runtime.specName as string, runtime.specVersion as number).then(
             (calls) => {
               const palletCalls: pst.RuntimeCall[] = calls.filter(c => c.pallet === pallet);
               subject.next(palletCalls)
@@ -155,10 +159,10 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     this.events = paramsAndRuntimeObservable.pipe(
       tap(() => this.fetchEventsStatus.next('loading')),
       filter(([p, r]) => !!r),
-      switchMap(([[network, specVersion, pallet], runtime]) => {
+      switchMap(([[specName, specVersion, pallet], runtime]) => {
         const subject: Subject<pst.RuntimeEvent[]> = new Subject();
         if (runtime) {
-          this.rs.getRuntimeEvents(network as string, specVersion as number).then(
+          this.rs.getRuntimeEvents(runtime.specName as string, runtime.specVersion as number).then(
             (events) => {
               const palletEvents: pst.RuntimeEvent[] = events.filter(e => e.pallet === pallet);
               subject.next(palletEvents);
@@ -180,10 +184,10 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     this.storages = paramsAndRuntimeObservable.pipe(
       tap(() => this.fetchStoragesStatus.next('loading')),
       filter(([p, r]) => !!r),
-      switchMap(([[network, specVersion, pallet], runtime]) => {
+      switchMap(([[specName, specVersion, pallet], runtime]) => {
         const subject: Subject<pst.RuntimeStorage[]> = new Subject();
         if (runtime) {
-          this.rs.getRuntimeStorages(network as string, specVersion as number).then(
+          this.rs.getRuntimeStorages(runtime.specName as string, runtime.specVersion as number).then(
             (storages) => {
               const palletStorages: pst.RuntimeStorage[] = storages.filter(s => s.pallet === pallet);
               subject.next(palletStorages);
@@ -205,10 +209,10 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     this.constants = paramsAndRuntimeObservable.pipe(
       tap(() => this.fetchConstantsStatus.next('loading')),
       filter(([p, r]) => !!r),
-      switchMap(([[network, specVersion, pallet], runtime]) => {
+      switchMap(([[specName, specVersion, pallet], runtime]) => {
         const subject: Subject<pst.RuntimeConstant[]> = new Subject();
         if (runtime) {
-          this.rs.getRuntimeConstants(network as string, specVersion as number).then(
+          this.rs.getRuntimeConstants(runtime.specName as string, runtime.specVersion as number).then(
             (constants) => {
               const palletConstants: pst.RuntimeConstant[] = constants.filter(c => c.pallet === pallet);
               subject.next(palletConstants);
@@ -230,10 +234,10 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     this.errorsMessages = paramsAndRuntimeObservable.pipe(
       tap(() => this.fetchConstantsStatus.next('loading')),
       filter(([p, r]) => !!r),
-      switchMap(([[network, specVersion, pallet], runtime]) => {
+      switchMap(([[specName, specVersion, pallet], runtime]) => {
         const subject: Subject<pst.RuntimeErrorMessage[]> = new Subject();
         if (runtime) {
-          this.rs.getRuntimeErrorMessages(network as string, specVersion as number).then(
+          this.rs.getRuntimeErrorMessages(runtime.specName as string, runtime.specVersion as number).then(
             (errors) => {
               const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet === pallet);
               subject.next(palletErrors);

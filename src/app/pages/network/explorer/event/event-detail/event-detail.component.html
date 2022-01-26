@@ -43,6 +43,10 @@
         <td>{{event.eventName}}</td>
       </tr>
 
+      <tr>
+        <td class="detail-table--label-cell">Runtime</td>
+        <td><a [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion">{{event.specName}}-{{event.specVersion}}</a></td>
+      </tr>
 
       <tr *ngIf="event.attributes">
         <td class="detail-table--label-cell">Attributes</td>

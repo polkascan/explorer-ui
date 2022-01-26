@@ -32,7 +32,7 @@ import { PolkadaptService } from '../../../../../../services/polkadapt.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
-  version: number;
+  runtime: string;
   pallet: string;
   event: Observable<pst.RuntimeEvent | null>;
   eventAttributes: Observable<pst.RuntimeEventAttribute[]>;
@@ -60,16 +60,19 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, params['specVersion'], params['pallet'], params['eventName']]),
-        tap(([network, version, pallet]) => {
-          this.version = version;
+        map(params => {
+          const [specName, specVersion] = params['runtime'].split('-');
+          return [specName, parseInt(specVersion, 10), params['pallet'], params['eventName']];
+        }),
+        tap(([specName, specVersion, pallet]) => {
+          this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
         })
       )),
-      switchMap(([network, specVersion, pallet, eventName]) =>
-        this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(
+      switchMap(([specName, specVersion, pallet, eventName]) =>
+        this.rs.getRuntime(specName, specVersion).pipe(
           takeUntil(this.destroyer),
-          map(runtime => [network, runtime as pst.Runtime, pallet, eventName])
+          map(runtime => [runtime as pst.Runtime, pallet, eventName])
         )
       ),
       shareReplay(1)
@@ -77,10 +80,10 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
 
     this.event = runtimeObservable.pipe(
       tap(() => this.fetchEventStatus.next('loading')),
-      switchMap(([network, runtime, pallet, eventName]) => {
+      switchMap(([runtime, pallet, eventName]) => {
         const subject: Subject<pst.RuntimeEvent | null> = new Subject();
         if (runtime) {
-          this.rs.getRuntimeEvents(network, runtime.specVersion).then(
+          this.rs.getRuntimeEvents(runtime.specName, runtime.specVersion).then(
             (events) => {
               const matchedEvent: pst.RuntimeEvent = events.filter(e => e.pallet === pallet && e.eventName === eventName)[0];
               if (matchedEvent) {
@@ -104,7 +107,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
 
     this.eventAttributes = runtimeObservable.pipe(
       tap(() => this.fetchEventAttributesStatus.next('loading')),
-      switchMap(([network, runtime, pallet, eventName]) => {
+      switchMap(([runtime, pallet, eventName]) => {
         const subject: Subject<pst.RuntimeEventAttribute[]> = new Subject();
         this.pa.run().polkascan.state.getRuntimeEventAttributes(runtime.specName, runtime.specVersion, pallet, eventName).then(
           (response) => {

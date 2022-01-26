@@ -31,7 +31,7 @@ import { catchError, filter, first, map, switchMap, takeUntil, tap } from 'rxjs/
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
-  version: Observable<string>;
+  runtime: Observable<string>;
   pallet: Observable<string>;
   storage: Observable<pst.RuntimeStorage | null>;
   fetchStorageStatus: BehaviorSubject<any> = new BehaviorSubject(null);
@@ -54,32 +54,35 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
           takeUntil(this.destroyer),
-          map(params => [network, params['specVersion'], params['pallet'], params['storageName']])
+          map(params => {
+            const [specName, specVersion] = params['runtime'].split('-');
+            return [specName, parseInt(specVersion, 10), params['pallet'], params['storageName']];
+          })
         )
       )
     )
 
-    this.version = observable.pipe(
-      map(([network, version, pallet]) => version)
+    this.runtime = observable.pipe(
+      map(([specName, specVersion, pallet]) => `${specName}-${specVersion}`)
     )
 
     this.pallet = observable.pipe(
-      map(([network, version, pallet]) => pallet)
+      map(([specName, specVersion, pallet]) => pallet)
     );
 
     this.storage = observable.pipe(
       tap(() => this.fetchStorageStatus.next('loading')),
-      switchMap(([network, specVersion, pallet, storageName]) =>
-        this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(
+      switchMap(([specName, specVersion, pallet, storageName]) =>
+        this.rs.getRuntime(specName, specVersion).pipe(
           takeUntil(this.destroyer),
           filter(r => r !== null),
           first(),
-          map(runtime => [network, runtime as pst.Runtime, pallet, storageName])
+          map(runtime => [runtime as pst.Runtime, pallet, storageName])
         )
       ),
-      switchMap(([network, runtime, pallet, storageName]) => {
+      switchMap(([runtime, pallet, storageName]) => {
         const subject = new Subject<pst.RuntimeStorage>();
-        this.rs.getRuntimeStorages(network, runtime.specVersion).then(
+        this.rs.getRuntimeStorages(runtime.specName, runtime.specVersion).then(
           (storages) => {
             const palletStorages: pst.RuntimeStorage[] = storages.filter(s =>
               s.pallet === pallet && s.storageName === storageName

@@ -41,6 +41,11 @@
       </tr>
 
       <tr>
+        <td class="detail-table--label-cell">Runtime</td>
+        <td><a [routerLink]="'../../runtime/' + transaction.specName + '-' + transaction.specVersion">{{transaction.specName}}-{{transaction.specVersion}}</a></td>
+      </tr>
+
+      <tr>
         <td class="detail-table--label-cell">Address</td>
         <td>
           <account-id *ngIf="transaction.multiAddressAccountId" [ss58Prefix]="props.ss58Format"

@@ -4,7 +4,7 @@
 
 <ng-container *ngIf="runtime|async as runtime; else loadingOrError">
 
-  <h2>{{$any(runtime).specName}} {{$any(runtime).specVersion}}</h2>
+  <h2>{{$any(runtime).specName}}-{{$any(runtime).specVersion}}</h2>
 
   <h3>Pallets</h3>
 

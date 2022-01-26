@@ -31,7 +31,7 @@ import { catchError, filter, first, map, switchMap, takeUntil, tap } from 'rxjs/
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
-  version: number;
+  runtime: string;
   pallet: string;
   constant: Observable<pst.RuntimeConstant | null>;
   fetchConstantStatus: BehaviorSubject<any> = new BehaviorSubject(null);
@@ -54,25 +54,28 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => [network, params['specVersion'], params['pallet'], params['constantName']]),
-        tap(([network, version, pallet]) => {
-          this.version = version;
+        map(params => {
+          const [specName, specVersion] = params['runtime'].split('-');
+          return [specName, parseInt(specVersion, 10), params['pallet'], params['constantName']]
+        }),
+        tap(([specName, specVersion, pallet]) => {
+          this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
         })
       )),
-      switchMap(([network, specVersion, pallet, constantName]) =>
-        this.rs.getRuntime(network, parseInt(specVersion, 10)).pipe(
+      switchMap(([specName, specVersion, pallet, constantName]) =>
+        this.rs.getRuntime(specName, specVersion).pipe(
           takeUntil(this.destroyer),
-          map(runtime => [network, runtime as pst.Runtime, pallet, constantName])
+          map(runtime => [runtime as pst.Runtime, pallet, constantName])
         ))
     );
 
     this.constant = runtimeObservable.pipe(
       tap(() => this.fetchConstantStatus.next(null)),
-      switchMap(([network, runtime, pallet, constantName]) => {
+      switchMap(([runtime, pallet, constantName]) => {
         const subject: Subject<pst.RuntimeConstant | null> = new Subject();
         if (runtime) {
-          this.rs.getRuntimeConstants(network, runtime.specVersion).then(
+          this.rs.getRuntimeConstants(runtime.specName, runtime.specVersion).then(
             (constants) => {
               const palletConstant: pst.RuntimeConstant = constants.filter(s =>
                 s.pallet === pallet && s.constantName === constantName
