@@ -16,16 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
+import { distinctUntilChanged, filter, first, map, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { u8aToHex } from '@polkadot/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 import { ActivatedRoute } from '@angular/router';
+import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 
 
 @Component({
@@ -36,11 +37,15 @@ import { ActivatedRoute } from '@angular/router';
 })
 export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extrinsic> implements OnInit, OnDestroy {
   listSize = 100;
+  extrinsicsFilters = new Map();
 
-  signedControl: FormControl = new FormControl(true);
+  palletControl: FormControl = new FormControl('');
+  callNameControl: FormControl = new FormControl('');
   addressControl: FormControl = new FormControl('');
+
   filtersFormGroup: FormGroup = new FormGroup({
-    signed: this.signedControl,
+    eventModule: this.palletControl,
+    callName: this.callNameControl,
     multiAddressAccountId: this.addressControl
   });
 
@@ -48,6 +53,8 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
+              private rs: RuntimeService,
+              private cd: ChangeDetectorRef,
               private route: ActivatedRoute) {
     super(ns);
   }
@@ -74,7 +81,47 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
         this.getItems();
       });
 
+    this.palletControl.valueChanges
+      .pipe(
+        takeUntil(this.destroyer)
+      )
+      .subscribe(() => {
+        this.callNameControl.reset('', {emitEvent: false});
+      });
+
     super.ngOnInit();
+  }
+
+
+  onNetworkChange(network: string): void {
+    this.filtersFormGroup.reset({
+      eventModule: '',
+      callName: ''
+    }, {emitEvent: false});
+
+    this.extrinsicsFilters.clear();
+
+    super.onNetworkChange(network);
+
+    if (network) {
+      this.rs.getRuntime(network)
+        .pipe(
+          takeUntil(this.destroyer),
+          filter((r) => r !== null),
+          first()
+        )
+        .subscribe(async (runtime): Promise<void> => {
+          const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
+          const calls = await this.rs.getRuntimeCalls(network, (runtime as pst.Runtime).specVersion);
+
+          if (pallets) {
+            pallets.forEach((pallet) => {
+              this.extrinsicsFilters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
+            });
+            this.cd.markForCheck();
+          }
+        });
+    }
   }
 
 
@@ -107,9 +154,12 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
 
   get filters(): any {
     const filters: any = {};
-    if (this.signedControl.value === true) {
-      // If true, singed only is being set. There is no need for a not signed check.
-      filters.signed = 1;
+
+    if (this.palletControl.value) {
+      filters.callModule = this.palletControl.value;
+    }
+    if (this.callNameControl.value) {
+      filters.callName = this.callNameControl.value;
     }
     if (this.addressControl.value) {
       filters.multiAddressAccountId = this.addressControl.value;

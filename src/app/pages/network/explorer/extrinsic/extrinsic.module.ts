@@ -30,6 +30,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatSelectModule } from '@angular/material/select';
 
 
 @NgModule({
@@ -40,6 +41,7 @@ import { MatTabsModule } from '@angular/material/tabs';
     ExtrinsicRoutingModule,
     PolkascanCommonModule,
     MatTableModule,
+    MatSelectModule,
     MatCheckboxModule,
     MatButtonModule,
     MatProgressBarModule,
