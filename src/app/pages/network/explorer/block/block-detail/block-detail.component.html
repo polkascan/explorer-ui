@@ -16,7 +16,12 @@
 
           <tr>
             <td class="detail-table--label-cell">Timestamp</td>
-            <td>{{block.datetime|date:'medium'}}</td>
+            <td>{{block.datetime | date:'medium'}}</td>
+          </tr>
+
+          <tr>
+            <td class="detail-table--label-cell">Timestamp UTC</td>
+            <td>{{block.datetime | date:'EEE, dd MMM yyyy HH:mm:ss zz' :'UTC'}}</td>
           </tr>
 
           <tr>
