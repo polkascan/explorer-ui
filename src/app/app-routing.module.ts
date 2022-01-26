@@ -22,7 +22,7 @@ import { PageNotFoundComponent } from './pages/page-not-found/page-not-found.com
 
 const routes: Routes = [
   {
-    path: 'n/:network',
+    path: ':network',
     loadChildren: () => import('./pages/network/network.module').then(m => m.NetworkModule)
   },
   {

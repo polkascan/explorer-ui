@@ -42,7 +42,7 @@ import { asObservable } from '../../../../../../common/polkadapt-rxjs';
 interface AccountBalance {
   total: BN;
   locked: BN;
-  transferrable: BN;
+  transferable: BN;
   bonded: BN;
   redeemable: BN;
   unbonding: BN;
@@ -285,7 +285,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         if (derivedBalancesAll) {
           balances.locked = derivedBalancesAll.lockedBalance;
           balances.total = derivedBalancesAll.freeBalance.add(derivedBalancesAll.reservedBalance);
-          balances.transferrable = derivedBalancesAll.availableBalance;
+          balances.transferable = derivedBalancesAll.availableBalance;
           balances.free = derivedBalancesAll.freeBalance;
           balances.reserved = derivedBalancesAll.reservedBalance;
         }

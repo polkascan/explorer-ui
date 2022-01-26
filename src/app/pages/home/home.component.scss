@@ -150,18 +150,14 @@
   }
 
   .home-button--polkadot {
-    background-image: url('../../../assets/polkadot.svg');
+    background-image: url('../../../assets/chains/polkadot.svg');
   }
 
   .home-button--kusama {
-    background-image: url(data:image/gif;base64,R0lGODlhgACAAOMPAAAAAP///0ADIkcyPWddYtcMcp2Ym5R0hcjFx+zq68+TsvGv0uZlp9g0ifrS5jczMyH+EUNyZWF0ZWQgd2l0aCBHSU1QACH5BAEDAA8ALAAAAACAAIAAAAT+EMhJq7046827/2AojmRpnmiqrmzrvnAsz3Rt33iu73zv/8CgcEgsGo/IpHLJbDqf0Kh0Sq1ar9isdsvter/gsHhMLpvP6LR6zW673/C4fE6vKwmIPOIgsIfwAYGCCQR+HQMIgoqCBoYaBAmLkgEIA44WkJOTCZaXEgeaoYSeBqGmnIaIppoJBp1Ar0EDBpGriwl8E30+A7G8tLaSjRW7PcW8CLXBisNEvjuzysuCCEcEBs06wNOShXSZ3JLVc6rhkwdzB9Lmg89r5ezicdvx3W+A9ZPjbNH5mtlpwPmThEoNvIHy1KhDyMqdmIMMFwEkQy/ion1l8FlMaKbiRkbmZwR+HOSNDMSRrY6NuYbNI8IEld4l+xjToMuBCEqi6bcx57ub/nCtEQA0qMMxRUUlgJlnnSB0aRZOg2mAwKtZiQi+OApEqi2qDgcQYJk1EEYWvYocKGsKQdU/is6y0PlDIyu3XDcoS/DibRC7BN2qHAFKEF0ueJyadcWiLILBWk62ylvC8RdwS1sddiF1IpYD2A70ggwDnFxPGwbU8om6g123rTUgcmsAtAHBsXPr3s27d40BAgRQdiGgQHDhx30rX868ufPn0KNLn069uvXr2LNr3869u/fv4MOLH0++vPnz6NPviAAAOw==);
-  }
-
-  .home-button--acala {
-    background-image: url('../../../assets/acala.svg');
+    background-image: url('../../../assets/chains/kusama.svg');
   }
 
   .home-button--rococo {
-    background-image: url('../../../assets/rococo.svg');
+    background-image: url('../../../assets/chains/rococo.svg');
   }
 }

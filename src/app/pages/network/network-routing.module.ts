@@ -21,17 +21,12 @@ import { RouterModule, Routes } from '@angular/router';
 import { NetworkComponent } from './network.component';
 
 const routes: Routes = [
-  {path: '', pathMatch: 'full', redirectTo: 'explorer'},
   {
     path: '',
     component: NetworkComponent,
     children: [
       {
-        path: 'dashboard',
-        loadChildren: () => import('./dashboard/dashboard.module').then(m => m.DashboardModule)
-      },
-      {
-        path: 'explorer',
+        path: '',
         loadChildren: () => import('./explorer/explorer.module').then(m => m.ExplorerModule)
       }
     ]

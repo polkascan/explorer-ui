@@ -38,6 +38,7 @@ ps-top-bar {
 .ps-top-bar-brand .logo-text {
   fill: var(--ps-top-bar-logo-text-color);
 }
+
 .ps-top-bar-brand .logo-circle {
   fill: var(--ps-top-bar-logo-dot-color);
 }
@@ -54,7 +55,7 @@ ps-top-bar {
 }
 
 .ps-top-bar-block-nr {
-  margin: 0 0.3rem;
+  margin: 0 0.7rem;
 }
 
 @keyframes breathe {
@@ -78,10 +79,49 @@ ps-top-bar {
     background: pink;
     color: #000;
   }
+
   .logo-text {
     fill: #000;
   }
+
   .logo-circle {
     fill: white;
+  }
+}
+
+.ps-top-bar-network-selector,
+.ps-top-bar-network-option {
+  &:before {
+    content: '';
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    vertical-align: middle;
+    height: 1rem;
+    width: 1rem;
+  }
+}
+
+.ps-top-bar-network-option--polkadot {
+  &:before {
+    display: inline-block;
+    margin-right: 0.3rem;
+    background-image: url('../../../assets/chains/polkadot.svg');
+  }
+}
+
+.ps-top-bar-network-option--kusama {
+  &:before {
+    display: inline-block;
+    margin-right: 0.3rem;
+    background-image: url('../../../assets/chains/kusama.svg');
+  }
+}
+
+.ps-top-bar-network-option--rococo {
+  &:before {
+    display: inline-block;
+    margin-right: 0.3rem;
+    background-image: url('../../../assets/chains/rococo.svg');
   }
 }

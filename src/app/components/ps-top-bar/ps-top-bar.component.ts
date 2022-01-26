@@ -81,7 +81,7 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
   }
 
   setNetwork(network: string): void {
-    this.router.navigateByUrl(`/n/${network}`);
+    this.router.navigateByUrl(`/${network}`);
   }
 
   openConnectionDialog(): void {

@@ -1,4 +1,5 @@
 <div class="width-container">
+  <!-- todo   MAAK DEZE OOK LINK  --->
   <a class="ps-top-bar-brand" [routerLink]="'/'" tabindex="0">
     <svg viewBox="0 0 189 81" width="189" height="81" xmlns="http://www.w3.org/2000/svg">
       <g stroke="none" stroke-width="1" fill="none" fill-rule="nonzero">
@@ -9,6 +10,7 @@
   </a>
 
   <div class="ps-top-bar-block-nr" *ngIf="vars.blockNumber|async as blockNumber">
+    <i class="fas fa-cube"></i>
     {{blockNumber}}
   </div>
 
@@ -16,11 +18,11 @@
     {{vars.currency | async}} {{price}}
   </div>
 
-  <button class="ps-top-bar-network-selector" mat-button [matMenuTriggerFor]="networkMenu">
+  <button class="ps-top-bar-network-selector ps-top-bar-network-option ps-top-bar-network-option--{{(vars.network|async)}}" mat-button [matMenuTriggerFor]="networkMenu">
     {{ (vars.network|async) || 'Network' }}
   </button>
   <mat-menu #networkMenu="matMenu">
-    <button mat-menu-item *ngFor="let network of networks" (click)="setNetwork(network)">{{ network }}</button>
+    <button mat-menu-item *ngFor="let network of networks" (click)="setNetwork(network)" class="ps-top-bar-network-option ps-top-bar-network-option--{{network}}">{{ network }}</button>
   </mat-menu>
 
   <button *ngIf="vars.network|async" class="ps-top-bar-connection-selector" mat-icon-button (click)="openConnectionDialog()">
