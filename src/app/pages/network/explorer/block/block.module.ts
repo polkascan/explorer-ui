@@ -26,11 +26,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
+import { PolkascanCommonModule } from '../../../../../common/polkascan-common.module';
 
 @NgModule({
   declarations: [BlockListComponent, BlockDetailComponent],
   imports: [
     CommonModule,
+    PolkascanCommonModule,
     BlockRoutingModule,
     MatTableModule,
     MatButtonModule,

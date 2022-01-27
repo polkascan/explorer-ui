@@ -13,7 +13,14 @@ export class AccountListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const explorerRoute = this.route.pathFromRoot.find(routePart => routePart.snapshot.url[0]?.path === 'explorer');
-    this.router.navigate(['.'], {relativeTo: explorerRoute});
+    let explorerRoute: ActivatedRoute | undefined;
+    const network = this.route.snapshot.paramMap && this.route.snapshot.paramMap.get('network');
+    if (network) {
+      explorerRoute = this.route.pathFromRoot.find(routePart => routePart.snapshot.url[0]?.path === network);
+    }
+
+    if (explorerRoute) {
+      this.router.navigate(['.'], {relativeTo: explorerRoute});
+    }
   }
 }

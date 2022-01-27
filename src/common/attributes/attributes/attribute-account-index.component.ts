@@ -40,6 +40,9 @@ export class AttributeAccountIndexComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.relativeToRoute = this.route.pathFromRoot.find(routePart => routePart.snapshot.url[0]?.path === 'explorer');
+    const network = this.route.snapshot.paramMap && this.route.snapshot.paramMap.get('network');
+    if (network) {
+      this.relativeToRoute = this.route.pathFromRoot.find(routePart => routePart.snapshot.url[0]?.path === network);
+    }
   }
 }

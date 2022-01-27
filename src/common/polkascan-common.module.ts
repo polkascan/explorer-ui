@@ -36,12 +36,14 @@ import { AccountIdCommonComponent } from './account-id/account-id.common.compone
 import { BalanceCommonComponent } from './balance/balance.common.component';
 import { AttributesComponent } from './attributes/attributes.component';
 import { RouterModule } from '@angular/router';
+import { TimeAgoCommonComponent } from './time-ago/time-ago.common.component';
 
 @NgModule({
   declarations: [
     IdenticonComponent,
     AccountIdCommonComponent,
     BalanceCommonComponent,
+    TimeAgoCommonComponent,
     AttributesComponent,
     AttributeAccountIndexComponent,
     AttributeAddressComponent,
@@ -65,6 +67,7 @@ import { RouterModule } from '@angular/router';
     IdenticonComponent,
     AccountIdCommonComponent,
     BalanceCommonComponent,
+    TimeAgoCommonComponent,
     AttributesComponent,
     AttributeAccountIndexComponent,
     AttributeAddressComponent,
