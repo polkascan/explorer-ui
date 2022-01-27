@@ -22,7 +22,7 @@ import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation } from '@a
   selector: 'attribute-date',
   template: `
     <ng-container *ngIf="attribute">
-      {{ attribute.value | date: 'medium' }}
+      {{ attribute.value | date: 'dd-MM-yyyy HH:mm:ss' }} (UTC)
     </ng-container>
   `,
   encapsulation: ViewEncapsulation.None,
