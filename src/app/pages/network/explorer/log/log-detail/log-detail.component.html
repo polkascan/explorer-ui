@@ -16,6 +16,16 @@
       </tr>
 
       <tr>
+        <td class="detail-table--label-cell">Timestamp</td>
+        <td>{{log.blockDatetime | date: 'dd-MM-yyyy HH:mm:ss'}}</td>
+      </tr>
+
+      <tr>
+        <td class="detail-table--label-cell">Timestamp UTC</td>
+        <td>{{log.blockDatetime | date:'dd-MM-yyyy HH:mm:ss' :'UTC'}}</td>
+      </tr>
+
+      <tr>
         <td class="detail-table--label-cell">Log Index</td>
         <td>{{log.logIdx}}</td>
       </tr>
@@ -27,7 +37,7 @@
 
       <tr>
         <td class="detail-table--label-cell">Runtime</td>
-        <td><a [routerLink]="'../../runtime/' + log.specName + '-' + log.specVersion">{{log.specName}}-{{log.specVersion}}</a></td>
+        <td><a [routerLink]="'../../runtime/' + log.specName + '-' + log.specVersion">{{log.specName + '-' + log.specVersion}}</a></td>
       </tr>
 
       <tr *ngIf="log.data">

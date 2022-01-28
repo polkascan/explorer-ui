@@ -5,7 +5,7 @@
 <ng-container *ngIf="(inherent | async) as inherent; else loadingOrError">
   <ng-container *ngIf="(networkProperties | async) as props">
 
-    <h2>{{inherent.blockNumber}}-{{inherent.extrinsicIdx}}</h2>
+    <h2>{{inherent.blockNumber + '-' + inherent.extrinsicIdx}}</h2>
 
     <table class="detail-table">
       <tbody>
@@ -42,7 +42,7 @@
 
       <tr>
         <td class="detail-table--label-cell">Runtime</td>
-        <td><a [routerLink]="'../../runtime/' + inherent.specName + '-' + inherent.specVersion">{{inherent.specName}}-{{inherent.specVersion}}</a></td>
+        <td><a [routerLink]="'../../runtime/' + inherent.specName + '-' + inherent.specVersion">{{inherent.specName + '-' + inherent.specVersion}}</a></td>
       </tr>
 
       <tr *ngIf="(callArguments | async) as arguments">

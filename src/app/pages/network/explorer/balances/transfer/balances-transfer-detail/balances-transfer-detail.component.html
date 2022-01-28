@@ -5,7 +5,7 @@
 <ng-container *ngIf="(transfer | async) as transfer; else loadingOrError">
   <ng-container *ngIf="(networkProperties | async) as props">
 
-    <h2>{{transfer.blockNumber}}-{{transfer.eventIdx}}</h2>
+    <h2>{{transfer.blockNumber + '-' + transfer.eventIdx}}</h2>
 
     <table class="detail-table">
       <tbody>

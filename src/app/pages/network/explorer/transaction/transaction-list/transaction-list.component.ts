@@ -51,7 +51,7 @@ export class TransactionListComponent extends PaginatedListComponentBase<pst.Ext
     addressControl: this.addressControl
   });
 
-  visibleColumns = ['icon', 'transactionID', 'from', 'block', 'pallet', 'call', 'details'];
+  visibleColumns = ['icon', 'transactionID', 'age', 'from', 'block', 'pallet', 'call', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,

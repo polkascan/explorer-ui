@@ -43,7 +43,7 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
     eventName: this.eventNameControl
   });
 
-  visibleColumns = ['icon', 'eventID', 'referencedTransaction', 'pallet', 'events', 'details'];
+  visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'events', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,

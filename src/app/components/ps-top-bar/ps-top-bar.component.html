@@ -10,12 +10,13 @@
   </a>
 
   <div class="ps-top-bar-block-nr" *ngIf="vars.blockNumber|async as blockNumber">
-    <i class="fas fa-cube"></i>
-    {{blockNumber}}
+    <button mat-button [routerLink]="'./block/' + blockNumber">
+      <i class="fas fa-cube"></i> {{blockNumber}}
+    </button>
   </div>
 
   <div class="ps-top-bar-block-nr" *ngIf="vars.price|async as price">
-    {{vars.currency | async}} {{price}}
+    <button mat-button>{{vars.currency | async}} {{price}}</button>
   </div>
 
   <button class="ps-top-bar-network-selector ps-top-bar-network-option ps-top-bar-network-option--{{(vars.network|async)}}" mat-button [matMenuTriggerFor]="networkMenu">

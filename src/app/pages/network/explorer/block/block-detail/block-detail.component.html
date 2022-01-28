@@ -57,7 +57,7 @@
           <ng-container *ngIf="block.specName">
             <tr>
               <td class="detail-table--label-cell">Runtime</td>
-              <td><a [routerLink]="'../../runtime/' + block.specName + '-' + block.specVersion">{{block.specName}}-{{block.specVersion}}</a></td>
+              <td><a [routerLink]="'../../runtime/' + block.specName + '-' + block.specVersion">{{block.specName + '-' + block.specVersion}}</a></td>
             </tr>
           </ng-container>
 
@@ -83,7 +83,7 @@
                 <ng-container *ngFor="let ext of extrinsics">
                   <tr>
                     <td><a
-                      [routerLink]="'../../extrinsic/' + block.number + '-' + ext.extrinsicIdx">{{ block.number }}-{{ext.extrinsicIdx}}</a>
+                      [routerLink]="'../../extrinsic/' + block.number + '-' + ext.extrinsicIdx">{{ block.number + '-' + ext.extrinsicIdx}}</a>
                     </td>
                     <td>{{ext.callModule}}</td>
                     <td>{{ext.callName}}</td>

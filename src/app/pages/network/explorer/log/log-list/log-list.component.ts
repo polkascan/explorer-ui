@@ -30,7 +30,7 @@ import { PaginatedListComponentBase } from '../../../../../../common/list-base/p
 })
 export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
   listSize = 100;
-  visibleColumns = ['icon', 'logID', 'block', 'type', 'details'];
+  visibleColumns = ['icon', 'logID', 'age', 'block', 'type', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService) {

@@ -38,7 +38,8 @@ const WEEK = DAY * 7;
 export class TimeAgoCommonComponent implements OnInit, OnChanges, OnDestroy {
   @Input() value: Date | string | number | null | undefined = null;
   ago: string;
-  interval: number;
+  interval: number | undefined;
+  delay: number | undefined;
   difference = -1;
 
   constructor(private cd: ChangeDetectorRef) {
@@ -57,6 +58,9 @@ export class TimeAgoCommonComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.delay) {
+      clearTimeout(this.delay);
+    }
     if (this.interval) {
       clearInterval(this.interval);
     }
@@ -67,8 +71,12 @@ export class TimeAgoCommonComponent implements OnInit, OnChanges, OnDestroy {
     let date: Date;
     this.difference = -1;
 
+    if (this.delay) {
+      clearTimeout(this.delay);
+    }
     if (this.interval) {
       clearInterval(this.interval);
+      this.interval = undefined;
     }
 
     if (currentValue && currentValue !== previousValue) {
@@ -87,10 +95,12 @@ export class TimeAgoCommonComponent implements OnInit, OnChanges, OnDestroy {
       const diff: number = today - date.getTime();
       this.difference = Math.ceil(diff / 1000);
 
-      this.interval = window.setInterval(() => {
-        this.difference++;
-        this.setAgo();
-      }, 1000);
+      this.delay = window.setTimeout(() => {
+        this.interval = window.setInterval(() => {
+          this.difference++;
+          this.setAgo();
+        }, 1000);
+      }, 1000 - today % 1000);
     }
 
     this.setAgo();

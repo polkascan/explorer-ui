@@ -49,7 +49,7 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
     multiAddressAccountId: this.addressControl
   });
 
-  visibleColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'signed', 'details'];
+  visibleColumns = ['icon', 'extrinsicID', 'age', 'block', 'pallet', 'call', 'signed', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,

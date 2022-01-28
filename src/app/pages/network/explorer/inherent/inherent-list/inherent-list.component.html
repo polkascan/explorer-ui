@@ -43,6 +43,13 @@
       </td>
     </ng-container>
 
+    <ng-container matColumnDef="age">
+      <th mat-header-cell *matHeaderCellDef>Time</th>
+      <td mat-cell *matCellDef="let inherent">
+        <time-ago [value]="inherent.blockDatetime"></time-ago>
+      </td>
+    </ng-container>
+
     <ng-container matColumnDef="block">
       <th mat-header-cell *matHeaderCellDef>Block</th>
       <td mat-cell *matCellDef="let inherent">

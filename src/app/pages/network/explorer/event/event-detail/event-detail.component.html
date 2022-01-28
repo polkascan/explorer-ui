@@ -5,7 +5,7 @@
 <ng-container *ngIf="(event | async) as event; else loadingOrError">
   <ng-container *ngIf="(networkProperties | async) as props">
 
-    <h2>{{event.blockNumber}}-{{event.eventIdx}}</h2>
+    <h2>{{event.blockNumber + '-' + event.eventIdx}}</h2>
 
     <table class="detail-table">
       <tbody>
@@ -16,7 +16,7 @@
 
       <tr>
         <td class="detail-table--label-cell">Referenced Transaction</td>
-        <td><a [routerLink]="'../../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber}}-{{event.extrinsicIdx}}</a></td>
+        <td><a [routerLink]="'../../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber + '-' + event.extrinsicIdx}}</a></td>
       </tr>
 
       <tr *ngIf="event.extrinsicIdx !== null">
@@ -45,7 +45,7 @@
 
       <tr>
         <td class="detail-table--label-cell">Runtime</td>
-        <td><a [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion">{{event.specName}}-{{event.specVersion}}</a></td>
+        <td><a [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion">{{event.specName + '-' + event.specVersion}}</a></td>
       </tr>
 
       <tr *ngIf="event.attributes">
