@@ -6,6 +6,7 @@
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "noImplicitOverride": false,
     "noPropertyAccessFromIndexSignature": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
@@ -14,9 +15,6 @@
     "downlevelIteration": true,
     "experimentalDecorators": true,
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "strictPropertyInitialization": false,
     "importHelpers": true,
     "target": "es2017",
     "module": "es2020",
@@ -24,15 +22,9 @@
       "es2020",
       "dom"
     ],
+    "strictPropertyInitialization": false,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "paths": {
-      "@polkadot/*": [
-        "node_modules/@polkadot/*"
-      ],
-      "@polkadapt/core": [
-        "node_modules/@polkadapt/core"
-      ]
-    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
