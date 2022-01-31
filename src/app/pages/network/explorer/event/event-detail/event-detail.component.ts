@@ -30,6 +30,7 @@ import {
 } from 'rxjs/operators';
 import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 
 @Component({
   selector: 'app-event-detail',
@@ -39,6 +40,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 })
 export class EventDetailComponent implements OnInit, OnDestroy {
   event: Observable<pst.Event | null>;
+  runtimeEventAttributes: Observable<pst.RuntimeEventAttribute[] | null>
   networkProperties = this.ns.currentNetworkProperties;
   fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
@@ -48,6 +50,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   constructor(private route: ActivatedRoute,
               private cd: ChangeDetectorRef,
               private pa: PolkadaptService,
+              private rs: RuntimeService,
               private ns: NetworkService
   ) {
   }
@@ -69,7 +72,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     this.event = paramsObservable.pipe(
       tap(() => this.fetchEventStatus.next('loading')),
       switchMap(([blockNr, eventIdx]) => {
-        const subject = new Subject<pst.Event>();
+        const subject = new BehaviorSubject<pst.Event | null>(null);
         this.pa.run().polkascan.chain.getEvent(blockNr, eventIdx).then(
           (event) => {
             if (event) {
@@ -87,6 +90,31 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       }),
       catchError((e) => {
         this.fetchEventStatus.next('error');
+        return of(null);
+      })
+    );
+
+    this.runtimeEventAttributes = this.event.pipe(
+      switchMap((event) => {
+        if (event && event.specName && event.specVersion && event.eventModule && event.eventName) {
+          const subject: Subject<pst.RuntimeEventAttribute[]> = new Subject();
+          this.pa.run().polkascan.state.getRuntimeEventAttributes(event.specName, event.specVersion, event.eventModule, event.eventName).then(
+            (response) => {
+              if (Array.isArray(response.objects)) {
+                subject.next(response.objects);
+              } else {
+                subject.error('Invalid response.')
+              }
+            },
+            (e) => {
+              subject.error(e);
+            });
+          return subject.pipe(takeUntil(this.destroyer));
+        }
+
+        return of(null);
+      }),
+      catchError((e) => {
         return of(null);
       })
     );

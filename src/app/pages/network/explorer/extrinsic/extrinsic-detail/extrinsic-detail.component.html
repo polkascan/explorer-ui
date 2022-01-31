@@ -64,7 +64,7 @@
 
       <tr>
         <td class="detail-table--label-cell">Signature</td>
-        <td>{{extrinsic.signature}}</td>
+        <td class="break-word">{{extrinsic.signature}}</td>
       </tr>
 
       <tr *ngIf="(callArguments | async) as arguments">
@@ -111,7 +111,7 @@
           <ng-container matColumnDef="details">
             <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
             <td mat-cell *matCellDef="let event">
-              <a [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx">Details</a>
+              <a [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx"><span class="material-icons">chevron_right</span></a>
             </td>
           </ng-container>
 

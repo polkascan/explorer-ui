@@ -53,7 +53,7 @@
         <td>
           <attributes [attributes]="event.attributes" [iconTheme]="props.iconTheme" [iconSize]="24"
                       [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
-                      [ss58Prefix]="props.ss58Format"></attributes>
+                      [ss58Prefix]="props.ss58Format" [runtimeEventAttributes]="runtimeEventAttributes | async"></attributes>
         </td>
       </tr>
 

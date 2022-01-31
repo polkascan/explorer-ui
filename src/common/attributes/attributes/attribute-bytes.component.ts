@@ -21,7 +21,7 @@ import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation } from '@a
 @Component({
   selector: 'attribute-bytes',
   template: `
-    {{ attribute.value }}
+    <span class="break-word">{{ attribute.value }}</span>
   `,
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush

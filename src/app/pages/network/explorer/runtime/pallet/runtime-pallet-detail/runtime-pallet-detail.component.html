@@ -42,7 +42,7 @@
       <ng-container matColumnDef="details">
         <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
         <td mat-cell *matCellDef="let callFunction">
-          <a [routerLink]="'call/' + callFunction.callName">Details</a>
+          <a [routerLink]="'call/' + callFunction.callName"><span class="material-icons">chevron_right</span></a>
         </td>
       </ng-container>
 
@@ -94,7 +94,7 @@
       <ng-container matColumnDef="details">
         <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
         <td mat-cell *matCellDef="let event">
-          <a [routerLink]="'event/' + event.eventName">Details</a>
+          <a [routerLink]="'event/' + event.eventName"><span class="material-icons">chevron_right</span></a>
         </td>
       </ng-container>
 
@@ -139,7 +139,7 @@
       <ng-container matColumnDef="details">
         <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
         <td mat-cell *matCellDef="let storage">
-          <a [routerLink]="'storage/' + storage.storageName">Details</a>
+          <a [routerLink]="'storage/' + storage.storageName"><span class="material-icons">chevron_right</span></a>
         </td>
       </ng-container>
 
@@ -191,7 +191,7 @@
       <ng-container matColumnDef="details">
         <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
         <td mat-cell *matCellDef="let constant">
-          <a [routerLink]="'constant/' + constant.constantName">Details</a>
+          <a [routerLink]="'constant/' + constant.constantName"><span class="material-icons">chevron_right</span></a>
         </td>
       </ng-container>
 

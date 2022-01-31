@@ -26,6 +26,8 @@ import {
 } from '@angular/core';
 import { IconTheme } from '../identicon/identicon.types';
 import { Prefix } from '@polkadot/util-crypto/address/types';
+import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { attributesConfig } from './attributes.config';
 
 @Component({
   selector: 'attributes',
@@ -40,16 +42,18 @@ export class AttributesComponent implements OnChanges {
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
   @Input() ss58Prefix: Prefix;
+  @Input() runtimeEventAttributes: pst.RuntimeEventAttribute[] | null | undefined;
 
   parsedAttributes: any[] = [];
+  attributesConfig = attributesConfig;
 
   constructor() {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['attributes']) {
+    if (changes['attributes'] || changes['runtimeEventAttributes']) {
       let attrs = [];
-      const currentValue = changes['attributes'].currentValue;
+      const currentValue = this.attributes;
 
       if (currentValue) {
         if (typeof currentValue === 'string') {
@@ -68,8 +72,24 @@ export class AttributesComponent implements OnChanges {
         } else if (typeof currentValue === 'object') {
           attrs = [currentValue];
         }
-      }
 
+        if (Array.isArray(this.runtimeEventAttributes)) {
+          attrs = attrs.map((value, index) => {
+            if (value.type) {
+              return value;
+            }
+
+            const eventAttribute = (this.runtimeEventAttributes as pst.RuntimeEventAttribute[]).find((ea) => ea.eventAttributeIdx === index);
+            if (eventAttribute && eventAttribute.scaleType) {
+              return {
+                type: eventAttribute.scaleType,
+                value: value
+              };
+            }
+            return value;
+          })
+        }
+      }
       this.parsedAttributes = attrs;
     }
   }

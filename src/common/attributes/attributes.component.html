@@ -1,51 +1,40 @@
 <div class="attribute" *ngFor="let attribute of parsedAttributes">
-  <ng-container [ngSwitch]="attribute.type">
+  <ng-container [ngSwitch]="attributesConfig[attribute.type]">
 
-    <attribute-address *ngSwitchCase="'Address'" [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize"
+    <label *ngIf="attributesConfig[attribute.type] && (attribute.name || attribute.key)">{{ attribute.name || attribute.key }}</label>
+
+    <attribute-address *ngSwitchCase="'address'" [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize"
                        [ss58Prefix]="ss58Prefix"></attribute-address>
-    <attribute-address *ngSwitchCase="'AuthorityId'" [attribute]="attribute" [iconTheme]="iconTheme"
-                       [iconSize]="iconSize"
-                       [ss58Prefix]="ss58Prefix"
-                      ></attribute-address>
-    <attribute-address *ngSwitchCase="'<Lookup as StaticLookup>::Source'" [attribute]="attribute"
-                       [iconTheme]="iconTheme" [iconSize]="iconSize"
-                       [ss58Prefix]="ss58Prefix"
-                      ></attribute-address>
-    <attribute-address *ngSwitchCase="'AccountId'" [attribute]="attribute" [iconTheme]="iconTheme"
-                       [iconSize]="iconSize"
-                       [ss58Prefix]="ss58Prefix"
-                      ></attribute-address>
 
-    <attribute-proposal *ngSwitchCase="'PropIndex'" [attribute]="attribute"></attribute-proposal>
+    <attribute-proposal *ngSwitchCase="'proposal'" [attribute]="attribute"></attribute-proposal>
 
-    <attribute-referendum *ngSwitchCase="'ReferendumIndex'" [attribute]="attribute"></attribute-referendum>
-    <attribute-referendum *ngSwitchCase="'Compact<ReferendumIndex>'" [attribute]="attribute"></attribute-referendum>
+    <attribute-referendum *ngSwitchCase="'referendum'" [attribute]="attribute"></attribute-referendum>
 
-    <attribute-session *ngSwitchCase="'SessionIndex'" [attribute]="attribute"></attribute-session>
+    <attribute-session *ngSwitchCase="'session'" [attribute]="attribute"></attribute-session>
 
-    <attribute-block *ngSwitchCase="'BlockNumber'" [attribute]="attribute"></attribute-block>
+    <attribute-block *ngSwitchCase="'block'" [attribute]="attribute"></attribute-block>
 
-    <attribute-account-index *ngSwitchCase="'AccountIndex'" [attribute]="attribute"></attribute-account-index>
+    <attribute-account-index *ngSwitchCase="'account'" [attribute]="attribute"></attribute-account-index>
 
-    <attribute-ethereum-address *ngSwitchCase="'EthereumAddress'" [attribute]="attribute"
-                                [iconSize]="iconSize"
-                               ></attribute-ethereum-address>
+    <attribute-ethereum-address *ngSwitchCase="'ethereumAddress'" [attribute]="attribute"
+                                [iconSize]="iconSize">
+    </attribute-ethereum-address>
 
-    <attribute-balance *ngSwitchCase="'Balance'" [attribute]="attribute" [tokenDecimals]="tokenDecimals"
+    <attribute-balance *ngSwitchCase="'balance'" [attribute]="attribute" [tokenDecimals]="tokenDecimals"
                        [tokenSymbol]="tokenSymbol"></attribute-balance>
-    <attribute-balance *ngSwitchCase="'Compact<Balance>'" [attribute]="attribute"></attribute-balance>
-    <attribute-balance *ngSwitchCase="'Compact<BalanceOf>'" [attribute]="attribute"></attribute-balance>
 
-    <attribute-date *ngSwitchCase="'Compact<Moment>'" [attribute]="attribute"></attribute-date>
 
-    <attribute-bytes *ngSwitchCase="'Bytes'" [attribute]="attribute"></attribute-bytes>
+    <attribute-date *ngSwitchCase="'date'" [attribute]="attribute"></attribute-date>
 
-    <attribute-downloadable *ngSwitchCase="'DownloadableBytesHash'" [attribute]="attribute"></attribute-downloadable>
+    <attribute-bytes *ngSwitchCase="'bytes'" [attribute]="attribute"></attribute-bytes>
 
-    <attribute-boolean *ngSwitchCase="'bool'" [attribute]="attribute"></attribute-boolean>
+    <attribute-downloadable *ngSwitchCase="'downloadable'" [attribute]="attribute"></attribute-downloadable>
 
-    <attribute-struct *ngSwitchDefault [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize" [tokenDecimals]="tokenDecimals"
-                       [tokenSymbol]="tokenSymbol"></attribute-struct>
+    <attribute-boolean *ngSwitchCase="'boolean'" [attribute]="attribute"></attribute-boolean>
+
+    <attribute-struct *ngSwitchDefault [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize"
+                      [tokenDecimals]="tokenDecimals"
+                      [tokenSymbol]="tokenSymbol"></attribute-struct>
 
   </ng-container>
 </div>
