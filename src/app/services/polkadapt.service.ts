@@ -57,6 +57,9 @@ export class PolkadaptService {
   } = {};
   badAdapterUrls: { [network: string]: { [K in AdapterName]: string[] } } = {};
   private currentNetwork: string = '';
+  private onlineHandler: EventListener = (ev) => {
+    this.reconnectPolkscanApi();
+  };
 
   constructor(private config: AppConfig) {
     this.setAvailableAdapters();
@@ -101,18 +104,22 @@ export class PolkadaptService {
     // Update the Substrate RPC url.
     this.configureSubstrateRpcUrl();
     const sAdapter = this.availableAdapters[network].substrateRpc;
+
     this.substrateRpcWsErrorHandler = () => {
       this.reconnectSubstrateRpc();
     };
     sAdapter.on('error', this.substrateRpcWsErrorHandler);
+
     this.substrateRpcWsConnectedHandler = () => {
       this.substrateRpcConnected.next(true);
     };
     sAdapter.on('connected', this.substrateRpcWsConnectedHandler);
+
     this.substrateRpcWsDisconnectedHandler = () => {
       this.substrateRpcConnected.next(false);
     };
     sAdapter.on('disconnected', this.substrateRpcWsDisconnectedHandler);
+
     this.substrateRpcUrls.next(this.config.networks[network].substrateRpcUrlArray);
 
     // Update the Polkascan API url.
@@ -129,9 +136,11 @@ export class PolkadaptService {
     if (pAdapter.socket) {
       this.polkascanWsErrorHandler = () => {
         console.error('Polkascan API web socket error, try reconnect');
+        this.polkascanWsConnected.next(false);
         this.reconnectPolkscanApi();
       };
       pAdapter.socket.on('socketError', this.polkascanWsErrorHandler);
+
       this.polkascanDataErrorHandler = (e) => {
         const error = {
           url: this.polkascanWsUrl.value || '',
@@ -140,17 +149,22 @@ export class PolkadaptService {
         this.polkascanDataErrors.next(this.polkascanDataErrors.value.concat([error]));
       };
       pAdapter.socket.on('dataError', this.polkascanDataErrorHandler);
+
       this.polkascanWsConnectedHandler = () => {
         console.info('Polkascan API connected');
         this.polkascanWsConnected.next(true);
       };
       pAdapter.socket.on('open', this.polkascanWsConnectedHandler);
+
       this.polkascanWsDisconnectedHandler = () => {
+        // This can happen when internet connection went down.
         console.info('Polkascan API disconnected');
         this.polkascanWsConnected.next(false);
       };
       pAdapter.socket.on('close', this.polkascanWsDisconnectedHandler);
     }
+
+    window.addEventListener('online', this.onlineHandler);
     // Wait until PolkADAPT has initialized all adapters.
     await this.polkadapt.ready();
   }
@@ -171,6 +185,7 @@ export class PolkadaptService {
         pAdapter.socket.off('open', this.polkascanWsConnectedHandler);
         pAdapter.socket.off('close', this.polkascanWsDisconnectedHandler);
       }
+      window.removeEventListener('online', this.onlineHandler);
       this.currentNetwork = '';
       this.substrateRpcUrls.next(null);
       this.substrateRpcUrl.next(null);
@@ -199,19 +214,13 @@ export class PolkadaptService {
   reconnectSubstrateRpc(): void {
     if (this.substrateRpcUrl.value) {
       const badSubstrateRpcUrls = this.badAdapterUrls[this.currentNetwork].substrateRpc;
-      badSubstrateRpcUrls.push(this.substrateRpcUrl.value);
+      badSubstrateRpcUrls.push(this.substrateRpcUrl.value as string);
       window.localStorage.removeItem(`lastUsedSubstrateRpcUrl-${this.currentNetwork}`);
-      if (badSubstrateRpcUrls.length < this.config.networks[this.currentNetwork].substrateRpcUrlArray.length) {
-        this.configureSubstrateRpcUrl();
-        if (this.polkascanRegistered.value) {
-          this.availableAdapters[this.currentNetwork].substrateRpc.connect();
-        } else {
-          this.polkadapt.register(this.availableAdapters[this.currentNetwork].substrateRpc);
-        }
+      this.configureSubstrateRpcUrl();
+      if (this.polkascanRegistered.value) {
+        this.availableAdapters[this.currentNetwork].substrateRpc.connect();
       } else {
-        // All url's are marked bad, so we unregister this adapter.
-        this.polkadapt.unregister(this.availableAdapters[this.currentNetwork].substrateRpc);
-        this.substrateRpcRegistered.next(false);
+        this.polkadapt.register(this.availableAdapters[this.currentNetwork].substrateRpc);
       }
     }
   }
@@ -250,19 +259,13 @@ export class PolkadaptService {
   reconnectPolkscanApi(): void {
     if (this.polkascanWsUrl.value) {
       const badPolkascanWsUrls = this.badAdapterUrls[this.currentNetwork].polkascanApi;
-      badPolkascanWsUrls.push(this.polkascanWsUrl.value);
+      badPolkascanWsUrls.push(this.polkascanWsUrl.value as string);
       window.localStorage.removeItem(`lastUsedPolkascanWsUrl-${this.currentNetwork}`);
-      if (badPolkascanWsUrls.length < this.config.networks[this.currentNetwork].polkascanWsUrlArray.length) {
-        this.configurePolkascanWsUrl();
-        if (this.polkascanRegistered.value) {
-          this.availableAdapters[this.currentNetwork].polkascanApi.connect();
-        } else {
-          this.polkadapt.register(this.availableAdapters[this.currentNetwork].polkascanApi);
-        }
+      this.configurePolkascanWsUrl();
+      if (this.polkascanRegistered.value) {
+        this.availableAdapters[this.currentNetwork].polkascanApi.connect();
       } else {
-        // All url's are marked bad, so we unregister this adapter.
-        this.polkadapt.unregister(this.availableAdapters[this.currentNetwork].polkascanApi);
-        this.polkascanRegistered.next(false);
+        this.polkadapt.register(this.availableAdapters[this.currentNetwork].polkascanApi);
       }
     }
   }
