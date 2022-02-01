@@ -235,11 +235,7 @@
             <div mat-subheader>Parent</div>
             <mat-list-item>
               <div mat-line>
-                <identicon [value]="$any(dai.identity.parent)" [theme]="props.iconTheme" [size]="16"
-                           [prefix]="props.ss58Format"></identicon>
-                <a [routerLink]="'../' + dai.identity?.parent?.toHuman()">{{ dai.identity.parent }}</a>
-                <ng-container *ngIf="dai.identity.displayParent"><b> {{ dai.identity.displayParent}}</b>
-                </ng-container>
+                <account-id [address]="$any(dai.identity.parent)" [iconTheme]="props.iconTheme" [iconSize]="24" [ss58Prefix]="props.ss58Format"></account-id>
               </div>
             </mat-list-item>
           </mat-list>
@@ -253,10 +249,7 @@
                 <div mat-subheader *ngIf="subsMap.length">Subs</div>
                 <mat-list-item *ngFor="let sub of (subsMap); let i = index">
                   <div mat-line>
-                    <identicon [value]="$any(sub.key)" [theme]="props.iconTheme" [size]="16"
-                               [prefix]="props.ss58Format"></identicon>
-                    <a [routerLink]="'../' + $any(sub.key).toHuman()">{{ $any(sub.key).toHuman() }}</a>
-                    <ng-container *ngIf="sub.value"><b> {{sub.value}}</b></ng-container>
+                    <account-id [address]="$any(sub.key)" [iconTheme]="props.iconTheme" [iconSize]="24" [ss58Prefix]="props.ss58Format"></account-id>
                   </div>
                 </mat-list-item>
               </mat-list>

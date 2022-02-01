@@ -3,7 +3,7 @@
   <form [formGroup]="searchForm" (ngSubmit)="submitSearch()">
     <mat-form-field class="search" appearance="outline">
       <mat-label>Search for account, transaction or block</mat-label>
-      <input matInput formControlName="search" placeholder="Account address, transaction hash or block number">
+      <input matInput formControlName="search" placeholder="Account address or block number">
       <button mat-icon-button matSuffix type="submit" [attr.aria-label]="'Search'">
         <mat-icon>search</mat-icon>
       </button>
@@ -11,7 +11,7 @@
         This address does not belong to the {{ns.currentNetwork|async}} network. Do you need to switch to another network?
       </mat-error>
       <mat-error *ngIf="searchForm.controls['search'].hasError('wrongFormat')">
-        Please enter a valid account address, transaction hash or block number.
+        Please enter a valid account address or block number.
       </mat-error>
     </mat-form-field>
   </form>
