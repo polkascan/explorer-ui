@@ -22,6 +22,8 @@
   --ps-top-bar-logo-text-color: #FFF;
   --ps-top-bar-logo-dot-color: #FF6482;
   --ps-grid-column-padding: 10px;
+  --ps-badge-good-color: #008000;
+  --ps-badge-bad-color: #8b0000;
 }
 
 button, html, input, select, textarea {
@@ -133,4 +135,9 @@ mat-divider.mat-divider {
 
 .break-word {
   word-break: break-word;
+}
+
+.mono {
+  font-family: Consolas, monaco, "Ubuntu Mono", "Liberation Mono", "Courier New", Courier, monospace;
+  opacity: 66%;
 }

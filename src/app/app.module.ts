@@ -26,11 +26,13 @@ import { CommonModule } from '@angular/common';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppConfig, initConfig } from './app-config';
 import { HttpClientModule } from '@angular/common/http';
+import { PsTooltipsComponent } from './components/ps-tooltip/ps-tooltips.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    PageNotFoundComponent
+    PageNotFoundComponent,
+    PsTooltipsComponent
   ],
   imports: [
     BrowserModule,

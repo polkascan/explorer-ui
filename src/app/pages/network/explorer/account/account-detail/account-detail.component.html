@@ -10,9 +10,9 @@
     <div *ngIf="(id | async) as address">
       <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
         <div class="account-address-identicon">
-          <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format"></identicon>
+          <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format" (copied)="copied($event)"></identicon>
         </div>
-        <div class="account-address-readable">{{ address }}</div>
+        <div class="account-address-readable account-judgement-unknown mono">{{ address }}</div>
       </div>
     </div>
   </ng-template>
@@ -22,20 +22,28 @@
 
       <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
         <div class="account-address-identicon">
-          <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format"></identicon>
+          <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format" (copied)="copied($event)"></identicon>
         </div>
 
-        <div class="account-address-readable">
+        <div class="account-address-readable account-judgement-{{ (accountJudgement | async) || 'unknown' }}">
           <ng-container *ngIf="dai.identity as idn">
-            <div *ngIf="idn.displayParent || idn.display">
+            <div class="account-labels" *ngIf="idn.displayParent || idn.display">
+
+              <span class="material-icons account-badge">
+                <ng-container [ngSwitch]="accountJudgement | async">
+                  <ng-container *ngSwitchCase="'isGood'">check_circle</ng-container>
+                  <ng-container *ngSwitchDefault>remove_circle</ng-container>
+                </ng-container>
+              </span>
+
               <ng-container [ngSwitch]="!!idn.parent">
-                <ng-container *ngSwitchCase="true"><b>{{ idn.displayParent }}</b></ng-container>
-                <ng-container *ngSwitchDefault><b>{{ idn.display }}</b></ng-container>
+                <ng-container *ngSwitchCase="true"><span class="account-name">{{ idn.displayParent }}</span></ng-container>
+                <ng-container *ngSwitchDefault><span class="account-name">{{ idn.display }}</span></ng-container>
               </ng-container>
               <ng-container *ngIf="idn.displayParent && idn.display"> / {{ idn.display }}</ng-container>
             </div>
           </ng-container>
-          <div>{{ address }}</div>
+          <div class="account-address-ss58 mono">{{ address }}</div>
         </div>
       </div>
 
@@ -79,7 +87,7 @@
               <ng-container [ngSwitch]="!!(idn?.judgements?.length)">
                 <ng-container *ngSwitchCase="true">
                   <ng-container *ngFor="let jmnt of idn.judgements">
-                    {{ jmnt[1] }}
+                    {{ jmnt[1] }}<br>
                   </ng-container>
                 </ng-container>
                 <ng-container *ngSwitchDefault>

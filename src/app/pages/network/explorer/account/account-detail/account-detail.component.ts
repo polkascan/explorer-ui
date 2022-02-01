@@ -37,6 +37,7 @@ import { Codec } from '@polkadot/types/types';
 import { decodeAddress, validateAddress } from '@polkadot/util-crypto';
 import { AccountInfo } from '@polkadot/types/interfaces/system/types';
 import { asObservable } from '../../../../../../common/polkadapt-rxjs';
+import { TooltipsService } from '../../../../../services/tooltips.service';
 
 
 interface AccountBalance {
@@ -108,6 +109,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   derivedBalancesAll: Observable<DeriveBalancesAll>;
   stakingInfo: Observable<DeriveStakingAccount>;
   accountBalances: Observable<Partial<AccountBalance>>;
+  accountJudgement: Observable<string>;
   errors = new BehaviorSubject<string | null>(null);
 
   networkProperties = this.ns.currentNetworkProperties;
@@ -129,7 +131,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private ns: NetworkService,
-    private pa: PolkadaptService
+    private pa: PolkadaptService,
+    private ts: TooltipsService
   ) {
   }
 
@@ -382,6 +385,23 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         .sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx)
         .slice(0, this.listsSize))
     )
+
+    this.accountJudgement = this.derivedAccountInfo.pipe(
+      map((dai) => {
+        if (dai && dai.identity && dai.identity.judgements) {
+          const judgements = dai.identity.judgements.map((j) => j[1].toString());
+          if (judgements.find((j) => j === 'LowQuality')) {
+            return 'isBad';
+          }
+
+          if (judgements.find((j) => j === 'KnownGood' || j === 'Reasonable')) {
+            return 'isGood';
+          }
+        }
+        return '';
+      }),
+      catchError((e) => of(''))
+    )
   }
 
 
@@ -481,5 +501,11 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
   balanceTransfersTrackBy(i: any, transfer: pst.Transfer): string {
     return `${transfer.blockNumber}-${transfer.eventIdx}`;
+  }
+
+
+  copied(address: string) {
+    this.ts.notify.next(
+      `Address copied.<br><span class="mono">${address}</span>`);
   }
 }

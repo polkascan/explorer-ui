@@ -36,3 +36,36 @@ table {
   font-size: 120%;
 }
 
+.account-address-ss58,
+.account-name {
+  color: #000;
+  opacity: 66%;
+  filter: grayscale(1);
+  vertical-align: middle;
+}
+
+.account-badge {
+  vertical-align: middle;
+  margin-right: 0.2rem;
+}
+
+.account-judgement-unknown {
+  filter: grayscale(1);
+  opacity: 0.7;
+}
+
+.account-judgement-isGood {
+  .account-name {
+    opacity: 1;
+  }
+  .account-badge {
+    color: var(--ps-badge-good-color);
+  }
+}
+
+.account-judgement-isBad {
+  .account-badge {
+    color: var(--ps-badge-bad-color);
+  }
+}
+
