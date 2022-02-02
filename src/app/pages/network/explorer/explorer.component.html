@@ -2,7 +2,7 @@
 
   <form [formGroup]="searchForm" (ngSubmit)="submitSearch()">
     <mat-form-field class="search" appearance="outline">
-      <mat-label>Search for account, transaction or block</mat-label>
+      <mat-label>Search for account or block</mat-label>
       <input matInput formControlName="search" placeholder="Account address or block number">
       <button mat-icon-button matSuffix type="submit" [attr.aria-label]="'Search'">
         <mat-icon>search</mat-icon>
