@@ -32,12 +32,12 @@
 
       <tr>
         <td class="detail-table--label-cell">Pallet</td>
-        <td>{{inherent.callModule}}</td>
+        <td><a [routerLink]="'../../runtime/' + inherent.specName + '-' + inherent.specVersion + '/pallet/' + inherent.callModule">{{inherent.callModule}}</a></td>
       </tr>
 
       <tr>
-        <td class="detail-table--label-cell">Call</td>
-        <td>{{inherent.callName}}</td>
+        <td class="detail-table--label-cell">Call name</td>
+        <td><a [routerLink]="'../../runtime/' + inherent.specName + '-' + inherent.specVersion + '/pallet/' + inherent.callModule + '/call/' + inherent.callName">{{inherent.callName}}</a></td>
       </tr>
 
       <tr>

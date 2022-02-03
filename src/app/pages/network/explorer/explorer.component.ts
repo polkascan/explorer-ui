@@ -206,8 +206,10 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     if (this.searchForm.valid) {
       const value = this.searchForm.value.search.trim();
       if (value) {
-        if (value.startsWith('0x') || /^\d+-\d+$/.test(value)) {
+        if (value.startsWith('0x')) {
           // this.router.navigate(['transaction', value], {relativeTo: this.route});
+        } else if (/^\d+-\d+$/.test(value)) {
+          this.router.navigate(['extrinsic', value], {relativeTo: this.route});
         } else if (/^\d+$/.test(value)) {
           this.router.navigate(['block', value], {relativeTo: this.route});
         } else {

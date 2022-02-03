@@ -1,4 +1,4 @@
-<ng-container *ngIf="ns.currentNetwork|async">
+<ng-container *ngIf="ns.currentNetwork | async">
 
   <form [formGroup]="searchForm" (ngSubmit)="submitSearch()">
     <mat-form-field class="search" appearance="outline">
@@ -8,7 +8,7 @@
         <mat-icon>search</mat-icon>
       </button>
       <mat-error *ngIf="searchForm.controls['search'].hasError('wrongNetwork')">
-        This address does not belong to the {{ns.currentNetwork|async}} network. Do you need to switch to another network?
+        This address does not belong to the {{ns.currentNetwork | async}} network. Do you need to switch to another network?
       </mat-error>
       <mat-error *ngIf="searchForm.controls['search'].hasError('wrongFormat')">
         Please enter a valid account address or block number.
@@ -16,13 +16,18 @@
     </mat-form-field>
   </form>
 
-  <div class="last-block" *ngIf="((latestBlockNumber|async) || 0) > 0">
-    {{latestBlockNumber|async}}
+  <ng-container *ngIf="(blocks | async)?.length === 0">
+    <p>Waiting for blocks...</p>
+    <mat-progress-bar mode="buffer"></mat-progress-bar>
+  </ng-container>
+
+  <div class="last-block" *ngIf="((latestBlockNumber | async) || 0) > 0">
+    {{latestBlockNumber | async}}
   </div>
 
-  <div class="blocks" [@blocksAnimation]="latestBlockNumber|async">
-    <div class="block-outer" *ngFor="let block$ of blocks|async">
-      <ng-container *ngIf="block$|async as block">
+  <div class="blocks" [@blocksAnimation]="(latestBlockNumber | async)">
+    <div class="block-outer" *ngFor="let block$ of (blocks | async)">
+      <ng-container *ngIf="block$ | async as block">
         <a class="block-inner" [class.finalized]="block.finalized" [routerLink]="'block/' + block.number" [@blockContentAnimation]="block.extrinsics.length">
           <span class="number">
             {{block.number.toString().slice(0, -2)}}<strong>{{block.number.toString().slice(-2)}}</strong>
@@ -36,8 +41,8 @@
 
 </ng-container>
 
-<p *ngIf="!(ns.currentNetwork|async) && ((pa.substrateRpcRegistered|async) && !(pa.substrateRpcConnected|async) || (pa.polkascanRegistered|async) && !(pa.polkascanWsConnected|async) || !(pa.substrateRpcRegistered|async) || !(pa.polkascanRegistered|async))">
+<p *ngIf="!(ns.currentNetwork | async) && ((pa.substrateRpcRegistered | async) && !(pa.substrateRpcConnected | async) || (pa.polkascanRegistered | async) && !(pa.polkascanWsConnected | async) || !(pa.substrateRpcRegistered | async) || !(pa.polkascanRegistered | async))">
   Initializing...
 </p>
 
-<p *ngIf="!(pa.substrateRpcRegistered|async) && !(pa.polkascanRegistered|async)" style="color: red">Connection error! Please try again later or try a different endpoint.</p>
+<p *ngIf="!(pa.substrateRpcRegistered | async) && !(pa.polkascanRegistered | async)" style="color: red">Connection error! Please try again later or try a different endpoint.</p>

@@ -37,12 +37,12 @@
 
       <tr>
         <td class="detail-table--label-cell">Pallet</td>
-        <td>{{transaction.callModule}}</td>
+        <td><a [routerLink]="'../../runtime/' + transaction.specName + '-' + transaction.specVersion + '/pallet/' + transaction.callModule">{{transaction.callModule}}</a></td>
       </tr>
 
       <tr>
-        <td class="detail-table--label-cell">Call</td>
-        <td>{{transaction.callName}}</td>
+        <td class="detail-table--label-cell">Call name</td>
+        <td><a [routerLink]="'../../runtime/' + transaction.specName + '-' + transaction.specVersion + '/pallet/' + transaction.callModule + '/call/' + transaction.callName">{{transaction.callName}}</a></td>
       </tr>
 
       <tr>

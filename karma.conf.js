@@ -43,7 +43,7 @@ module.exports = function (config) {
       suppressAll: true // removes the duplicated traces
     },
     coverageReporter: {
-      dir: require('path').join(__dirname, './coverage/polkascan-ui'),
+      dir: require('path').join(__dirname, './coverage/explorer-ui'),
       subdir: '.',
       reporters: [
         { type: 'html' },

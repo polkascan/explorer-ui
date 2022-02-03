@@ -28,6 +28,7 @@ import { VariablesService } from './services/variables.service';
   encapsulation: ViewEncapsulation.None
 })
 export class AppComponent implements OnDestroy {
+  title = 'explorer-ui';
   private destroyer = new Subject();
 
   constructor(public vars: VariablesService) {

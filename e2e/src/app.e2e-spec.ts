@@ -28,7 +28,7 @@ describe('workspace-project App', () => {
 
   it('should display welcome message', async () => {
     await page.navigateTo();
-    expect(await page.getTitleText()).toEqual('polkascan-ui app is running!');
+    expect(await page.getTitleText()).toEqual('explorer-ui app is running!');
   });
 
   afterEach(async () => {

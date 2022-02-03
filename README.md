@@ -1,8 +1,6 @@
-# Polkascan UI
+# Explorer UI
 
-This repository contains the code for the [Polkascan](https://polkascan.io/) client sided [Angular](https://angular.io/) application. It utilizes [PolkADAPT](https://github.com/polkascan/polkadapt) to obtain data from multiple data sources.
-
-**Hic sunt dracones!** this application is under heavy development, so tread carefully 😉
+Explorer UI is a client-sided [Angular](https://angular.io/) based application that utilizes [PolkADAPT](https://github.com/polkascan/polkadapt) and its Adapters to obtain data from multiple data sources. Its design is based on flat [Material](https://material.angular.io/) component design, styled in Polkascan branding.
 
 ## Clone with submodules!
 
@@ -17,56 +15,66 @@ git submodule update
 ```
 You need the submodule to build and run this application.
 
+## Configuration file
+
+You will need to add a file named `config.json` in `src/assets/`. This file contains configuration per network for the used [PolkADAPT](https://github.com/polkascan/polkadapt) adapters.
+
+The order in which the networks are shown in the UI is also based on this configuration. It is advised to add multiple endpoints for fallback and custom switching capabilities.
+
+```shell
+{
+  "polkadot": {
+    "substrateRpcUrlArray": ["wss://rpc.polkadot.io"],
+    "polkascanWsUrlArray": ["wss://mycustomnode.io/polkadot"]
+  },
+  "kusama": {
+    "substrateRpcUrlArray": ["wss://kusama-rpc.polkadot.io", "wss://other-kusama-node.io"],
+    "polkascanWsUrlArray": ["wss://mycustomnode.io/kusama"]
+  }
+}
+```
+
 ## Build and run with Docker
 
 If you want a quick and easy way to run the application, you can build a [Docker](https://www.docker.com/get-started) image with the included Dockerfile. In a shell, from this project's directory, run the following command to build the Docker image:
+
 ```shell
-docker build -t polkascan-ui .
+docker build -t explorer-ui .
 ```
 To run the image and start a local webserver with the application:
 ```shell
-docker run --rm -p 8000:80 polkascan-ui
+docker run --rm -p 8000:80 explorer-ui
 ```
 You can now open your web browser and navigate to `http://localhost:8000/` to visit the application.
 
-If you want to configure URL's for the various API endpoints, there are environment variables that you can change with the `-e` docker argument, e.g.:
-```shell
-docker run --rm -p 8000:80 -e POLKADOT_SUBSTRATE_RPC_URL=wss://mycustomnode.com polkascan-ui
-```
-For a full list of URL's in use, see the Dockerfile (look for 'Runtime environment variables').
-
 ## Build manually
 
-These are the instructions for a manual build. You need [Yarn](https://yarnpkg.com/) for this. If you already have Node/NPM installed, you can install Yarn globally with NPM:
-```shell
-sudo npm -g i yarn
-```
+These are the instructions for a manual build. It is advised to use the latest Node LTS. Or at least the node version asked by [Angular](https://angular.io/) or [Polkadot JS](https://polkadot.js.org/):
+
 You need to install and build `polkadapt` before you install and build the application:
 ```shell
 cd polkadapt
-yarn
-yarn build
+npm i
+npm run build
 cd ..
-yarn
-yarn build
+npm i
+npm run build
 ```
 The build artifacts will be stored in the `dist/` directory.
 
 ## Development server
 
-Make sure you have Yarn installed (see command above).
-
 For a dev server, open a terminal and run:
 ```shell
 cd polkadapt
-yarn
-yarn start
+npm i
+npm run build
 ``` 
-Wait for the process to stop emitting messages. It stays active and will rebuild PolkADAPT if you change a source file.
+When making changes in `polkadapt` source files you have to build again.
 
 Now open a second terminal and run:
 ```shell
-yarn
-yarn start
+npm i
+npm run start
 ```
 Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.

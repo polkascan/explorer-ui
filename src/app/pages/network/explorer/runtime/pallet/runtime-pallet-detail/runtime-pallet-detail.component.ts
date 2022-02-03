@@ -109,7 +109,6 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         if (runtime) {
           this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).then(
             (pallets) => {
-              console.log(pallets, pallet);
               const matchedPallet: pst.RuntimePallet = pallets.filter(p => p.pallet === pallet)[0];
               if (matchedPallet) {
                 subject.next(matchedPallet);

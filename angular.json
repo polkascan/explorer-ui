@@ -10,7 +10,7 @@
     }
   },
   "projects": {
-    "polkascan-ui": {
+    "explorer-ui": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -28,7 +28,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "dist/polkascan-ui",
+            "outputPath": "dist/explorer-ui",
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
@@ -81,10 +81,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "polkascan-ui:build:production"
+              "browserTarget": "explorer-ui:build:production"
             },
             "development": {
-              "browserTarget": "polkascan-ui:build:development"
+              "browserTarget": "explorer-ui:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -92,7 +92,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "polkascan-ui:build"
+            "browserTarget": "explorer-ui:build"
           }
         },
         "test": {
@@ -116,5 +116,5 @@
       }
     }
   },
-  "defaultProject": "polkascan-ui"
+  "defaultProject": "explorer-ui"
 }

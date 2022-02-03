@@ -1,4 +1,4 @@
-# STAGE 1: layered build of PolkADAPT submodule and Polkascan application.
+# STAGE 1: layered build of PolkADAPT submodule and Polkascan Explorer application.
 
 FROM node:lts-alpine as builder
 
@@ -57,7 +57,7 @@ RUN npm exec ng build -- --configuration ${ENV_CONFIG}
 FROM nginx:stable-alpine
 
 # Allow for various nginx proxy configuration.
-ARG NGINX_CONF=nginx/polkascan-ui.conf
+ARG NGINX_CONF=nginx/explorer-ui.conf
 ENV NGINX_CONF=$NGINX_CONF
 
 # Remove default nginx configs.
@@ -70,7 +70,7 @@ COPY ${NGINX_CONF} /etc/nginx/conf.d/
 RUN rm -rf /usr/share/nginx/html/*
 
 # Copy build artifacts from ‘builder’ stage to default nginx public folder.
-COPY --from=builder /app/dist/polkascan-ui /usr/share/nginx/html
+COPY --from=builder /app/dist/explorer-ui /usr/share/nginx/html
 
 # Copy config.json file for runtime environment variables.
 ARG CONFIG_JSON=src/assets/config.json

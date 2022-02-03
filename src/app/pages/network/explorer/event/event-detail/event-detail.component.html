@@ -34,13 +34,13 @@
       </tr>
 
       <tr>
-        <td class="detail-table--label-cell">Module</td>
-        <td>{{event.eventModule}}</td>
+        <td class="detail-table--label-cell">Pallet</td>
+        <td><a [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion + '/pallet/' + event.eventModule">{{event.eventModule}}</a></td>
       </tr>
 
       <tr>
         <td class="detail-table--label-cell">Event name</td>
-        <td>{{event.eventName}}</td>
+        <td><a [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion + '/pallet/' + event.eventModule + '/event/' + event.eventName">{{event.eventName}}</a></td>
       </tr>
 
       <tr>

@@ -36,12 +36,12 @@
 
       <tr>
         <td class="detail-table--label-cell">Pallet</td>
-        <td>{{extrinsic.callModule}}</td>
+        <td><a [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion + '/pallet/' + extrinsic.callModule">{{extrinsic.callModule}}</a></td>
       </tr>
 
       <tr>
-        <td class="detail-table--label-cell">Call</td>
-        <td>{{extrinsic.callName}}</td>
+        <td class="detail-table--label-cell">Call name</td>
+        <td><a [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion + '/pallet/' + extrinsic.callModule + '/call/' + extrinsic.callName">{{extrinsic.callName}}</a></td>
       </tr>
 
       <tr>
