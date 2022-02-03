@@ -24,7 +24,7 @@ jobs:
           git submodule sync --recursive
           git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
 
-      - name: Create dummy config
+      - name: Create dummy config 
         run:  echo '{}' > src/assets/config.json
         
       - name: Build the Docker image
