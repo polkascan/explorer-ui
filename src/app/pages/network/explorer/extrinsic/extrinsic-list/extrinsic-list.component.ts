@@ -25,7 +25,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { u8aToHex } from '@polkadot/util';
 import { decodeAddress } from '@polkadot/util-crypto';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 
 
@@ -55,6 +55,7 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
               private pa: PolkadaptService,
               private rs: RuntimeService,
               private cd: ChangeDetectorRef,
+              private router: Router,
               private route: ActivatedRoute) {
     super(ns);
   }
@@ -62,23 +63,40 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
   ngOnInit(): void {
     this.route.queryParamMap.pipe(
       takeUntil(this.destroyer),
-      map((params) => params.get('address') || ''),
+      map((params) => {
+        return [
+          (params.get('address') || ''),
+          (params.get('pallet') || ''),
+          (params.get('callName') || '')
+        ];
+      }),
       distinctUntilChanged()
-    ).subscribe((address) => {
-      if (address) {
-        address = u8aToHex(decodeAddress(address));
+    ).subscribe(([address, pallet, callName]) => {
+      if (address !== this.addressControl.value) {
+        this.addressControl.setValue(address);
       }
-      this.addressControl.setValue(address);
+      if (pallet !== this.palletControl.value) {
+        this.palletControl.setValue(pallet);
+      }
+      if (callName !== this.callNameControl.value) {
+        this.callNameControl.setValue(callName);
+      }
     });
 
     this.filtersFormGroup.valueChanges
       .pipe(
         takeUntil(this.destroyer)
       )
-      .subscribe(() => {
+      .subscribe((values) => {
         this.items = [];
         this.subscribeNewItem();
         this.getItems();
+
+        this.router.navigate(['.'], {
+          relativeTo: this.route,
+          queryParams: {pallet: values.eventModule, callName: values.callName},
+          queryParamsHandling: 'merge'
+        });
       });
 
     this.palletControl.valueChanges
@@ -93,11 +111,19 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
   }
 
 
-  onNetworkChange(network: string): void {
-    this.filtersFormGroup.reset({
-      eventModule: '',
-      callName: ''
-    }, {emitEvent: false});
+  onNetworkChange(network: string, previous: string): void {
+    if (previous) {
+      this.filtersFormGroup.reset({
+        eventModule: '',
+        callName: ''
+      }, {emitEvent: false});
+
+      this.router.navigate(['.'], {
+        relativeTo: this.route,
+        queryParams: {pallet: '', callName: ''},
+        queryParamsHandling: 'merge'
+      });
+    }
 
     this.extrinsicsFilters.clear();
 
@@ -162,7 +188,8 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
       filters.callName = this.callNameControl.value;
     }
     if (this.addressControl.value) {
-      filters.multiAddressAccountId = this.addressControl.value;
+      const accountIdHex = u8aToHex(decodeAddress(this.addressControl.value))
+      filters.multiAddressAccountId = accountIdHex;
     }
 
     return filters;

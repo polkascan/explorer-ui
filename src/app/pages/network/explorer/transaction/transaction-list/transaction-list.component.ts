@@ -26,7 +26,7 @@ import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import {
   PaginatedListComponentBase
 } from '../../../../../../common/list-base/paginated-list-component-base.directive';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { u8aToHex } from '@polkadot/util';
 import { decodeAddress } from '@polkadot/util-crypto';
 
@@ -57,18 +57,32 @@ export class TransactionListComponent extends PaginatedListComponentBase<pst.Ext
               private pa: PolkadaptService,
               private rs: RuntimeService,
               private cd: ChangeDetectorRef,
+              private router: Router,
               private route: ActivatedRoute) {
     super(ns);
   }
 
   ngOnInit(): void {
-    // Set address if already in route query params;
     this.route.queryParamMap.pipe(
       takeUntil(this.destroyer),
-      map((params) => params.get('address') || ''),
+      map((params) => {
+        return [
+          (params.get('address') || ''),
+          (params.get('pallet') || ''),
+          (params.get('callName') || '')
+        ];
+      }),
       distinctUntilChanged()
-    ).subscribe((address) => {
-      this.addressControl.setValue(address)
+    ).subscribe(([address, pallet, callName]) => {
+      if (address !== this.addressControl.value) {
+        this.addressControl.setValue(address);
+      }
+      if (pallet !== this.palletControl.value) {
+        this.palletControl.setValue(pallet);
+      }
+      if (callName !== this.callNameControl.value) {
+        this.callNameControl.setValue(callName);
+      }
     });
 
     // Initialize and get items
@@ -83,6 +97,12 @@ export class TransactionListComponent extends PaginatedListComponentBase<pst.Ext
         this.items = [];
         this.subscribeNewItem();
         this.getItems();
+
+        this.router.navigate(['.'], {
+          relativeTo: this.route,
+          queryParams: {pallet: values.eventModule, callName: values.callName},
+          queryParamsHandling: 'merge'
+        });
       });
 
     this.palletControl.valueChanges
@@ -95,11 +115,20 @@ export class TransactionListComponent extends PaginatedListComponentBase<pst.Ext
   }
 
 
-  onNetworkChange(network: string): void {
-    this.filtersFormGroup.reset({
-      eventModule: '',
-      callName: ''
-    }, {emitEvent: false});
+  onNetworkChange(network: string, previous: string): void {
+    if (previous) {
+      this.filtersFormGroup.reset({
+        eventModule: '',
+        callName: ''
+      }, {emitEvent: false});
+
+      this.router.navigate(['.'], {
+        relativeTo: this.route,
+        queryParams: {pallet: '', callName: ''},
+        queryParamsHandling: 'merge'
+      });
+    }
+
 
     this.transactionFilters.clear();
 

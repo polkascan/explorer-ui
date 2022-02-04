@@ -19,11 +19,12 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
+import { debounceTime, filter, first, map, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
+import { ActivatedRoute, Router } from '@angular/router';
 
 
 @Component({
@@ -48,11 +49,30 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
               private rs: RuntimeService,
-              private cd: ChangeDetectorRef) {
+              private cd: ChangeDetectorRef,
+              private router: Router,
+              private route: ActivatedRoute) {
     super(ns);
   }
 
   ngOnInit(): void {
+    this.route.queryParamMap.pipe(
+      takeUntil(this.destroyer),
+      map((params) => {
+        return [
+          (params.get('pallet') || ''),
+          (params.get('eventName') || '')
+        ];
+      })
+    ).subscribe(([pallet, eventName]) => {
+      if (pallet !== this.palletControl.value) {
+        this.palletControl.setValue(pallet);
+      }
+      if (eventName !== this.eventNameControl.value) {
+        this.eventNameControl.setValue(eventName);
+      }
+    });
+
     super.ngOnInit();
 
     this.filtersFormGroup.valueChanges
@@ -64,6 +84,11 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
         this.items = [];
         this.subscribeNewItem();
         this.getItems();
+
+        this.router.navigate(['.'], {
+          relativeTo: this.route,
+          queryParams: {pallet: values.eventModule, eventName: values.eventName}
+        });
       });
 
     this.palletControl.valueChanges
@@ -76,11 +101,19 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
   }
 
 
-  onNetworkChange(network: string): void {
-    this.filtersFormGroup.reset({
-      eventModule: '',
-      eventName: ''
-    }, {emitEvent: false});
+  onNetworkChange(network: string, previous: string): void {
+    if (previous) {
+      this.filtersFormGroup.reset({
+        eventModule: '',
+        eventName: ''
+      }, {emitEvent: false});
+
+      this.router.navigate(['.'], {
+        relativeTo: this.route,
+        queryParams: {pallet: '', eventName: ''},
+        queryParamsHandling: 'merge'
+      });
+    }
 
     this.eventFilters.clear();
 

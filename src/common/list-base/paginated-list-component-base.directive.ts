@@ -1,6 +1,6 @@
 import { Directive, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { debounceTime, filter, takeUntil } from 'rxjs/operators';
 import { NetworkService } from '../../app/services/network.service';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { ListResponse } from '../../../polkadapt/projects/polkascan/src/lib/polkascan.types';
@@ -70,12 +70,15 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
     this._ns.currentNetwork
       .pipe(
         debounceTime(100),
-        takeUntil(this.destroyer)
+        takeUntil(this.destroyer),
+        filter((n) => !!n)
       )
       .subscribe((network: string) => {
         if (this.network !== network) {
+          if (typeof this.onNetworkChange === 'function') {
+            this.onNetworkChange(network, this.network);
+          }
           this.network = network;
-          typeof this.onNetworkChange === 'function' ? this.onNetworkChange(network) : null;
         }
       });
 
@@ -93,7 +96,7 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   }
 
 
-  onNetworkChange(network: string): void {
+  onNetworkChange(network: string, previous?: string): void {
     typeof this.unsubscribeNewItem === 'function' ? this.unsubscribeNewItem() : null;
 
     if (network) {

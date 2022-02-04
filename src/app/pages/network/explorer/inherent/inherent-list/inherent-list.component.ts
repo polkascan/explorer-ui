@@ -21,9 +21,10 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
-import { debounceTime, filter, first, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, filter, first, map, takeUntil } from 'rxjs/operators';
 import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
+import { ActivatedRoute, Router } from '@angular/router';
 
 
 @Component({
@@ -48,11 +49,31 @@ export class InherentListComponent extends PaginatedListComponentBase<pst.Extrin
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
               private rs: RuntimeService,
-              private cd: ChangeDetectorRef) {
+              private cd: ChangeDetectorRef,
+              private router: Router,
+              private route: ActivatedRoute) {
     super(ns);
   }
 
   ngOnInit(): void {
+    this.route.queryParamMap.pipe(
+      takeUntil(this.destroyer),
+      map((params) => {
+        return [
+          (params.get('pallet') || ''),
+          (params.get('callName') || '')
+        ];
+      }),
+      distinctUntilChanged()
+    ).subscribe(([pallet, callName]) => {
+      if (pallet !== this.palletControl.value) {
+        this.palletControl.setValue(pallet);
+      }
+      if (callName !== this.callNameControl.value) {
+        this.callNameControl.setValue(callName);
+      }
+    });
+
     super.ngOnInit();
 
     this.filtersFormGroup.valueChanges
@@ -64,6 +85,11 @@ export class InherentListComponent extends PaginatedListComponentBase<pst.Extrin
         this.items = [];
         this.subscribeNewItem();
         this.getItems();
+
+        this.router.navigate(['.'], {
+          relativeTo: this.route,
+          queryParams: {pallet: values.eventModule, callName: values.callName}
+        });
       });
 
     this.palletControl.valueChanges
@@ -76,11 +102,19 @@ export class InherentListComponent extends PaginatedListComponentBase<pst.Extrin
   }
 
 
-  onNetworkChange(network: string): void {
-    this.filtersFormGroup.reset({
-      eventModule: '',
-      callName: ''
-    }, {emitEvent: false});
+  onNetworkChange(network: string, previous: string): void {
+    if (previous) {
+      this.filtersFormGroup.reset({
+        eventModule: '',
+        callName: ''
+      }, {emitEvent: false});
+
+      this.router.navigate(['.'], {
+        relativeTo: this.route,
+        queryParams: {pallet: '', callName: ''},
+        queryParamsHandling: 'merge'
+      });
+    }
 
     this.inherentFilters.clear();
 
