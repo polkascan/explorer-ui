@@ -48,6 +48,7 @@ export class NetworkService {
   currentNetwork = new BehaviorSubject<string>('');
   currentNetworkProperties = new BehaviorSubject<NetworkProperties | undefined>(undefined);
   blockHarvester: BlockHarvester
+  online: BehaviorSubject<boolean>;
 
   private defaultDecimals = 12;
   private defaultSS58 = addressDefaults.prefix;
@@ -58,6 +59,9 @@ export class NetworkService {
               private rs: RuntimeService,
               private ps: PricingService,
               private vs: VariablesService) {
+    this.online = new BehaviorSubject(navigator.onLine);
+    window.addEventListener('online', () => this.online.next(true));
+    window.addEventListener('offline', () => this.online.next(false));
   }
 
   async setNetwork(network: string): Promise<void> {

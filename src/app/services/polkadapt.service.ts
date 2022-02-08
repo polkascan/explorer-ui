@@ -164,6 +164,16 @@ export class PolkadaptService {
       pAdapter.socket.on('close', this.polkascanWsDisconnectedHandler);
     }
 
+    const cAdapter = this.availableAdapters[network].coingeckoApi;
+    try {
+      await cAdapter.isReady;
+    } catch (e) {
+      // Coingecko adapter could not initialize.
+      // For now we unregister the adapter.
+      this.polkadapt.unregister(cAdapter);
+      console.error('Coingecko adapter could not be initialized, it is now unregistered from PolkAdapt.', e);
+    }
+
     window.addEventListener('online', this.onlineHandler);
     // Wait until PolkADAPT has initialized all adapters.
     await this.polkadapt.ready();

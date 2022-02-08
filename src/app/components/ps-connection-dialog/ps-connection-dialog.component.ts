@@ -29,6 +29,7 @@ import { takeUntil } from 'rxjs/operators';
 import { PolkadaptService } from '../../services/polkadapt.service';
 import { MatDialogRef } from '@angular/material/dialog';
 import { VariablesService } from '../../services/variables.service';
+import { NetworkService } from '../../services/network.service';
 
 @Component({
   templateUrl: 'ps-connection-dialog.component.html',
@@ -50,6 +51,7 @@ export class PsConnectionDialogComponent implements OnInit, OnDestroy {
   constructor(
     public dialogRef: MatDialogRef<PsConnectionDialogComponent>,
     public pa: PolkadaptService,
+    public ns: NetworkService,
     public vars: VariablesService
   ) {}
 

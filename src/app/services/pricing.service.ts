@@ -14,6 +14,9 @@ export class PricingService {
   constructor(private pa: PolkadaptService,
               private vs: VariablesService) {
     this.price.subscribe(this.vs.price);
+
+    window.addEventListener('online', () => this.startPriceWatch());
+    window.addEventListener('offline', () => this.stopPriceWatch());
   }
 
 
@@ -30,42 +33,48 @@ export class PricingService {
     this.currency = currency;
     this.price.next(null);
 
-    if (this.interval) {
-      clearInterval(this.interval);
-      this.interval = null;
-    }
-
-    try {
-      const price = await this.pa.run(this.network as string).prices.getPrice(this.currency as string);
-
-      if (price !== undefined) {
-        this.interval = window.setInterval(async () => {
-          const price = await this.pa.run(this.network as string).prices.getPrice(this.currency as string);
-          this.price.next(price);
-        }, 30000);
-
-        if (this.interval) {
-          // Only send price if not destroyed.
-          this.price.next(price);
-        }
-      } else {
-        this.price.next(null);
-      }
-
-    } catch (e) {
-      this.price.next(null);
-      throw e;
-    }
+    this.fetchAndSetPrice();
+    this.startPriceWatch();
   }
 
 
   async destroy(): Promise<void> {
+    this.stopPriceWatch();
+    this.network = null;
+    this.currency = null;
+    this.price.next(null);
+  }
+
+
+  async startPriceWatch(): Promise<void> {
+      this.interval = window.setInterval(async () => {
+        this.fetchAndSetPrice();
+      }, 15000);
+  }
+
+
+  stopPriceWatch(): void {
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
     }
-    this.network = null;
-    this.currency = null;
-    this.price.next(null);
+  }
+
+
+  async fetchAndSetPrice(): Promise<void> {
+    try {
+      const adapterAvailable = await this.pa.availableAdapters[this.network as string].coingeckoApi.isReady;
+      if (adapterAvailable) {
+        const price = await this.pa.run(this.network as string).prices.getPrice(this.currency as string);
+
+        if (this.interval) {
+          // Only set price if not destroyed.
+          this.price.next(price);
+        }
+      }
+    } catch (e) {
+      this.price.next(null);
+      // console.error(e);
+    }
   }
 }

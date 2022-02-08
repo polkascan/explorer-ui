@@ -27,8 +27,14 @@
   </mat-menu>
 
   <button *ngIf="vars.network|async" class="ps-top-bar-connection-selector" mat-icon-button (click)="openConnectionDialog()">
-    <mat-icon *ngIf="(pa.substrateRpcRegistered|async) && (pa.substrateRpcConnected|async) || (pa.polkascanRegistered|async) && (pa.polkascanWsConnected|async)">wifi</mat-icon>
-    <mat-icon class="connecting" *ngIf="(pa.substrateRpcRegistered|async) && !(pa.substrateRpcConnected|async) || (pa.polkascanRegistered|async) && !(pa.polkascanWsConnected|async)">wifi</mat-icon>
-    <mat-icon *ngIf="!(pa.substrateRpcRegistered|async) || !(pa.polkascanRegistered|async)">report_problem</mat-icon>
+    <ng-container [ngSwitch]="(ns.online | async)">
+      <mat-icon *ngSwitchCase="false">wifi_off</mat-icon>
+      <ng-container *ngSwitchDefault>
+        <mat-icon *ngIf="(pa.substrateRpcRegistered|async) && (pa.substrateRpcConnected|async) || (pa.polkascanRegistered|async) && (pa.polkascanWsConnected|async)">wifi</mat-icon>
+        <mat-icon class="connecting" *ngIf="(pa.substrateRpcRegistered|async) && !(pa.substrateRpcConnected|async) || (pa.polkascanRegistered|async) && !(pa.polkascanWsConnected|async)">wifi</mat-icon>
+        <mat-icon *ngIf="!(pa.substrateRpcRegistered|async) || !(pa.polkascanRegistered|async)">report_problem</mat-icon>
+      </ng-container>
+    </ng-container>
+
   </button>
 </div>
