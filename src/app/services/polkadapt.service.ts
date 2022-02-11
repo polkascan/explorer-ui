@@ -22,7 +22,7 @@ import * as substrate from '@polkadapt/substrate-rpc';
 import * as polkascan from '@polkadapt/polkascan';
 import * as coingecko from '@polkadapt/coingecko';
 import { AppConfig } from '../app-config';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject, Subscription, throttleTime } from 'rxjs';
 
 export type AugmentedApi = substrate.Api & polkascan.Api & coingecko.Api;
 
@@ -57,14 +57,35 @@ export class PolkadaptService {
   } = {};
   badAdapterUrls: { [network: string]: { [K in AdapterName]: string[] } } = {};
   private currentNetwork: string = '';
+
+  private sleepDetectorWorker: Worker;
+  triggerReconnect: Subject<any> = new Subject();
+  private triggerReconnectSubscription: Subscription;
+
   private onlineHandler: EventListener = (ev) => {
-    this.reconnectPolkscanApi();
+    // In case the browser comes online, try and reconnect websockets.
+    this.triggerReconnect.next(null);
   };
 
   constructor(private config: AppConfig) {
     this.setAvailableAdapters();
     this.polkadapt = new Polkadapt();
     this.run = this.polkadapt.run.bind(this.polkadapt);
+
+    // Create a detector for suspended computers.
+    // A web worker will keep running, even if the browser tab is inactive, therefor the timer that runs in
+    // the worker will only take longer if the computer is suspended or the browser got stalled.
+    if (typeof Worker !== 'undefined') {
+      this.sleepDetectorWorker = new Worker(new URL('./polkadapt.worker', import.meta.url));
+      this.sleepDetectorWorker.onmessage = ({ data }) => {
+        if (data === 'wake') {
+          // Detected a suspended computer or stalled browser. Try and reconnect websockets.
+          this.triggerReconnect.next(null);
+        }
+      };
+    } else {
+      // Web workers are not supported in this environment.
+    }
   }
 
   setAvailableAdapters(): void {
@@ -174,7 +195,17 @@ export class PolkadaptService {
       console.error('Coingecko adapter could not be initialized, it is now unregistered from PolkAdapt.', e);
     }
 
+    // Reconnect on sleep and/or online event.
+    if (this.sleepDetectorWorker) {
+      this.sleepDetectorWorker.postMessage('start');
+    }
     window.addEventListener('online', this.onlineHandler);
+
+    // Throttle the reconnect trigger (can also be triggered from outside this service).
+    this.triggerReconnectSubscription = this.triggerReconnect
+      .pipe(throttleTime(5000))
+      .subscribe(() => this.forceReconnect());
+
     // Wait until PolkADAPT has initialized all adapters.
     await this.polkadapt.ready();
   }
@@ -195,7 +226,13 @@ export class PolkadaptService {
         pAdapter.socket.off('open', this.polkascanWsConnectedHandler);
         pAdapter.socket.off('close', this.polkascanWsDisconnectedHandler);
       }
+
+      if (this.sleepDetectorWorker) {
+        this.sleepDetectorWorker.postMessage('stop');
+      }
       window.removeEventListener('online', this.onlineHandler);
+      this.triggerReconnectSubscription.unsubscribe();
+
       this.currentNetwork = '';
       this.substrateRpcUrls.next(null);
       this.substrateRpcUrl.next(null);
@@ -292,5 +329,10 @@ export class PolkadaptService {
       this.polkadapt.register(this.availableAdapters[this.currentNetwork].polkascanApi);
       this.polkascanRegistered.next(true);
     }
+  }
+
+  forceReconnect(): void {
+    this.reconnectSubstrateRpc();
+    this.reconnectPolkscanApi();
   }
 }

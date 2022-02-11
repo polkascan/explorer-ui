@@ -17,7 +17,7 @@
  */
 
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, skip, take } from 'rxjs';
 import { PolkadaptService } from './polkadapt.service';
 import { BlockHarvester } from './block/block.harvester';
 import { BlockService } from './block/block.service';
@@ -28,6 +28,7 @@ import { ChainProperties } from '@polkadot/types/interfaces';
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 import { IconTheme } from '../../common/identicon/identicon.types';
 import { getSystemIcon } from '../../common/identicon/polkadot-js';
+import { debounceTime, filter, takeUntil } from 'rxjs/operators';
 
 
 export interface NetworkProperties {
@@ -162,6 +163,24 @@ export class NetworkService {
     }
 
     this.currentNetwork.next(network);
+
+    // Check if blocks are coming in at the expected block time. If not, trigger reload connection.
+    try {
+      const expectedBlockTime = await this.pa.run(network).consts.babe.expectedBlockTime;
+      const blockTime: number = (expectedBlockTime as any).toNumber();
+      if (Number.isInteger(blockTime)) {
+        this.blockHarvester.headNumber.pipe(
+          skip(1), // Ignore the initial value (or first block)
+          debounceTime((blockTime + 10000)), // 10 seconds after the last expected block
+          takeUntil(this.currentNetwork.pipe( // Stop the subscription when the network changes.
+            filter((n: string) => network !== n),
+            take(1))
+          )
+        ).subscribe(this.pa.triggerReconnect)
+      }
+    } catch (e) {
+      // The expected block time is unknown. No need to do anything.
+    }
   }
 
   destroy(): void {
