@@ -69,7 +69,7 @@ export class PricingService {
 
         if (this.interval) {
           // Only set price if not destroyed.
-          this.price.next(price);
+          this.price.next(price as number);
         }
       }
     } catch (e) {
