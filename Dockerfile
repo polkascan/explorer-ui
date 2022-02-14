@@ -16,7 +16,7 @@ RUN cd projects/core && npm i
 
 # We build the core libary first, because PolkADAPT adapters depend on it.
 
-COPY polkadapt/angular.json polkadapt/tsconfig.json polkadapt/tslint.json ./
+COPY polkadapt/angular.json polkadapt/tsconfig.json ./
 COPY polkadapt/projects/core projects/core
 RUN npm exec ng build -- --configuration production core
 
