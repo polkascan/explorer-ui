@@ -34,7 +34,7 @@
       </ng-container>
     </form>
 
-    <form [formGroup]="polkascanWsUrlForm" (ngSubmit)="submitPolkascanWsUrl()">
+    <form [formGroup]="explorerWsUrlForm" (ngSubmit)="submitExplorerWsUrl()">
       <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
         <mat-label>{{vars.network|async}} Polkascan URL</mat-label>
         <input type="text"
@@ -42,8 +42,8 @@
                aria-label="URL"
                matInput
                formControlName="url"
-               [matAutocomplete]="polkascanWsUrlOptionsAuto">
-        <mat-autocomplete #polkascanWsUrlOptionsAuto="matAutocomplete" (optionSelected)="submitPolkascanWsUrl()">
+               [matAutocomplete]="explorerWsUrlOptionsAuto">
+        <mat-autocomplete #explorerWsUrlOptionsAuto="matAutocomplete" (optionSelected)="submitExplorerWsUrl()">
           <mat-option *ngFor="let option of pa.explorerWsUrls|async" [value]="option">
             {{option}}
           </mat-option>

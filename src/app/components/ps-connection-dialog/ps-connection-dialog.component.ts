@@ -42,7 +42,7 @@ export class PsConnectionDialogComponent implements OnInit, OnDestroy {
   substrateRpcUrlForm = new FormGroup({
     url: new FormControl('')
   });
-  polkascanWsUrlForm = new FormGroup({
+  explorerWsUrlForm = new FormGroup({
     url: new FormControl('')
   });
 
@@ -61,7 +61,7 @@ export class PsConnectionDialogComponent implements OnInit, OnDestroy {
     });
 
     this.pa.explorerWsUrl.pipe(takeUntil(this.destroyer)).subscribe(url => {
-      this.polkascanWsUrlForm.setValue({url});
+      this.explorerWsUrlForm.setValue({url});
     });
   }
 
@@ -73,7 +73,7 @@ export class PsConnectionDialogComponent implements OnInit, OnDestroy {
     await this.pa.setSubstrateRpcUrl(this.substrateRpcUrlForm.value.url);
   }
 
-  async submitPolkascanWsUrl(): Promise<void> {
-    await this.pa.setPolkascanWsUrl(this.polkascanWsUrlForm.value.url);
+  async submitExplorerWsUrl(): Promise<void> {
+    await this.pa.setExplorerWsUrl(this.explorerWsUrlForm.value.url);
   }
 }

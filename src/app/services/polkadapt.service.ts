@@ -158,7 +158,7 @@ export class PolkadaptService {
       this.exporerWsErrorHandler = () => {
         console.error('Polkascan Explorer API web socket error, try reconnect');
         this.explorerWsConnected.next(false);
-        this.reconnectPolkscanApi();
+        this.reconnectExplorerApi();
       };
       pAdapter.socket.on('socketError', this.exporerWsErrorHandler);
 
@@ -288,26 +288,26 @@ export class PolkadaptService {
 
   configureExplorerWsUrl(): void {
     const network: string = this.currentNetwork;
-    const polkascanWsUrls = this.config.networks[network].explorerWsUrlArray;
-    let polkascanWsUrl = window.localStorage.getItem(`lastUsedPolkascanWsUrl-${network}`);
-    if (!polkascanWsUrl) {
-      const badPolkascanWsUrls = this.badAdapterUrls[network].explorerApi;
-      if (badPolkascanWsUrls.length >= polkascanWsUrls.length) {
+    const explorerWsUrls = this.config.networks[network].explorerWsUrlArray;
+    let explorerWsUrl = window.localStorage.getItem(`lastUsedExplorerWsUrl-${network}`);
+    if (!explorerWsUrl) {
+      const badExplorerWsUrls = this.badAdapterUrls[network].explorerApi;
+      if (badExplorerWsUrls.length >= explorerWsUrls.length) {
         // All url's are marked bad, so let's just try all of them again.
-        badPolkascanWsUrls.length = 0;
+        badExplorerWsUrls.length = 0;
       }
-      polkascanWsUrl = polkascanWsUrls.filter(url => !badPolkascanWsUrls.includes(url))[0];
-      window.localStorage.setItem(`lastUsedPolkascanWsUrl-${network}`, polkascanWsUrl);
+      explorerWsUrl = explorerWsUrls.filter(url => !badExplorerWsUrls.includes(url))[0];
+      window.localStorage.setItem(`lastUsedExplorerWsUrl-${network}`, explorerWsUrl);
     }
-    this.availableAdapters[network].explorerApi.setWsUrl(polkascanWsUrl);
-    this.explorerWsUrl.next(polkascanWsUrl);
+    this.availableAdapters[network].explorerApi.setWsUrl(explorerWsUrl);
+    this.explorerWsUrl.next(explorerWsUrl);
   }
 
-  reconnectPolkscanApi(): void {
+  reconnectExplorerApi(): void {
     if (this.explorerWsUrl.value) {
-      const badPolkascanWsUrls = this.badAdapterUrls[this.currentNetwork].explorerApi;
-      badPolkascanWsUrls.push(this.explorerWsUrl.value as string);
-      window.localStorage.removeItem(`lastUsedPolkascanWsUrl-${this.currentNetwork}`);
+      const badExplorerWsUrls = this.badAdapterUrls[this.currentNetwork].explorerApi;
+      badExplorerWsUrls.push(this.explorerWsUrl.value as string);
+      window.localStorage.removeItem(`lastUsedExplorerWsUrl-${this.currentNetwork}`);
       this.configureExplorerWsUrl();
       if (this.explorerRegistered.value) {
         this.availableAdapters[this.currentNetwork].explorerApi.connect();
@@ -317,8 +317,8 @@ export class PolkadaptService {
     }
   }
 
-  async setPolkascanWsUrl(url: string): Promise<void> {
-    window.localStorage.setItem(`lastUsedPolkascanWsUrl-${this.currentNetwork}`, url);
+  async setExplorerWsUrl(url: string): Promise<void> {
+    window.localStorage.setItem(`lastUsedExplorerWsUrl-${this.currentNetwork}`, url);
     this.availableAdapters[this.currentNetwork].explorerApi.setWsUrl(url);
     this.explorerWsUrl.next(url);
     if (this.explorerRegistered.value) {
@@ -333,6 +333,6 @@ export class PolkadaptService {
 
   forceReconnect(): void {
     this.reconnectSubstrateRpc();
-    this.reconnectPolkscanApi();
+    this.reconnectExplorerApi();
   }
 }
