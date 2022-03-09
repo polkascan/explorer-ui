@@ -31,7 +31,7 @@ import {
   DeriveStakingAccount
 } from '@polkadot/api-derive/types';
 import { BN, BN_ZERO, u8aToHex, u8aToString } from '@polkadot/util';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 import { AccountId, AccountIndex } from '@polkadot/types/interfaces';
 import { Codec } from '@polkadot/types/types';
 import { decodeAddress, validateAddress } from '@polkadot/util-crypto';

@@ -19,14 +19,14 @@
 import { Injectable } from '@angular/core';
 import { Polkadapt, PolkadaptRunConfig } from '@polkadapt/core';
 import * as substrate from '@polkadapt/substrate-rpc';
-import * as polkascan from '@polkadapt/polkascan';
+import * as explorer from '@polkadapt/polkascan-explorer';
 import * as coingecko from '@polkadapt/coingecko';
 import { AppConfig } from '../app-config';
 import { BehaviorSubject, Subject, Subscription, throttleTime } from 'rxjs';
 
-export type AugmentedApi = substrate.Api & polkascan.Api & coingecko.Api;
+export type AugmentedApi = substrate.Api & explorer.Api & coingecko.Api;
 
-type AdapterName = 'substrateRpc' | 'polkascanApi' | 'coingeckoApi';
+type AdapterName = 'substrateRpc' | 'explorerApi' | 'coingeckoApi';
 
 @Injectable({providedIn: 'root'})
 export class PolkadaptService {
@@ -39,19 +39,19 @@ export class PolkadaptService {
   substrateRpcWsErrorHandler: () => void;
   substrateRpcWsConnectedHandler: () => void;
   substrateRpcWsDisconnectedHandler: () => void;
-  polkascanWsUrls = new BehaviorSubject<string[] | null>(null)
-  polkascanWsUrl = new BehaviorSubject<string | null>(null)
-  polkascanWsConnected = new BehaviorSubject(false);
-  polkascanRegistered = new BehaviorSubject(false);
-  polkascanWsErrorHandler: () => void;
-  polkascanWsConnectedHandler: () => void;
-  polkascanWsDisconnectedHandler: () => void;
-  polkascanDataErrorHandler: (e: any) => void;
-  polkascanDataErrors = new BehaviorSubject<{url: string, error: any}[]>([]);
+  explorerWsUrls = new BehaviorSubject<string[] | null>(null)
+  explorerWsUrl = new BehaviorSubject<string | null>(null)
+  explorerWsConnected = new BehaviorSubject(false);
+  explorerRegistered = new BehaviorSubject(false);
+  exporerWsErrorHandler: () => void;
+  explorerWsConnectedHandler: () => void;
+  explorerWsDisconnectedHandler: () => void;
+  explorerDataErrorHandler: (e: any) => void;
+  explorerDataErrors = new BehaviorSubject<{url: string, error: any}[]>([]);
   availableAdapters: {
     [network: string]: {
       substrateRpc: substrate.Adapter,
-      polkascanApi: polkascan.Adapter,
+      explorerApi: explorer.Adapter,
       coingeckoApi: coingecko.Adapter
     }
   } = {};
@@ -94,7 +94,7 @@ export class PolkadaptService {
         substrateRpc: new substrate.Adapter({
           chain: network
         }),
-        polkascanApi: new polkascan.Adapter({
+        explorerApi: new explorer.Adapter({
           chain: network
         }),
         coingeckoApi: new coingecko.Adapter({
@@ -104,7 +104,7 @@ export class PolkadaptService {
       };
       this.badAdapterUrls[network] = {
         substrateRpc: [],
-        polkascanApi: [],
+        explorerApi: [],
         coingeckoApi: []
       };
     }
@@ -144,45 +144,45 @@ export class PolkadaptService {
     this.substrateRpcUrls.next(this.config.networks[network].substrateRpcUrlArray);
 
     // Update the Polkascan API url.
-    this.configurePolkascanWsUrl();
-    const pAdapter = this.availableAdapters[network].polkascanApi;
-    this.polkascanWsUrls.next(this.config.networks[network].polkascanWsUrlArray);
+    this.configureExplorerWsUrl();
+    const pAdapter = this.availableAdapters[network].explorerApi;
+    this.explorerWsUrls.next(this.config.networks[network].explorerWsUrlArray);
 
     // Now that the adapters are set, register them in PolkADAPT which will connect() them.
     this.substrateRpcRegistered.next(true);
-    this.polkascanRegistered.next(true);
+    this.explorerRegistered.next(true);
     this.polkadapt.register(...Object.values(this.availableAdapters[network]));
 
     // After polkascan adapter has connected, we can listen to the events on the socket.
     if (pAdapter.socket) {
-      this.polkascanWsErrorHandler = () => {
-        console.error('Polkascan API web socket error, try reconnect');
-        this.polkascanWsConnected.next(false);
+      this.exporerWsErrorHandler = () => {
+        console.error('Polkascan Explorer API web socket error, try reconnect');
+        this.explorerWsConnected.next(false);
         this.reconnectPolkscanApi();
       };
-      pAdapter.socket.on('socketError', this.polkascanWsErrorHandler);
+      pAdapter.socket.on('socketError', this.exporerWsErrorHandler);
 
-      this.polkascanDataErrorHandler = (e) => {
+      this.explorerDataErrorHandler = (e) => {
         const error = {
-          url: this.polkascanWsUrl.value || '',
+          url: this.explorerWsUrl.value || '',
           error: e
         };
-        this.polkascanDataErrors.next(this.polkascanDataErrors.value.concat([error]));
+        this.explorerDataErrors.next(this.explorerDataErrors.value.concat([error]));
       };
-      pAdapter.socket.on('dataError', this.polkascanDataErrorHandler);
+      pAdapter.socket.on('dataError', this.explorerDataErrorHandler);
 
-      this.polkascanWsConnectedHandler = () => {
-        console.info('Polkascan API connected');
-        this.polkascanWsConnected.next(true);
+      this.explorerWsConnectedHandler = () => {
+        console.info('Polkascan Explorer API connected');
+        this.explorerWsConnected.next(true);
       };
-      pAdapter.socket.on('open', this.polkascanWsConnectedHandler);
+      pAdapter.socket.on('open', this.explorerWsConnectedHandler);
 
-      this.polkascanWsDisconnectedHandler = () => {
+      this.explorerWsDisconnectedHandler = () => {
         // This can happen when internet connection went down.
-        console.info('Polkascan API disconnected');
-        this.polkascanWsConnected.next(false);
+        console.info('Polkascan Explorer API disconnected');
+        this.explorerWsConnected.next(false);
       };
-      pAdapter.socket.on('close', this.polkascanWsDisconnectedHandler);
+      pAdapter.socket.on('close', this.explorerWsDisconnectedHandler);
     }
 
     const cAdapter = this.availableAdapters[network].coingeckoApi;
@@ -214,17 +214,17 @@ export class PolkadaptService {
     if (this.currentNetwork) {
       this.polkadapt.unregister();
       this.substrateRpcRegistered.next(false);
-      this.polkascanRegistered.next(false);
+      this.explorerRegistered.next(false);
       const sAdapter = this.availableAdapters[this.currentNetwork].substrateRpc;
       sAdapter.off('error', this.substrateRpcWsErrorHandler);
       sAdapter.off('connected', this.substrateRpcWsConnectedHandler);
       sAdapter.off('disconnected', this.substrateRpcWsDisconnectedHandler);
-      const pAdapter = this.availableAdapters[this.currentNetwork].polkascanApi;
+      const pAdapter = this.availableAdapters[this.currentNetwork].explorerApi;
       if (pAdapter.socket) {
-        pAdapter.socket.off('socketError', this.polkascanWsErrorHandler);
-        pAdapter.socket.off('dataError', this.polkascanDataErrorHandler);
-        pAdapter.socket.off('open', this.polkascanWsConnectedHandler);
-        pAdapter.socket.off('close', this.polkascanWsDisconnectedHandler);
+        pAdapter.socket.off('socketError', this.exporerWsErrorHandler);
+        pAdapter.socket.off('dataError', this.explorerDataErrorHandler);
+        pAdapter.socket.off('open', this.explorerWsConnectedHandler);
+        pAdapter.socket.off('close', this.explorerWsDisconnectedHandler);
       }
 
       if (this.sleepDetectorWorker) {
@@ -236,8 +236,8 @@ export class PolkadaptService {
       this.currentNetwork = '';
       this.substrateRpcUrls.next(null);
       this.substrateRpcUrl.next(null);
-      this.polkascanWsUrls.next(null);
-      this.polkascanWsUrl.next(null);
+      this.explorerWsUrls.next(null);
+      this.explorerWsUrl.next(null);
     }
   }
 
@@ -264,7 +264,7 @@ export class PolkadaptService {
       badSubstrateRpcUrls.push(this.substrateRpcUrl.value as string);
       window.localStorage.removeItem(`lastUsedSubstrateRpcUrl-${this.currentNetwork}`);
       this.configureSubstrateRpcUrl();
-      if (this.polkascanRegistered.value) {
+      if (this.explorerRegistered.value) {
         this.availableAdapters[this.currentNetwork].substrateRpc.connect();
       } else {
         this.polkadapt.register(this.availableAdapters[this.currentNetwork].substrateRpc);
@@ -282,16 +282,16 @@ export class PolkadaptService {
       // Not registered, so let's try this url as well as the others again.
       this.badAdapterUrls[this.currentNetwork].substrateRpc.length = 0;
       this.polkadapt.register(this.availableAdapters[this.currentNetwork].substrateRpc);
-      this.polkascanRegistered.next(true);
+      this.explorerRegistered.next(true);
     }
   }
 
-  configurePolkascanWsUrl(): void {
+  configureExplorerWsUrl(): void {
     const network: string = this.currentNetwork;
-    const polkascanWsUrls = this.config.networks[network].polkascanWsUrlArray;
+    const polkascanWsUrls = this.config.networks[network].explorerWsUrlArray;
     let polkascanWsUrl = window.localStorage.getItem(`lastUsedPolkascanWsUrl-${network}`);
     if (!polkascanWsUrl) {
-      const badPolkascanWsUrls = this.badAdapterUrls[network].polkascanApi;
+      const badPolkascanWsUrls = this.badAdapterUrls[network].explorerApi;
       if (badPolkascanWsUrls.length >= polkascanWsUrls.length) {
         // All url's are marked bad, so let's just try all of them again.
         badPolkascanWsUrls.length = 0;
@@ -299,35 +299,35 @@ export class PolkadaptService {
       polkascanWsUrl = polkascanWsUrls.filter(url => !badPolkascanWsUrls.includes(url))[0];
       window.localStorage.setItem(`lastUsedPolkascanWsUrl-${network}`, polkascanWsUrl);
     }
-    this.availableAdapters[network].polkascanApi.setWsUrl(polkascanWsUrl);
-    this.polkascanWsUrl.next(polkascanWsUrl);
+    this.availableAdapters[network].explorerApi.setWsUrl(polkascanWsUrl);
+    this.explorerWsUrl.next(polkascanWsUrl);
   }
 
   reconnectPolkscanApi(): void {
-    if (this.polkascanWsUrl.value) {
-      const badPolkascanWsUrls = this.badAdapterUrls[this.currentNetwork].polkascanApi;
-      badPolkascanWsUrls.push(this.polkascanWsUrl.value as string);
+    if (this.explorerWsUrl.value) {
+      const badPolkascanWsUrls = this.badAdapterUrls[this.currentNetwork].explorerApi;
+      badPolkascanWsUrls.push(this.explorerWsUrl.value as string);
       window.localStorage.removeItem(`lastUsedPolkascanWsUrl-${this.currentNetwork}`);
-      this.configurePolkascanWsUrl();
-      if (this.polkascanRegistered.value) {
-        this.availableAdapters[this.currentNetwork].polkascanApi.connect();
+      this.configureExplorerWsUrl();
+      if (this.explorerRegistered.value) {
+        this.availableAdapters[this.currentNetwork].explorerApi.connect();
       } else {
-        this.polkadapt.register(this.availableAdapters[this.currentNetwork].polkascanApi);
+        this.polkadapt.register(this.availableAdapters[this.currentNetwork].explorerApi);
       }
     }
   }
 
   async setPolkascanWsUrl(url: string): Promise<void> {
     window.localStorage.setItem(`lastUsedPolkascanWsUrl-${this.currentNetwork}`, url);
-    this.availableAdapters[this.currentNetwork].polkascanApi.setWsUrl(url);
-    this.polkascanWsUrl.next(url);
-    if (this.polkascanRegistered.value) {
-      this.availableAdapters[this.currentNetwork].polkascanApi.connect();
+    this.availableAdapters[this.currentNetwork].explorerApi.setWsUrl(url);
+    this.explorerWsUrl.next(url);
+    if (this.explorerRegistered.value) {
+      this.availableAdapters[this.currentNetwork].explorerApi.connect();
     } else {
       // Not registered, so let's try this url as well as the others again.
-      this.badAdapterUrls[this.currentNetwork].polkascanApi.length = 0;
-      this.polkadapt.register(this.availableAdapters[this.currentNetwork].polkascanApi);
-      this.polkascanRegistered.next(true);
+      this.badAdapterUrls[this.currentNetwork].explorerApi.length = 0;
+      this.polkadapt.register(this.availableAdapters[this.currentNetwork].explorerApi);
+      this.explorerRegistered.next(true);
     }
   }
 

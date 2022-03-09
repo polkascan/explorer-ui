@@ -22,7 +22,7 @@ import { NetworkService } from '../../../../../services/network.service';
 import { ActivatedRoute } from '@angular/router';
 import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 
 @Component({
   selector: 'app-runtime-detail',

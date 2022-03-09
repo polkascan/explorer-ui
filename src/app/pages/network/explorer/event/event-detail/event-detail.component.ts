@@ -29,7 +29,7 @@ import {
   takeUntil
 } from 'rxjs/operators';
 import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 
 @Component({

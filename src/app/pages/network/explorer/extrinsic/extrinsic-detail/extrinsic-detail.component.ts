@@ -22,7 +22,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { catchError, filter, first, map, shareReplay, switchMap, takeUntil } from 'rxjs/operators';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 
 
 @Component({

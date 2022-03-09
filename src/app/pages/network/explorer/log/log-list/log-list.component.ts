@@ -19,7 +19,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 
 @Component({

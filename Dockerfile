@@ -23,7 +23,7 @@ RUN npm exec ng build -- --configuration production core
 COPY polkadapt/projects/substrate-rpc/package.json projects/substrate-rpc/package.json
 RUN cd projects/substrate-rpc && npm i
 
-COPY polkadapt/projects/polkascan/package.json projects/polkascan/package.json
+COPY polkadapt/projects/polkascan-explorer/package.json projects/polkascan/package.json
 RUN cd projects/polkascan && npm i
 
 COPY polkadapt/projects/coingecko/package.json projects/coingecko/package.json

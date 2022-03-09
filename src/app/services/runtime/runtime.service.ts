@@ -18,7 +18,7 @@
 
 import { Injectable } from '@angular/core';
 import { PolkadaptService } from '../polkadapt.service';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 import { BehaviorSubject } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
 

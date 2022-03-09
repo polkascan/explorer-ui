@@ -23,7 +23,7 @@ import { BehaviorSubject, combineLatest, Subject } from 'rxjs';
 import { Block } from '../../../../../services/block/block.harvester';
 import { filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 
 @Component({
   selector: 'app-block-detail',

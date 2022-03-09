@@ -26,7 +26,7 @@ import {
 } from '@angular/core';
 import { IconTheme } from '../identicon/identicon.types';
 import { Prefix } from '@polkadot/util-crypto/address/types';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 import { attributesConfig } from './attributes.config';
 
 @Component({

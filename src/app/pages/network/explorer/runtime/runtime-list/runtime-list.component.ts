@@ -19,7 +19,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { BehaviorSubject, Subject } from 'rxjs';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 import { NetworkService } from '../../../../../services/network.service';
 import { filter, first, switchMap, takeUntil } from 'rxjs/operators';
 

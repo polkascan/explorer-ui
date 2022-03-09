@@ -60,7 +60,7 @@ export class PsConnectionDialogComponent implements OnInit, OnDestroy {
       this.substrateRpcUrlForm.setValue({url});
     });
 
-    this.pa.polkascanWsUrl.pipe(takeUntil(this.destroyer)).subscribe(url => {
+    this.pa.explorerWsUrl.pipe(takeUntil(this.destroyer)).subscribe(url => {
       this.polkascanWsUrlForm.setValue({url});
     });
   }

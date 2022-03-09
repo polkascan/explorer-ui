@@ -22,8 +22,7 @@ import { HttpClient } from '@angular/common/http';
 type NetworkConfig = {
   [network: string]: {
     substrateRpcUrlArray: string[];
-    polkascanApiUrlArray: string[];
-    polkascanWsUrlArray: string[];
+    explorerWsUrlArray: string[];
   };
 };
 

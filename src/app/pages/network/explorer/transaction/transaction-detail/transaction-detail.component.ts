@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';

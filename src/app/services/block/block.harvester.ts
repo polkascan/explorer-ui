@@ -20,7 +20,7 @@ import { BehaviorSubject, combineLatest, defer } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt } from '@polkadapt/core';
 import { Header } from '@polkadot/types/interfaces';
-import * as pst from '@polkadapt/polkascan/lib/polkascan.types';
+import { types as pst } from '@polkadapt/polkascan-explorer';
 import { filter, finalize, first } from 'rxjs/operators';
 
 export type Block = Partial<pst.Block> & {

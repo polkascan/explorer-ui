@@ -30,9 +30,9 @@
     <ng-container [ngSwitch]="(ns.online | async)">
       <mat-icon *ngSwitchCase="false">wifi_off</mat-icon>
       <ng-container *ngSwitchDefault>
-        <mat-icon *ngIf="(pa.substrateRpcRegistered|async) && (pa.substrateRpcConnected|async) || (pa.polkascanRegistered|async) && (pa.polkascanWsConnected|async)">wifi</mat-icon>
-        <mat-icon class="connecting" *ngIf="(pa.substrateRpcRegistered|async) && (pa.substrateRpcConnected|async) === false || (pa.polkascanRegistered|async) && (pa.polkascanWsConnected|async) === false">wifi</mat-icon>
-        <mat-icon *ngIf="(pa.substrateRpcRegistered|async) === false || (pa.polkascanRegistered|async) === false">report_problem</mat-icon>
+        <mat-icon *ngIf="(pa.substrateRpcRegistered|async) && (pa.substrateRpcConnected|async) || (pa.explorerRegistered|async) && (pa.explorerWsConnected|async)">wifi</mat-icon>
+        <mat-icon class="connecting" *ngIf="(pa.substrateRpcRegistered|async) && (pa.substrateRpcConnected|async) === false || (pa.explorerRegistered|async) && (pa.explorerWsConnected|async) === false">wifi</mat-icon>
+        <mat-icon *ngIf="(pa.substrateRpcRegistered|async) === false || (pa.explorerRegistered|async) === false">report_problem</mat-icon>
       </ng-container>
     </ng-container>
 
