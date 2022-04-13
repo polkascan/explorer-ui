@@ -27,7 +27,7 @@ const routes: Routes = [
     component: BlockListComponent
   },
   {
-    path: ':id',
+    path: ':idOrHash',
     component: BlockDetailComponent
   }
 ];
