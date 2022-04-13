@@ -109,3 +109,12 @@ ps-top-bar {
     background-image: url('../../../assets/chains/rococo.svg');
   }
 }
+
+.github-link {
+  margin-left: 16px;
+  padding-top: 6px;
+
+  path {
+    fill: white;
+  }
+}
