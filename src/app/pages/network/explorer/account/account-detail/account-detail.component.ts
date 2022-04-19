@@ -245,31 +245,31 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     )
 
     this.superOf = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.identity.superOf, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => id ? asObservable(this.pa.run().query.identity.superOf, id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.identity = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.identity.identityOf, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => id ? asObservable(this.pa.run().query.identity.identityOf, id).pipe(takeUntil(this.destroyer)): of(null))
     );
 
     this.subsOf = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.identity.subsOf, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => id ? asObservable(this.pa.run().query.identity.subsOf, id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.derivedAccountInfo = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.accounts.info, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => id ? asObservable(this.pa.run().derive.accounts.info, id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.derivedAccountFlags = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.accounts.flags, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => id ? asObservable(this.pa.run().derive.accounts.flags, id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.derivedBalancesAll = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.balances.all, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => id ? asObservable(this.pa.run().derive.balances.all, id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.stakingInfo = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.staking.account, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => id ? asObservable(this.pa.run().derive.staking.account, id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.accountBalances = combineLatest(

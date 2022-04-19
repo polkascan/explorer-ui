@@ -17,13 +17,15 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Params } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
-import { BehaviorSubject, combineLatest, Subject } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, Subject, take } from 'rxjs';
 import { Block } from '../../../../../services/block/block.harvester';
-import { filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
+import { catchError, filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { types as pst } from '@polkadapt/polkascan-explorer';
+import { asObservable } from '../../../../../../common/polkadapt-rxjs';
+import { Header } from '@polkadot/types/interfaces';
 
 @Component({
   selector: 'app-block-detail',
@@ -37,12 +39,14 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
   extrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
   events = new BehaviorSubject<pst.Event[]>([]);
   headNumber = new BehaviorSubject<number>(0);
+  invalidHash = new BehaviorSubject<boolean>(false);
 
   constructor(
     private route: ActivatedRoute,
     private ns: NetworkService,
     private pa: PolkadaptService,
-  ) { }
+  ) {
+  }
 
   ngOnInit(): void {
     // Wait for network to be set.
@@ -55,8 +59,26 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
       // Switch to the route param, from which we get the block number.
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => parseInt(params['id'], 10))
       )),
+      tap(() => {
+        this.invalidHash.next(false);
+      }),
+      switchMap<Params, Observable<number>>(((params) => {
+        const id = parseInt(params['idOrHash'], 10);
+        if (String(id) === params['idOrHash']) {
+          // Id is a blockNumber.
+          return of(id);
+        } else {
+          return asObservable(this.pa.run().rpc.chain.getHeader, params['idOrHash']).pipe(
+            take(1),
+            map((header: Header) => header.number.toJSON() as number),
+            catchError((err) => {
+              this.invalidHash.next(true);
+              throw new Error(`Block detail could not be fetched. The header maybe invalid or does not exist. ${err}`);
+            })
+          );
+        }
+      })),
       switchMap((blockNr) => combineLatest(
         // Update block when block data changes.
         this.ns.blockHarvester.blocks[blockNr].pipe(
