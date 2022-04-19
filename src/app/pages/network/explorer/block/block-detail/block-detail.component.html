@@ -1,8 +1,8 @@
 <button mat-button [routerLink]="'..'"><i class="fas fa-chevron-left"></i> Blocks</button>
 
 <ng-container [ngSwitch]="invalidHash | async">
-  <p *ngSwitchCase="false">
-    The provided hash is invalid.
+  <p *ngSwitchCase="true">
+    The provided hash is invalid or does not exist.
   </p>
 
   <ng-container *ngSwitchDefault>

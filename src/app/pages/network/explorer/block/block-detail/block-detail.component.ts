@@ -71,11 +71,11 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
         } else {
           return asObservable(this.pa.run().rpc.chain.getHeader, params['idOrHash']).pipe(
             take(1),
-            catchError((err, obs) => {
+            map((header: Header) => header.number.toJSON() as number),
+            catchError((err) => {
               this.invalidHash.next(true);
-              throw err;
-            }),
-            map((header: Header) => header.number.toJSON() as number)
+              throw new Error(`Block detail could not be fetched. The header maybe invalid or does not exist. ${err}`);
+            })
           );
         }
       })),
