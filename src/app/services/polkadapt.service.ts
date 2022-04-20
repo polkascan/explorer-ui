@@ -206,8 +206,8 @@ export class PolkadaptService {
       .pipe(throttleTime(5000))
       .subscribe(() => this.forceReconnect());
 
-    // Wait until PolkADAPT has initialized all adapters.
-    await this.polkadapt.ready();
+    // Wait until PolkADAPT has initialized at least the substrate rpc adapters.
+    await sAdapter.isReady;
   }
 
   clearNetwork(): void {

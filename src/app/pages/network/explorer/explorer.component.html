@@ -42,7 +42,7 @@
 </ng-container>
 
 <p *ngIf="(ns.currentNetwork | async) === '' &&
-          ((pa.substrateRpcRegistered | async) && (pa.substrateRpcConnected | async) === false || (pa.explorerRegistered | async) && (pa.explorerWsConnected | async) === false || (pa.substrateRpcRegistered | async) === false || (pa.explorerRegistered | async) === false)">
+          ((pa.substrateRpcRegistered | async) && (pa.substrateRpcConnected | async) === false || (pa.substrateRpcRegistered | async) === false)">
   Initializing...
 </p>
 

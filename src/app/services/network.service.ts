@@ -94,6 +94,8 @@ export class NetworkService {
       return;
     }
 
+    const runOnRPC = {chain: network, adapters: ['substrate-rpc']};
+
     // Only the last of concurring calls to this function will continue on the code below.
     if (network) {
       this.blockHarvester = this.bs.getBlockHarvester(network, true);
@@ -113,23 +115,23 @@ export class NetworkService {
       let properties: ChainProperties | undefined;
 
       try {
-        chainSS58 = await this.pa.run(network).registry.chainSS58;
-        chainDecimals = await this.pa.run(network).registry.chainDecimals;
-        chainTokens = await this.pa.run(network).registry.chainTokens;
+        chainSS58 = await this.pa.run(runOnRPC).registry.chainSS58;
+        chainDecimals = await this.pa.run(runOnRPC).registry.chainDecimals;
+        chainTokens = await this.pa.run(runOnRPC).registry.chainTokens;
       } catch (e) {
         console.error(e);
       }
 
       try {
-        systemName = (await this.pa.run(network).rpc.system.name())?.toString();
-        specName = await this.pa.run(network).runtimeVersion.specName?.toString();
-        systemVersion = (await this.pa.run(network).rpc.system.version())?.toString();
+        systemName = (await this.pa.run(runOnRPC).rpc.system.name())?.toString();
+        specName = await this.pa.run(runOnRPC).runtimeVersion.specName?.toString();
+        systemVersion = (await this.pa.run(runOnRPC).rpc.system.version())?.toString();
       } catch (e) {
         console.error(e);
       }
 
       try {
-        properties = await this.pa.run(network).rpc.system.properties();
+        properties = await this.pa.run(runOnRPC).rpc.system.properties();
         if (properties) {
           chainSS58 = chainSS58 ?? ((properties.ss58Format || (properties as any).ss58Prefix).isSome
             ? (properties.ss58Format || (properties as any).ss58Prefix).toJSON() as number
@@ -166,7 +168,7 @@ export class NetworkService {
 
     // Check if blocks are coming in at the expected block time. If not, trigger reload connection.
     try {
-      const expectedBlockTime = await this.pa.run(network).consts.babe.expectedBlockTime;
+      const expectedBlockTime = await this.pa.run(runOnRPC).consts.babe.expectedBlockTime;
       const blockTime: number = (expectedBlockTime as any).toNumber();
       if (Number.isInteger(blockTime)) {
         this.blockHarvester.headNumber.pipe(

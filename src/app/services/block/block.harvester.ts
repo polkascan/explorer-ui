@@ -89,7 +89,7 @@ export class BlockHarvester {
   private async subscribeNewBlocks(): Promise<void> {
     if (!this.unsubscribeNewHeads) {
       // Subscribe to new blocks *without finality*.
-      this.unsubscribeNewHeads = await this.polkadapt.run(this.network).rpc.chain.subscribeNewHeads(
+      this.unsubscribeNewHeads = await this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.subscribeNewHeads(
         (header: Header) => this.newHeadHandler(header)
       );
     }
@@ -190,15 +190,16 @@ export class BlockHarvester {
         cached.complete();
       } else {
         // Load data from substrate rpc.
+        const runOnRpc = {chain: this.network, adapters: ['substrate-rpc']};
         if (!block.hash) {
-          block.hash = (await this.polkadapt.run(this.network).rpc.chain.getBlockHash(block.number)).toString();
+          block.hash = (await this.polkadapt.run(runOnRpc).rpc.chain.getBlockHash(block.number)).toString();
         }
         let signedBlock, allEvents, timestamp;
         try {
           [signedBlock, allEvents, timestamp] = await Promise.all([
-            this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.getBlock(block.hash),
-            this.polkadapt.run(this.network).query.system.events.at(block.hash),
-            this.polkadapt.run(this.network).query.timestamp.now.at(block.hash)
+            this.polkadapt.run(runOnRpc).rpc.chain.getBlock(block.hash),
+            this.polkadapt.run(runOnRpc).query.system.events.at(block.hash),
+            this.polkadapt.run(runOnRpc).query.timestamp.now.at(block.hash)
           ]);
         } catch (e) {
           block.status = oldStatus;
