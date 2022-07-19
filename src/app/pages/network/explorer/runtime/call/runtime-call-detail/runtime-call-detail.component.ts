@@ -61,8 +61,10 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
       switchMap(network => this.route.params.pipe(
         takeUntil(this.destroyer),
         map(params => {
-          const [specName, specVersion] = params['runtime'].split('-');
-          return [specName, parseInt(specVersion, 10), params['pallet'], params['callName']]
+          const lastIndex = params['runtime'].lastIndexOf('-');
+          const specName = params['runtime'].substring(0, lastIndex);
+          const specVersion = params['runtime'].substring(lastIndex);
+          return [specName, parseInt(specVersion, 10), params['pallet'], params['callName']];
         }),
         tap(([specName, specVersion, pallet]) => {
           this.runtime = `${specName}-${specVersion}`;
