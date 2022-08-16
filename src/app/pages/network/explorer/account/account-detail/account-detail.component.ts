@@ -208,6 +208,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
             this.fetchAndSubscribeFromTransfers(accountIdHex);
             this.fetchAndSubscribeToTransfers(accountIdHex);
             this.fetchAndSubscribeExtrinsics(accountIdHex);
+            this.fetchTaggedAccounts(accountIdHex);
           } catch (e) {
           }
         } else {
@@ -218,12 +219,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         // Account not found.
         this.errors.next('Account not found.');
       }
-    });
-
-    idObservable.subscribe((id) => {
-      this.pa.run().polkascan.state.getTaggedAccount(u8aToHex(decodeAddress(id))).then(
-        (account) => this.polkascanAccountInfo.next(account)
-      );
     });
 
     this.account = idObservable.pipe(
@@ -522,6 +517,11 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.unsubscribeFns.set('toBalanceTransfersUnsubscribeFn', toBalanceTransfersUnsubscribeFn);
   }
 
+  fetchTaggedAccounts(accountIdHex: string): void {
+    this.pa.run().polkascan.state.getTaggedAccount(accountIdHex).then(
+      (account) => this.polkascanAccountInfo.next(account)
+    );
+  }
 
   ngOnDestroy(): void {
     this.unsubscribeFns.forEach((unsub) => unsub());
