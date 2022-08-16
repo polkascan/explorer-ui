@@ -70,10 +70,10 @@ export class PsConnectionDialogComponent implements OnInit, OnDestroy {
   }
 
   async submitSubstrateRpcUrl(): Promise<void> {
-    await this.pa.setSubstrateRpcUrl(this.substrateRpcUrlForm.value.url);
+    await this.pa.setSubstrateRpcUrl(this.substrateRpcUrlForm.value.url!);
   }
 
   async submitExplorerWsUrl(): Promise<void> {
-    await this.pa.setExplorerWsUrl(this.explorerWsUrlForm.value.url);
+    await this.pa.setExplorerWsUrl(this.explorerWsUrlForm.value.url!);
   }
 }
