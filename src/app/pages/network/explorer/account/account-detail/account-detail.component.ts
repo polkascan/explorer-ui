@@ -406,34 +406,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       }),
       catchError((e) => of(''))
     )
-
-    // this.extrinsic = paramsObservable.pipe(
-    //   tap(() => this.fetchExtrinsicStatus.next('loading')),
-    //   switchMap(([blockNr, extrinsicIdx]) => {
-    //     const subject = new Subject<pst.Extrinsic>();
-    //     this.pa.run().polkascan.chain.getExtrinsic(blockNr, extrinsicIdx).then(
-    //       (inherent) => {
-    //         if (inherent) {
-    //           subject.next(inherent);
-    //           this.fetchExtrinsicStatus.next(null);
-    //         } else {
-    //           subject.error('Extrinsic not found.');
-    //         }
-    //       },
-    //       (e) => {
-    //         subject.error(e);
-    //       }
-    //     );
-    //     return subject.pipe(takeUntil(this.destroyer))
-    //   }),
-    //   catchError((e) => {
-    //     this.fetchExtrinsicStatus.next('error');
-    //     return of(null);
-    //   })
-    // );
-
-
-
   }
 
 
