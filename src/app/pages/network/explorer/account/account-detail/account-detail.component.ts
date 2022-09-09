@@ -21,7 +21,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import {
-  catchError, distinctUntilChanged, filter, first, map, shareReplay, startWith, switchMap, takeUntil
+  catchError, distinctUntilChanged, filter, first, map, shareReplay, startWith, switchMap, takeUntil, tap
 } from 'rxjs/operators';
 import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
 import {
@@ -119,6 +119,9 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   balanceTransfers: Observable<pst.Transfer[]>;
   signedExtrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
 
+  fetchAccountInfoStatus = new BehaviorSubject<any>(null);
+  polkascanAccountInfo = new BehaviorSubject<pst.TaggedAccount| null>(null);
+
   balanceTransferColumns = ['icon', 'block', 'from', 'to', 'value', 'details']
   signedExtrinsicsColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'details'];
 
@@ -205,6 +208,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
             this.fetchAndSubscribeFromTransfers(accountIdHex);
             this.fetchAndSubscribeToTransfers(accountIdHex);
             this.fetchAndSubscribeExtrinsics(accountIdHex);
+            this.fetchTaggedAccounts(accountIdHex);
           } catch (e) {
           }
         } else {
@@ -485,6 +489,11 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.unsubscribeFns.set('toBalanceTransfersUnsubscribeFn', toBalanceTransfersUnsubscribeFn);
   }
 
+  fetchTaggedAccounts(accountIdHex: string): void {
+    this.pa.run().polkascan.state.getTaggedAccount(accountIdHex).then(
+      (account) => this.polkascanAccountInfo.next(account)
+    );
+  }
 
   ngOnDestroy(): void {
     this.unsubscribeFns.forEach((unsub) => unsub());
