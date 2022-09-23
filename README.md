@@ -47,6 +47,12 @@ docker run --rm -p 8000:80 explorer-ui
 ```
 You can now open your web browser and navigate to `http://localhost:8000/` to visit the application.
 
+You can also use the hosted Docker image at Docker Hub, you only need to map a volume to overwrite the `config.json` in the container:
+
+```bash
+docker run --rm -it -p 80:80 -v /path/to/your/src/assets/config.json:/usr/share/nginx/html/assets/config.json polkascan/explorer-ui
+```
+
 ## Build manually
 
 These are the instructions for a manual build. It is advised to use the latest Node LTS. Or at least the node version asked by [Angular](https://angular.io/) or [Polkadot JS](https://polkadot.js.org/):
