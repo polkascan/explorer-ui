@@ -25,11 +25,11 @@ The order in which the networks are shown in the UI is also based on this config
 {
   "polkadot": {
     "substrateRpcUrlArray": ["wss://rpc.polkadot.io"],
-    "polkascanWsUrlArray": ["wss://mycustomnode.io/polkadot"]
+    "explorerWsUrlArray": ["wss://mycustomnode.io/polkadot"]
   },
   "kusama": {
     "substrateRpcUrlArray": ["wss://kusama-rpc.polkadot.io", "wss://other-kusama-node.io"],
-    "polkascanWsUrlArray": ["wss://mycustomnode.io/kusama"]
+    "explorerWsUrlArray": ["wss://mycustomnode.io/kusama"]
   }
 }
 ```

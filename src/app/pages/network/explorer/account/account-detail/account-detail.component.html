@@ -47,6 +47,28 @@
         </div>
       </div>
 
+      <ng-container *ngIf="(fetchAccountInfoStatus | async) as status">
+        <p *ngIf="status === 'loading'">Loading...</p>
+        <p *ngIf="status === 'error'">Could not fetch runtime.</p>
+      </ng-container>
+
+      <ng-container *ngIf="(polkascanAccountInfo | async) as pai">
+        <h3>Tags</h3>
+        <table class="detail-table">
+          <tr *ngIf="pai.tagType">
+            <td class="detail-table--label-cell">Type</td>
+            <td>
+              <i class="fas fa-exclamation-triangle" *ngIf="pai.riskLevel && pai.riskLevel > 0" title="{{pai.riskLevelVerbose}}"></i>
+              {{ pai.tagType }} <span *ngIf="pai.tagSubType">({{pai.tagSubType}})</span>
+            </td>
+          </tr>
+          <tr *ngIf="pai.tagName">
+            <td class="detail-table--label-cell">Name</td>
+            <td>{{ pai.tagName }}</td>
+          </tr>
+        </table>
+
+      </ng-container>
 
       <ng-container *ngIf="dai.identity as idn">
         <h3>Identity</h3>
