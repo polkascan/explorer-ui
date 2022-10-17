@@ -94,11 +94,12 @@ export class BalancesTransferListComponent extends PaginatedListComponentBase<ps
       });
   }
 
-  createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Transfer>> {
+  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Transfer>> {
     return this.pa.run(this.network).polkascan.chain.getTransfers(
       this.filters,
       this.listSize,
-      pageKey
+      pageKey,
+      blockLimitOffset
     );
   }
 

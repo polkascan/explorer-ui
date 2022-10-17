@@ -38,10 +38,11 @@ export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
   }
 
 
-  createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Log>> {
+  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Log>> {
     return this.pa.run(this.network).polkascan.chain.getLogs(
       this.listSize,
-      pageKey
+      pageKey,
+      blockLimitOffset
     );
   }
 

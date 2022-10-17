@@ -28,7 +28,7 @@ import { ListResponse } from '../../../polkadapt/projects/polkascan-explorer/src
 export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy {
   abstract listSize: number;
 
-  abstract createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<T>>;
+  abstract createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<T>>;
 
   abstract createNewItemSubscription?(handleItemFn: (item: T) => void): Promise<() => void>;
 
@@ -42,12 +42,16 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   pageKey: string | undefined;
   pagePrev: string | null = null;
   pageNext: string | null = null;
+  blockLimitCount?: number;
+  blockLimitOffset?: number;
+  searchInfo: {fromBlock?: number, toBlock?: number, nextBlocksCount?: number} = {};
 
   newItemObservable = new Subject<T>();
   lastReceivedItem: T | null = null;
   unsubscribeNewItemFn: null | (() => void);
 
-  readonly pageLiveObservable = new BehaviorSubject(true);
+  readonly historyAvailableObservable = new BehaviorSubject<boolean>(true)
+  readonly pageLiveObservable = new BehaviorSubject<boolean>(true);
   readonly itemsObservable = new BehaviorSubject<T[]>([]);
   readonly loadingObservable = new BehaviorSubject<number>(0);
 
@@ -107,7 +111,7 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
           items.splice(0, 0, item);
         }
         items.sort(this.sortCompareFn);
-        items.length = Math.min(items.length, this.listSize);  // Cap the list.
+        items.length = Math.min(items.length, this.listSize);  // Cap the list if it is a live list.
         this.items = items;
       }
     });
@@ -147,11 +151,12 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
 
     if (typeof this.createNewItemSubscription === 'function') {
       this.unsubscribeNewItemFn = await this.createNewItemSubscription((item) => this.handleItem(item));
+      this.pageLive = true;
     }
   }
 
 
-  async getItems(pageKey?: string): Promise<void> {
+  async getItems(pageKey?: string, blockLimitOffset?: number, blockLimitCount?: number): Promise<void> {
     if (typeof this.createGetItemsRequest !== 'function') {
       throw new Error('[getItems] createGetItemsRequest must be a function.')
     }
@@ -162,41 +167,42 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
 
     this.loading++;
 
+    if (!pageKey) {
+      this.searchInfo = {};
+    }
+
     try {
-      const response = await this.createGetItemsRequest(pageKey);
+      const response = await this.createGetItemsRequest(pageKey, blockLimitOffset);
 
       this.pageKey = pageKey;
       this.pagePrev = response.pageInfo ? response.pageInfo.pagePrev || null : null;
       this.pageNext = response.pageInfo ? response.pageInfo.pageNext || null : null;
+      this.blockLimitCount = response.pageInfo ? response.pageInfo.blockLimitCount || undefined : undefined;
+      this.blockLimitOffset = response.pageInfo ? response.pageInfo.blockLimitOffset || undefined : undefined;
 
-      if (this.pagePrev) {
-        // Received a page that does not contain the latest items, just replace the items array.
-        this.items = response.objects;
-        this.pageLive = false;
-
-      } else {
-        // No pagePrev, this is probably the first page containing the latest items.
-        let items = response.objects;
-
-        if (response.objects.length !== this.listSize) {
-          // Merge list with current list
-          items = response.objects.concat(this.items.filter((a) =>
-            response.objects.findIndex((b) => this.equalityCompareFn(a, b)) === -1
-          ));
+      if (this.blockLimitOffset && this.blockLimitCount) {
+        if (!this.searchInfo.fromBlock) {
+          this.searchInfo.fromBlock = this.blockLimitOffset;
         }
-
-        this.items = items.sort(this.sortCompareFn);
-        this.items.length = Math.min(this.items.length, this.listSize);
-
-        // Check if response has the latest items or that the lastItemFromSubscription contains a more recent one.
-        const lastItemFromSubscriptionIsNewer = !!(
-          this.lastReceivedItem && response.objects[0] && this.sortCompareFn(this.lastReceivedItem, response.objects[0]) < 0
-        );
-
-        if (lastItemFromSubscriptionIsNewer === false) {
-          this.pageLive = true;
-        }
+        this.searchInfo.toBlock = Math.max(0, (this.blockLimitOffset as number) - (this.blockLimitCount as number));
+        this.searchInfo.nextBlocksCount = Math.min(this.blockLimitCount, this.blockLimitOffset);
       }
+
+      let historyAvailable = false;
+      if (this.pageNext) {
+        historyAvailable = true;
+      } else if (this.blockLimitOffset && this.blockLimitCount) {
+        historyAvailable = Math.max(0, this.blockLimitOffset - this.blockLimitCount) > 0;
+      }
+
+      this.historyAvailableObservable.next(historyAvailable);
+
+      // Merge list with current list
+      const items = response.objects.concat(this.items.filter((a) =>
+        response.objects.findIndex((b) => this.equalityCompareFn(a, b)) === -1
+      ));
+
+      this.items = items.sort(this.sortCompareFn);
 
     } catch (e) {
       // Ignore for now...
@@ -215,36 +221,32 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   }
 
 
-  async getPrevPage(): Promise<void> {
-    if (this.pagePrev) {
-      return this.getItems(this.pagePrev);
-
-    } else if (!this.pageLive) {
-      // Page is not live, try fetching a pagePrev for current list.
-      const response: ListResponse<T> = await this.createGetItemsRequest(this.pageKey);
-
-      if (response.pageInfo && response.pageInfo.pagePrev) {
-        await this.getItems(response.pageInfo.pagePrev);
-      } else {
-        await this.getItems(undefined);
-      }
-    }
+  async goLive(): Promise<void> {
+    this.subscribeNewItem();
+    await this.getItems();
   }
 
 
-  async getNextPage(): Promise<void> {
+  async searchMoreItems(): Promise<void> {
     if (this.pageLive) {
+      this.pageLive = false;
+      this.unsubscribeNewItem();
+
       // When viewing live data we first want to fetch the current list to receive a recent pageNext key.
       const response: ListResponse<T> = await this.createGetItemsRequest();
 
       if (response.pageInfo && response.pageInfo.pageNext) {
-        await this.getItems(response.pageInfo.pageNext);
+        await this.getItems(response.pageInfo.pageNext, this.blockLimitOffset, this.blockLimitCount);
       }
 
     } else if (this.pageNext) {
-      await this.getItems(this.pageNext);
+      await this.getItems(this.pageNext, this.blockLimitOffset);
+    } else if (this.blockLimitOffset && this.blockLimitCount) {
+      const blockLimitOffset = Math.max(0, this.blockLimitOffset - this.blockLimitCount)
+      if (blockLimitOffset) {
+        await this.getItems(undefined, blockLimitOffset);
+      }
     }
-    window.scrollTo(0, 0);
   }
 
 

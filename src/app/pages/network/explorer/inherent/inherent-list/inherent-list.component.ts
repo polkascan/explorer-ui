@@ -142,11 +142,12 @@ export class InherentListComponent extends PaginatedListComponentBase<pst.Extrin
   }
 
 
-  createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Extrinsic>> {
+  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Extrinsic>> {
     return this.pa.run(this.network).polkascan.chain.getExtrinsics(
       this.filters,
       this.listSize,
-      pageKey
+      pageKey,
+      blockLimitOffset
     );
   }
 

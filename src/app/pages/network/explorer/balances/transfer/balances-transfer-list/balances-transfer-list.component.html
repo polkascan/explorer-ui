@@ -1,5 +1,10 @@
 <h1>Balance transfers</h1>
 
+<button *ngIf="pageLiveObservable | async" [disabled]="(((loadingObservable | async) || 0) > 0)" mat-stroked-button
+        aria-label="To live data" (click)="goLive()">
+  Show live data
+</button>
+
 <ng-container *ngIf="(itemsObservable | async) as dataSource">
   <ng-container *ngIf="(networkProperties | async) as props">
     <table mat-table [dataSource]="dataSource" [trackBy]="track">
@@ -57,17 +62,17 @@
 
     </table>
   </ng-container>
+
+  <div *ngIf="(loadingObservable | async) === false && dataSource.length === 0">
+    No items found. Searched from block {{ searchInfo.fromBlock }} to {{ searchInfo.toBlock }}.
+  </div>
 </ng-container>
 
 <div *ngIf="loadingObservable | async">
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>
 </div>
 
-<button [disabled]="(((loadingObservable | async) || 0) > 0) || (!pagePrev && pageLive)" mat-stroked-button
-        aria-label="Previous" (click)="getPrevPage()">
-  Previous
-</button>
-<button [disabled]="(((loadingObservable | async) || 0) > 0) || !pageNext" mat-stroked-button
-        aria-label="Next" (click)="getNextPage()">
-  Next
+<button [disabled]="(((loadingObservable | async) || 0) > 0) || (historyAvailableObservable | async)" mat-stroked-button
+        aria-label="Next" (click)="searchMoreItems()">
+  Search more items
 </button>

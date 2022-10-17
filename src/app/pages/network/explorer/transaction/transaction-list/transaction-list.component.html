@@ -28,6 +28,11 @@
     </mat-form-field>
   </div>
 
+  <button *ngIf="pageLiveObservable | async" [disabled]="(((loadingObservable | async) || 0) > 0)" mat-stroked-button
+          aria-label="To live data" (click)="goLive()">
+    Show live data
+  </button>
+
   <ng-container *ngIf="(itemsObservable | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="track">
 
@@ -92,17 +97,20 @@
       <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
 
     </table>
+
+  <div *ngIf="(loadingObservable | async) === false && dataSource.length === 0">
+    No items found. Searched from block {{ searchInfo.fromBlock }} to {{ searchInfo.toBlock }}.
+  </div>
+
   </ng-container>
 
   <div *ngIf="loadingObservable | async">
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
   </div>
 
-  <button [disabled]="(((loadingObservable | async) || 0) > 0) || (!pagePrev && pageLive)" mat-stroked-button
-          aria-label="Previous" (click)="getPrevPage()">Previous
-  </button>
-  <button [disabled]="(((loadingObservable | async) || 0) > 0) || !pageNext" mat-stroked-button aria-label="Next"
-          (click)="getNextPage()">Next
-  </button>
+  <button [disabled]="(((loadingObservable | async) || 0) > 0) || (historyAvailableObservable | async)" mat-stroked-button
+        aria-label="Next" (click)="searchMoreItems()">
+  Search more items
+</button>
 
 </ng-container>
