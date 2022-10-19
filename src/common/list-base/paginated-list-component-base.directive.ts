@@ -17,8 +17,8 @@
  */
 
 import { Directive, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
-import { debounceTime, filter, takeUntil } from 'rxjs/operators';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { debounceTime, filter, takeUntil, map } from 'rxjs/operators';
 import { NetworkService } from '../../app/services/network.service';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 import { ListResponse } from '../../../polkadapt/projects/polkascan-explorer/src/lib/polkascan-explorer.types';
@@ -50,10 +50,11 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   lastReceivedItem: T | null = null;
   unsubscribeNewItemFn: null | (() => void);
 
-  readonly historyAvailableObservable = new BehaviorSubject<boolean>(true)
-  readonly pageLiveObservable = new BehaviorSubject<boolean>(true);
   readonly itemsObservable = new BehaviorSubject<T[]>([]);
-  readonly loadingObservable = new BehaviorSubject<number>(0);
+  readonly loadingObservable: Observable<boolean>;
+  readonly loadingCounterObservable = new BehaviorSubject<number>(0);
+  readonly pageLiveObservable = new BehaviorSubject<boolean>(true);
+  readonly historyAvailableObservable = new BehaviorSubject<boolean>(true)
 
   get pageLive(): boolean {
     return this.pageLiveObservable.value;
@@ -74,17 +75,18 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   }
 
   get loading(): number {
-    return this.loadingObservable.value;
+    return this.loadingCounterObservable.value;
   }
 
   set loading(value: number) {
-    this.loadingObservable.next(value);
+    this.loadingCounterObservable.next(value);
   }
 
   readonly destroyer: Subject<undefined> = new Subject();
   protected onDestroyCalled = false;
 
   constructor(private _ns: NetworkService) {
+    this.loadingObservable = this.loadingCounterObservable.pipe(takeUntil(this.destroyer), map((c) => !!c));
   }
 
 
@@ -221,13 +223,13 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   }
 
 
-  async goLive(): Promise<void> {
+  async gotoLatestItems(): Promise<void> {
     this.subscribeNewItem();
     await this.getItems();
   }
 
 
-  async searchMoreItems(): Promise<void> {
+  async loadMoreItems(): Promise<void> {
     if (this.pageLive) {
       this.pageLive = false;
       this.unsubscribeNewItem();

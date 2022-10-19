@@ -1,9 +1,12 @@
 <h1>Balance transfers</h1>
 
-<button *ngIf="pageLiveObservable | async" [disabled]="(((loadingObservable | async) || 0) > 0)" mat-stroked-button
-        aria-label="To live data" (click)="goLive()">
-  Show live data
-</button>
+<div class="centered-button-bar" *ngIf="(pageLiveObservable | async) === false">
+  <button [disabled]="loadingObservable | async" mat-stroked-button
+          aria-label="To live data" (click)="gotoLatestItems()">
+    Goto latest
+    <mat-icon>change_circle</mat-icon>
+  </button>
+</div>
 
 <ng-container *ngIf="(itemsObservable | async) as dataSource">
   <ng-container *ngIf="(networkProperties | async) as props">
@@ -64,7 +67,14 @@
   </ng-container>
 
   <div *ngIf="(loadingObservable | async) === false && dataSource.length === 0">
-    No items found. Searched from block {{ searchInfo.fromBlock }} to {{ searchInfo.toBlock }}.
+    <ng-container *ngSwitch="pageLiveObservable | async">
+      <ng-container *ngSwitchCase="true">
+        No items. Waiting for new blocks.
+      </ng-container>
+      <ng-container *ngSwitchDefault>
+        No items found.
+      </ng-container>
+    </ng-container>
   </div>
 </ng-container>
 
@@ -72,7 +82,14 @@
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>
 </div>
 
-<button [disabled]="(((loadingObservable | async) || 0) > 0) || (historyAvailableObservable | async)" mat-stroked-button
-        aria-label="Next" (click)="searchMoreItems()">
-  Search more items
-</button>
+<div>
+  <ng-container *ngIf="(historyAvailableObservable | async)">
+    <button [disabled]="(loadingObservable | async)" mat-stroked-button aria-label="Next" (click)="loadMoreItems()">
+      Load more <mat-icon>expand_more</mat-icon>
+    </button>
+  </ng-container>
+
+  <ng-container *ngIf="(pageLiveObservable | async) === false && searchInfo.fromBlock">
+    Blocks {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}.
+  </ng-container>
+</div>

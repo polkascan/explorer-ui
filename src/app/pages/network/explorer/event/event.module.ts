@@ -28,6 +28,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatIconModule } from '@angular/material/icon';
 
 
 @NgModule({
@@ -43,7 +44,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     MatTableModule,
     MatSelectModule,
     MatButtonModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatIconModule
   ]
 })
 export class EventModule {
