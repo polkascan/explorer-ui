@@ -27,6 +27,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import { PolkascanCommonModule } from '../../../../../common/polkascan-common.module';
+import { MatIconModule } from '@angular/material/icon';
 
 @NgModule({
   declarations: [BlockListComponent, BlockDetailComponent],
@@ -38,7 +39,8 @@ import { PolkascanCommonModule } from '../../../../../common/polkascan-common.mo
     MatButtonModule,
     MatProgressBarModule,
     MatTabsModule,
-    MatDividerModule
+    MatDividerModule,
+    MatIconModule
   ]
 })
 export class BlockModule { }

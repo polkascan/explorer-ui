@@ -2,8 +2,8 @@
 
 <div class="centered-button-bar" *ngIf="(pageLiveObservable | async) === false">
   <button [disabled]="loadingObservable | async" mat-stroked-button
-          aria-label="To live data" (click)="gotoLatestItems()">
-    Goto latest
+          aria-label="Show latest" (click)="gotoLatestItems()">
+    Show latest
     <mat-icon>change_circle</mat-icon>
   </button>
 </div>
@@ -76,14 +76,23 @@
 </div>
 
 <div>
-  <ng-container *ngIf="(historyAvailableObservable | async)">
+  <ng-container *ngIf="(hasNextPageObservable | async)">
     <button [disabled]="(loadingObservable | async)" mat-stroked-button aria-label="Next" (click)="loadMoreItems()">
-      Load more
+      <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
+        <ng-template #showMore>Show More</ng-template>
+        <ng-container *ngIf="searchInfo.endOfBlockRange; else showMore">
+          Increase search range
+        </ng-container>
+      </ng-container>
       <mat-icon>expand_more</mat-icon>
     </button>
   </ng-container>
 
-  <ng-container *ngIf="(pageLiveObservable | async) === false && searchInfo.fromBlock">
-    Blocks {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}.
+  <ng-container class="list-block-range" *ngIf="(pageLiveObservable | async) === false">
+    <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
+      <span class="list-block-range" *ngIf="searchInfo.fromBlock">
+        Searched block range {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}.
+      </span>
+    </ng-container>
   </ng-container>
 </div>

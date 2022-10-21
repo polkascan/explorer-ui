@@ -18,10 +18,21 @@
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { rowsAnimationByCounter } from '../../../../../animations';
-import { BehaviorSubject, of, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { catchError, distinctUntilChanged, filter, first, switchMap, takeUntil, tap, timeout } from 'rxjs/operators';
+import {
+  catchError,
+  distinctUntilChanged,
+  filter,
+  first,
+  map,
+  switchMap,
+  takeUntil,
+  tap,
+  timeout
+} from 'rxjs/operators';
+import { combineLatest } from 'rxjs';
 import { Block } from '../../../../../services/block/block.harvester';
 
 @Component({
@@ -35,8 +46,12 @@ export class BlockListComponent implements OnInit, OnDestroy {
   listSize = 100;
   latestBlockNumber = new BehaviorSubject<number>(0);
   blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
-  customUntilBlockNumber: number | null = null;
-  loadingObservable = new BehaviorSubject<number>(0);
+
+  customUntilObservable = new BehaviorSubject<number | null>(null);
+  loadingObservable: Observable<boolean>;
+  loadingCounterObservable = new BehaviorSubject<number>(0);
+  pageLiveObservable = new BehaviorSubject<boolean>(true);
+  hasNextPageObservable: Observable<boolean>;
 
   visibleColumns = ['icon', 'number', 'age', 'blockHash', 'signedExtrinsics', 'moduleEvents', 'details'];
 
@@ -46,6 +61,14 @@ export class BlockListComponent implements OnInit, OnDestroy {
     private pa: PolkadaptService,
     private ns: NetworkService
   ) {
+    this.loadingObservable = this.loadingCounterObservable.pipe(takeUntil(this.destroyer), map((c) => !!c));
+    this.hasNextPageObservable = combineLatest(
+      this.pageLiveObservable,
+      this.latestBlockNumber,
+      this.customUntilObservable
+    ).pipe(
+      map<any, boolean>(([p,l,c]) => (p && l > this.listSize || c && c > this.listSize)
+    ));
   }
 
   ngOnInit(): void {
@@ -72,8 +95,8 @@ export class BlockListComponent implements OnInit, OnDestroy {
         tap(() => {
           // We won't wait for the result, but the function will mark the blocks to load,
           // so other (lazy) block loading mechanics won't kick in.
-          this.loadingObservable.next(this.loadingObservable.value + 1);
-          this.ns.blockHarvester.loadBlocksUntil(null, this.listSize).then().finally(() => this.loadingObservable.next(this.loadingObservable.value - 1));
+          this.loadingCounterObservable.next(this.loadingCounterObservable.value + 1);
+          this.ns.blockHarvester.loadBlocksUntil(null, this.listSize).then().finally(() => this.loadingCounterObservable.next(this.loadingCounterObservable.value - 1));
         }),
         catchError(error => of(-1))
       )),
@@ -90,9 +113,10 @@ export class BlockListComponent implements OnInit, OnDestroy {
     ).subscribe(block => {
       const newBlockCount: number = block.number - this.latestBlockNumber.value;
       if (newBlockCount > 0) {
-        this.latestBlockNumber.next(block.number);
+        if (this.latestBlockNumber.value === 202) { return }
+        this.latestBlockNumber.next(202);
         // Add new blocks to the beginning (while removing same amount at the end) of the Array.
-        if (this.customUntilBlockNumber === null) {
+        if (this.pageLiveObservable.value) {
           this.spliceBlocks(Math.min(newBlockCount, this.listSize));
         }
       }
@@ -110,15 +134,15 @@ export class BlockListComponent implements OnInit, OnDestroy {
     const latest: number = this.latestBlockNumber.value;
     blocks.splice(-n, n);
     // Insert n blocks.
-    for (let nr = latest; nr > latest - n; nr--) {
+    for (let nr = latest; nr > Math.max(0, latest - n); nr--) {
       const block: BehaviorSubject<Block> = this.ns.blockHarvester.blocks[nr];
       blocks.splice(latest - nr, 0, block);
     }
     this.blocks.next(blocks);
   }
 
-  getPrevPage(): void {
-    if (this.loadingObservable.value) {
+  gotoLatestItems(): void {
+    if (this.loadingCounterObservable.value) {
       return;
     }
 
@@ -127,31 +151,26 @@ export class BlockListComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const latest = this.latestBlockNumber.value;
-    let until: number = Math.max(this.listSize - 1,
-      ((this.customUntilBlockNumber === null ? latest : this.customUntilBlockNumber) || 0) + this.listSize
-    );
+    this.pageLiveObservable.next(true);
+    this.customUntilObservable.next(null);
+    this.loadingCounterObservable.next(this.loadingCounterObservable.value + 1);
 
-    if (until >= latest) {
-      this.customUntilBlockNumber = null;
-      until = Math.min(until, latest);
-    } else {
-      this.customUntilBlockNumber = until;
-    }
+    const until = this.latestBlockNumber.value;
 
-    this.loadingObservable.next(this.loadingObservable.value + 1);
-    this.ns.blockHarvester.loadBlocksUntil(until, this.listSize).then().finally(() => this.loadingObservable.next(this.loadingObservable.value - 1));
+    this.ns.blockHarvester.loadBlocksUntil(until, this.listSize)
+      .then()
+      .finally(() => this.loadingCounterObservable.next(this.loadingCounterObservable.value - 1));
 
     const blocks: BehaviorSubject<Block>[] = []
-    for (let nr = until; nr > until - this.listSize; nr--) {
+    for (let nr = until; nr > Math.max(until - this.listSize, 1); nr--) {
       const block: BehaviorSubject<Block> = this.ns.blockHarvester.blocks[nr];
       blocks.push(block);
     }
     this.blocks.next(blocks);
   }
 
-  getNextPage(): void {
-    if (this.loadingObservable.value) {
+  loadMoreItems(): void {
+    if (this.loadingCounterObservable.value) {
       return;
     }
 
@@ -160,21 +179,27 @@ export class BlockListComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const until: number = Math.max(this.listSize - 1,
-      ((this.customUntilBlockNumber === null ? this.latestBlockNumber.value : this.customUntilBlockNumber) || 0) - this.listSize
+    this.pageLiveObservable.next(false);
+
+    const until: number = Math.max(0,
+      ((this.customUntilObservable.value === null ? this.latestBlockNumber.value : this.customUntilObservable.value) || 0) - this.listSize
     );
+    this.customUntilObservable.next(until);
 
-    this.customUntilBlockNumber = until;
-    this.loadingObservable.next(this.loadingObservable.value + 1);
+    this.loadingCounterObservable.next(this.loadingCounterObservable.value + 1);
+    this.ns.blockHarvester.loadBlocksUntil(until, this.listSize).then().finally(() => this.loadingCounterObservable.next(this.loadingCounterObservable.value - 1));
 
-    this.ns.blockHarvester.loadBlocksUntil(until, this.listSize).then().finally(() => this.loadingObservable.next(this.loadingObservable.value - 1));
-
-    const blocks: BehaviorSubject<Block>[] = []
-    for (let nr = until; nr > until - this.listSize; nr--) {
+    const newblocks: BehaviorSubject<Block>[] = [];
+    for (let nr = until; nr > Math.max(until - this.listSize, 0); nr--) {
       const block: BehaviorSubject<Block> = this.ns.blockHarvester.blocks[nr];
-      blocks.push(block);
+      newblocks.push(block);
     }
-    this.blocks.next(blocks);
-    window.scrollTo(0, 0);
+    const currentBlocks = this.blocks.value;
+
+    const blocks = currentBlocks.concat(newblocks.filter((a) =>
+      currentBlocks.indexOf(a) === -1
+    ));
+
+    this.blocks.next(blocks)
   }
 }
