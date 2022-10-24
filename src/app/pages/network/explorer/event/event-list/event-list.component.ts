@@ -43,18 +43,18 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
   palletControl = new FormControl('');
   eventNameControl = new FormControl('');
   specVersionControl = new FormControl<number | ''>('');
-  dateRangeStartControl = new FormControl<Date | ''>('');
+  dateRangeBeginControl = new FormControl<Date | ''>('');
   dateRangeEndControl = new FormControl<Date | ''>('');
-  blockRangeStartControl = new FormControl<number | ''>('');
+  blockRangeBeginControl = new FormControl<number | ''>('');
   blockRangeEndControl = new FormControl<number | ''>('');
 
   filtersFormGroup: FormGroup = new FormGroup({
     pallet: this.palletControl,
     eventName: this.eventNameControl,
     specVersion: this.specVersionControl,
-    dateRangeStart: this.dateRangeStartControl,
+    dateRangeBegin: this.dateRangeBeginControl,
     dateRangeEnd: this.dateRangeEndControl,
-    blockRangeStart: this.blockRangeStartControl,
+    blockRangeBegin: this.blockRangeBeginControl,
     blockRangeEnd: this.blockRangeEndControl
   });
 
@@ -77,12 +77,12 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
         parseInt(params.get('runtime') as string, 10) || '',
         params.get('pallet') as string || '',
         params.get('eventName') as string || '',
-        params.get('dateRangeStart') ? new Date(params.get('dateRangeStart') as string) : '',
-        params.get('dateRangeEnd') ? new Date(params.get('dateRangeEnd') as string) : '',
-        parseInt(params.get('blockRangeStart') as string, 10) || '',
+        params.get('dateRangeBegin') ? new Date(`${params.get('dateRangeBegin') as string}T00:00`) : '',
+        params.get('dateRangeEnd') ? new Date(`${params.get('dateRangeEnd') as string}T00:00`) : '',
+        parseInt(params.get('blockRangeBegin') as string, 10) || '',
         parseInt(params.get('blockRangeEnd') as string, 10) || ''
       ] as [number | '', string, string, Date | '', Date | '', number | '', number | ''])
-    ).subscribe(([specVersion, pallet, eventName, dateRangeStart, dateRangeEnd, blockRangeStart, blockRangeEnd]) => {
+    ).subscribe(([specVersion, pallet, eventName, dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd]) => {
       if (pallet !== this.palletControl.value) {
         this.palletControl.setValue(pallet);
       }
@@ -92,16 +92,16 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
       if (specVersion !== this.specVersionControl.value) {
         this.specVersionControl.setValue(specVersion);
       }
-      const oldDateStart = this.dateRangeStartControl.value;
-      if ((dateRangeStart && dateRangeStart.getTime() || '') !== (oldDateStart && oldDateStart.getTime() || '')) {
-        this.dateRangeStartControl.setValue(dateRangeStart);
+      const oldDateStart = this.dateRangeBeginControl.value;
+      if ((dateRangeBegin && dateRangeBegin.getTime() || '') !== (oldDateStart && oldDateStart.getTime() || '')) {
+        this.dateRangeBeginControl.setValue(dateRangeBegin);
       }
       const oldDateEnd = this.dateRangeEndControl.value;
       if ((dateRangeEnd && dateRangeEnd.getTime() || '') !== (oldDateEnd && oldDateEnd.getTime() || '')) {
         this.dateRangeEndControl.setValue(dateRangeEnd);
       }
-      if (blockRangeStart !== this.blockRangeStartControl.value) {
-        this.blockRangeStartControl.setValue(blockRangeStart);
+      if (blockRangeBegin !== this.blockRangeBeginControl.value) {
+        this.blockRangeBeginControl.setValue(blockRangeBegin);
       }
       if (blockRangeEnd !== this.blockRangeEndControl.value) {
         this.blockRangeEndControl.setValue(blockRangeEnd);
@@ -128,14 +128,16 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
         if (values.specVersion) {
           queryParams.runtime = values.specVersion;
         }
-        if (values.dateRangeStart) {
-          queryParams.dateRangeStart = values.dateRangeStart.toISOString().substring(0, 10);
+        if (values.dateRangeBegin) {
+          const d = new Date(values.dateRangeBegin.getTime() - values.dateRangeBegin.getTimezoneOffset() * 60000)
+          queryParams.dateRangeBegin = d.toISOString().substring(0, 10);
         }
         if (values.dateRangeEnd) {
-          queryParams.dateRangeEnd = values.dateRangeEnd.toISOString().substring(0, 10);
+          const d = new Date(values.dateRangeEnd.getTime() - values.dateRangeEnd.getTimezoneOffset() * 60000)
+          queryParams.dateRangeEnd = d.toISOString().substring(0, 10);
         }
-        if (values.blockRangeStart) {
-          queryParams.blockRangeStart = values.blockRangeStart;
+        if (values.blockRangeBegin) {
+          queryParams.blockRangeBegin = values.blockRangeBegin;
         }
         if (values.blockRangeEnd) {
           queryParams.blockRangeEnd = values.blockRangeEnd;
@@ -187,9 +189,9 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
         pallet: '',
         eventName: '',
         specVersion: '',
-        dateRangeStart: '',
+        dateRangeBegin: '',
         dateRangeEnd: '',
-        blockRangeStart: '',
+        blockRangeBegin: '',
         blockRangeEnd: ''
       }, {emitEvent: false});
 
@@ -292,14 +294,16 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
     if (this.specVersionControl.value) {
       filters.specVersion = this.specVersionControl.value;
     }
-    if (this.dateRangeStartControl.value) {
-      filters.dateRangeStart = this.dateRangeStartControl.value?.toISOString().substring(0, 10);
+    if (this.dateRangeBeginControl.value) {
+      filters.dateRangeBegin = this.dateRangeBeginControl.value;
     }
-    if (this.dateRangeEndControl.value) {
-      filters.dateRangeEnd = this.dateRangeEndControl.value?.toISOString().substring(0, 10);
+    const dateRangeEnd = this.dateRangeEndControl.value;
+    if (dateRangeEnd) {
+      // Add an entire day (minus 1 millisecond), so it will become inclusive.
+      filters.dateRangeEnd = new Date(dateRangeEnd.getTime() + 24 * 60 * 60 * 1000 - 1);
     }
-    if (this.blockRangeStartControl.value) {
-      filters.blockRangeStart = this.blockRangeStartControl.value;
+    if (this.blockRangeBeginControl.value) {
+      filters.blockRangeBegin = this.blockRangeBeginControl.value;
     }
     if (this.blockRangeEndControl.value) {
       filters.blockRangeEnd = this.blockRangeEndControl.value;

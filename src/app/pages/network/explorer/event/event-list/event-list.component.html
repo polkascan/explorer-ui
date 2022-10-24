@@ -43,20 +43,20 @@
   <mat-form-field appearance="fill">
     <mat-label>Date range</mat-label>
     <mat-date-range-input [rangePicker]="picker">
-      <input matStartDate [formControl]="dateRangeStartControl" placeholder="Start date">
+      <input matStartDate [formControl]="dateRangeBeginControl" placeholder="Start date">
       <input matEndDate [formControl]="dateRangeEndControl" placeholder="End date">
     </mat-date-range-input>
     <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
     <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
     <mat-date-range-picker #picker></mat-date-range-picker>
 
-    <mat-error *ngIf="dateRangeStartControl.hasError('matStartDateInvalid')">Invalid start date</mat-error>
+    <mat-error *ngIf="dateRangeBeginControl.hasError('matStartDateInvalid')">Invalid start date</mat-error>
     <mat-error *ngIf="dateRangeEndControl.hasError('matEndDateInvalid')">Invalid end date</mat-error>
   </mat-form-field>
 
   <mat-form-field appearance="fill">
     <mat-label>Block start</mat-label>
-    <input matInput type="number" placeholder="Genesis" [formControl]="blockRangeStartControl">
+    <input matInput type="number" placeholder="Genesis" [formControl]="blockRangeBeginControl">
   </mat-form-field>
 
   <mat-form-field appearance="fill">
