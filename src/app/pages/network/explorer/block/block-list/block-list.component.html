@@ -78,7 +78,7 @@
   </table>
 
   <div *ngIf="(loadingObservable | async) === false && dataSource.length === 0">
-    <ng-container *ngSwitch="pageLiveObservable | async">
+    <ng-container [ngSwitch]="pageLiveObservable | async">
       <ng-container *ngSwitchCase="true">
         No items. Waiting for new blocks.
       </ng-container>

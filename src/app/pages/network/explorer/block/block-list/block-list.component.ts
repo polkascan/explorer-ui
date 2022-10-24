@@ -113,8 +113,7 @@ export class BlockListComponent implements OnInit, OnDestroy {
     ).subscribe(block => {
       const newBlockCount: number = block.number - this.latestBlockNumber.value;
       if (newBlockCount > 0) {
-        if (this.latestBlockNumber.value === 202) { return }
-        this.latestBlockNumber.next(202);
+        this.latestBlockNumber.next(block.number);
         // Add new blocks to the beginning (while removing same amount at the end) of the Array.
         if (this.pageLiveObservable.value) {
           this.spliceBlocks(Math.min(newBlockCount, this.listSize));

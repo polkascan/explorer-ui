@@ -192,7 +192,8 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
 
       const searchInfo: SearchInfo = {};
       if (this.blockLimitOffset && this.blockLimitCount) {
-        searchInfo.fromBlock = this.searchInfoObservable.value.fromBlock || this.blockLimitOffset;
+        const highestBlockNumber = items[0] && (items[0] as any).blockNumber;
+        searchInfo.fromBlock = highestBlockNumber || this.blockLimitOffset;
         searchInfo.toBlock = Math.max(0, (this.blockLimitOffset as number) - (this.blockLimitCount as number) + 1);
         searchInfo.nextBlocksCount = Math.min(this.blockLimitCount, this.blockLimitOffset);
         searchInfo.endOfBlockRange = !this.pageNext && this.blockLimitOffset > this.blockLimitCount

@@ -94,7 +94,7 @@
   </table>
 
   <div *ngIf="(loadingObservable | async) === false && dataSource.length === 0">
-    <ng-container *ngSwitch="pageLiveObservable | async">
+    <ng-container [ngSwitch]="pageLiveObservable | async">
       <ng-container *ngSwitchCase="true">
         No items. Waiting for new blocks.
       </ng-container>
@@ -126,7 +126,7 @@
   <ng-container class="list-block-range" *ngIf="(pageLiveObservable | async) === false">
     <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
       <span class="list-block-range" *ngIf="searchInfo.fromBlock">
-        Searched block range {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}.
+        Search range: Blocks {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}
       </span>
     </ng-container>
   </ng-container>
