@@ -31,6 +31,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
 
 
 @NgModule({
@@ -49,7 +50,8 @@ import { MatInputModule } from '@angular/material/input';
         MatProgressBarModule,
         MatDatepickerModule,
         MatNativeDateModule,
-        MatInputModule
+        MatInputModule,
+        MatIconModule
     ]
 })
 export class EventModule {

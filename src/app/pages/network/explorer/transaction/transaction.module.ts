@@ -30,6 +30,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatIconModule } from '@angular/material/icon';
 
 
 @NgModule({
@@ -47,7 +48,8 @@ import { MatTabsModule } from '@angular/material/tabs';
     MatButtonModule,
     MatProgressBarModule,
     MatDividerModule,
-    MatTabsModule
+    MatTabsModule,
+    MatIconModule
   ]
 })
 export class TransactionModule {
