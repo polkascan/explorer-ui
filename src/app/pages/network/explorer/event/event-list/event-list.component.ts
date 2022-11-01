@@ -141,11 +141,12 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
   }
 
 
-  createGetItemsRequest(pageKey?: string): Promise<pst.ListResponse<pst.Event>> {
+  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Event>> {
     return this.pa.run(this.network).polkascan.chain.getEvents(
       this.filters,
       this.listSize,
-      pageKey
+      pageKey,
+      blockLimitOffset
     );
   }
 

@@ -265,7 +265,7 @@ export class BlockHarvester {
     if (loadBlocks) {
       // Then, await the result from Polkascan and update our cached block data.
       const data: pst.ListResponse<pst.Block> =
-        await this.polkadapt.run(this.network).polkascan.chain.getBlocksUntil(untilNumber, pageSize);
+        await this.polkadapt.run(this.network).polkascan.chain.getBlocksUntil(untilNumber, pageSize, undefined, untilNumber);
 
       if (data.objects) {
         for (const obj of data.objects) {

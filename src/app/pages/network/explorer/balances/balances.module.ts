@@ -26,6 +26,7 @@ import { PolkascanCommonModule } from '../../../../../common/polkascan-common.mo
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatIconModule } from '@angular/material/icon';
 
 
 @NgModule({
@@ -36,7 +37,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     PolkascanCommonModule,
     MatTableModule,
     MatButtonModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatIconModule
   ]
 })
 export class BalancesModule { }
