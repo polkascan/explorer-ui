@@ -2,8 +2,22 @@
 
 <div>
   <mat-form-field appearance="fill">
+    <mat-label>Runtime</mat-label>
+    <mat-select [formControl]="specVersionControl">
+      <mat-option *ngIf="(specVersions | async)?.length === 0" [value]="specVersionControl.value">Loading...</mat-option>
+      <mat-option [value]="''">All versions</mat-option>
+      <ng-container *ngFor="let specVersion of specVersions | async">
+        <mat-option [value]="specVersion">
+          {{specVersion}}
+        </mat-option>
+      </ng-container>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
     <mat-label>Pallet</mat-label>
     <mat-select [formControl]="palletControl">
+      <mat-option *ngIf="eventFilters.size === 0" [value]="palletControl.value">Loading...</mat-option>
       <mat-option [value]="''">All pallets</mat-option>
       <mat-option *ngFor="let item of eventFilters | keyvalue" [value]="item.key.pallet">
         {{item.key.pallet}}
@@ -14,6 +28,7 @@
   <mat-form-field appearance="fill">
     <mat-label>Event</mat-label>
     <mat-select [formControl]="eventNameControl">
+      <mat-option *ngIf="eventFilters.size === 0" [value]="eventNameControl.value">Loading...</mat-option>
       <mat-option [value]="''">All events</mat-option>
       <ng-container *ngFor="let item of eventFilters | keyvalue">
         <ng-container *ngIf="item.key.pallet === palletControl.value">
@@ -23,6 +38,30 @@
         </ng-container>
       </ng-container>
     </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Date range</mat-label>
+    <mat-date-range-input [rangePicker]="picker">
+      <input matStartDate [formControl]="dateRangeBeginControl" placeholder="Start date">
+      <input matEndDate [formControl]="dateRangeEndControl" placeholder="End date">
+    </mat-date-range-input>
+    <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+    <mat-date-range-picker #picker></mat-date-range-picker>
+
+    <mat-error *ngIf="dateRangeBeginControl.hasError('matStartDateInvalid')">Invalid start date</mat-error>
+    <mat-error *ngIf="dateRangeEndControl.hasError('matEndDateInvalid')">Invalid end date</mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Block start</mat-label>
+    <input matInput type="number" placeholder="Genesis" [formControl]="blockRangeBeginControl">
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Block end</mat-label>
+    <input matInput type="number" placeholder="Current" [formControl]="blockRangeEndControl">
   </mat-form-field>
 </div>
 

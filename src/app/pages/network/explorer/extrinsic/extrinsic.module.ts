@@ -31,6 +31,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSelectModule } from '@angular/material/select';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatInputModule } from '@angular/material/input';
+import { MatNativeDateModule } from '@angular/material/core';
 import { MatIconModule } from '@angular/material/icon';
 
 
@@ -48,6 +51,9 @@ import { MatIconModule } from '@angular/material/icon';
     MatProgressBarModule,
     MatDividerModule,
     MatTabsModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatInputModule,
     MatIconModule
   ]
 })

@@ -19,14 +19,15 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { distinctUntilChanged, filter, first, map, takeUntil } from 'rxjs/operators';
+import { combineLatestWith, distinctUntilChanged, filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { u8aToHex } from '@polkadot/util';
 import { decodeAddress } from '@polkadot/util-crypto';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, ParamMap, Params, Router } from '@angular/router';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
+import { BehaviorSubject, Subscription } from 'rxjs';
 
 
 @Component({
@@ -38,15 +39,27 @@ import { RuntimeService } from '../../../../../services/runtime/runtime.service'
 export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extrinsic> implements OnInit, OnDestroy {
   listSize = 100;
   extrinsicsFilters = new Map();
+  specVersions = new BehaviorSubject<number[]>([]);
+  runtimesSubscription: Subscription | null = null;
 
-  palletControl: FormControl = new FormControl('');
-  callNameControl: FormControl = new FormControl('');
-  addressControl: FormControl = new FormControl('');
+  palletControl = new FormControl<string>('');
+  callNameControl = new FormControl<string>('');
+  addressControl = new FormControl<string>('');
+  specVersionControl = new FormControl<number | ''>('');
+  dateRangeBeginControl = new FormControl<Date | ''>('');
+  dateRangeEndControl = new FormControl<Date | ''>('');
+  blockRangeBeginControl = new FormControl<number | ''>('');
+  blockRangeEndControl = new FormControl<number | ''>('');
 
-  filtersFormGroup: FormGroup = new FormGroup({
-    eventModule: this.palletControl,
+  filtersFormGroup = new FormGroup({
+    pallet: this.palletControl,
     callName: this.callNameControl,
-    multiAddressAccountId: this.addressControl
+    multiAddressAccountId: this.addressControl,
+    specVersion: this.specVersionControl,
+    dateRangeBegin: this.dateRangeBeginControl,
+    dateRangeEnd: this.dateRangeEndControl,
+    blockRangeBegin: this.blockRangeBeginControl,
+    blockRangeEnd: this.blockRangeEndControl
   });
 
   visibleColumns = ['icon', 'extrinsicID', 'age', 'block', 'pallet', 'call', 'signed', 'details'];
@@ -63,15 +76,18 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
   ngOnInit(): void {
     this.route.queryParamMap.pipe(
       takeUntil(this.destroyer),
-      map((params) => {
-        return [
-          (params.get('address') || ''),
-          (params.get('pallet') || ''),
-          (params.get('callName') || '')
-        ];
-      }),
-      distinctUntilChanged()
-    ).subscribe(([address, pallet, callName]) => {
+      distinctUntilChanged(),
+      map(params => [
+        params.get('address') as string || '',
+        parseInt(params.get('runtime') as string, 10) || '',
+        params.get('pallet') as string || '',
+        params.get('callName') as string || '',
+        params.get('dateRangeBegin') ? new Date(`${params.get('dateRangeBegin') as string}T00:00`) : '',
+        params.get('dateRangeEnd') ? new Date(`${params.get('dateRangeEnd') as string}T00:00`) : '',
+        parseInt(params.get('blockRangeBegin') as string, 10) || '',
+        parseInt(params.get('blockRangeEnd') as string, 10) || ''
+      ] as [string, number | '', string, string, Date | '', Date | '', number | '', number | ''])
+    ).subscribe(([address, specVersion, pallet, callName, dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd]) => {
       if (address !== this.addressControl.value) {
         this.addressControl.setValue(address);
       }
@@ -80,6 +96,23 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
       }
       if (callName !== this.callNameControl.value) {
         this.callNameControl.setValue(callName);
+      }
+      if (specVersion !== this.specVersionControl.value) {
+        this.specVersionControl.setValue(specVersion);
+      }
+      const oldDateStart = this.dateRangeBeginControl.value;
+      if ((dateRangeBegin && dateRangeBegin.getTime() || '') !== (oldDateStart && oldDateStart.getTime() || '')) {
+        this.dateRangeBeginControl.setValue(dateRangeBegin);
+      }
+      const oldDateEnd = this.dateRangeEndControl.value;
+      if ((dateRangeEnd && dateRangeEnd.getTime() || '') !== (oldDateEnd && oldDateEnd.getTime() || '')) {
+        this.dateRangeEndControl.setValue(dateRangeEnd);
+      }
+      if (blockRangeBegin !== this.blockRangeBeginControl.value) {
+        this.blockRangeBeginControl.setValue(blockRangeBegin);
+      }
+      if (blockRangeEnd !== this.blockRangeEndControl.value) {
+        this.blockRangeEndControl.setValue(blockRangeEnd);
       }
     });
 
@@ -92,11 +125,51 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
         this.subscribeNewItem();
         this.getItems();
 
+        const queryParams: Params = {};
+        if (values.multiAddressAccountId) {
+          queryParams.address = values.multiAddressAccountId;
+        }
+        if (values.pallet) {
+          queryParams.pallet = values.pallet;
+        }
+        if (values.callName) {
+          queryParams.callName = values.callName;
+        }
+        if (values.specVersion) {
+          queryParams.runtime = values.specVersion;
+        }
+        if (values.dateRangeBegin) {
+          const d = new Date(values.dateRangeBegin.getTime() - values.dateRangeBegin.getTimezoneOffset() * 60000)
+          queryParams.dateRangeBegin = d.toISOString().substring(0, 10);
+        }
+        if (values.dateRangeEnd) {
+          const d = new Date(values.dateRangeEnd.getTime() - values.dateRangeEnd.getTimezoneOffset() * 60000)
+          queryParams.dateRangeEnd = d.toISOString().substring(0, 10);
+        }
+        if (values.blockRangeBegin) {
+          queryParams.blockRangeBegin = values.blockRangeBegin;
+        }
+        if (values.blockRangeEnd) {
+          queryParams.blockRangeEnd = values.blockRangeEnd;
+        }
+
         this.router.navigate(['.'], {
           relativeTo: this.route,
-          queryParams: {pallet: values.eventModule, callName: values.callName},
-          queryParamsHandling: 'merge'
+          queryParams
         });
+      });
+
+    this.specVersionControl.valueChanges
+      .pipe(
+        takeUntil(this.destroyer)
+      )
+      .subscribe((specVersion) => {
+        this.palletControl.reset('', {emitEvent: false});
+        this.callNameControl.reset('', {emitEvent: false});
+        this.extrinsicsFilters.clear();
+        if (this.network) {
+          this.loadExtrinsicsFilters(this.network, specVersion || undefined);
+        }
       });
 
     this.palletControl.valueChanges
@@ -111,17 +184,29 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
   }
 
 
+  ngOnDestroy() {
+    if (this.runtimesSubscription) {
+      this.runtimesSubscription.unsubscribe();
+      this.runtimesSubscription = null;
+    }
+    super.ngOnDestroy();
+  }
+
+
   onNetworkChange(network: string, previous: string): void {
     if (previous) {
       this.filtersFormGroup.reset({
-        eventModule: '',
-        callName: ''
+        pallet: '',
+        callName: '',
+        specVersion: '',
+        dateRangeBegin: '',
+        dateRangeEnd: '',
+        blockRangeBegin: '',
+        blockRangeEnd: ''
       }, {emitEvent: false});
 
       this.router.navigate(['.'], {
-        relativeTo: this.route,
-        queryParams: {pallet: '', callName: ''},
-        queryParamsHandling: 'merge'
+        relativeTo: this.route
       });
     }
 
@@ -129,25 +214,55 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
 
     super.onNetworkChange(network);
 
-    if (network) {
-      this.rs.getRuntime(network)
-        .pipe(
-          takeUntil(this.destroyer),
-          filter((r) => r !== null),
-          first()
-        )
-        .subscribe(async (runtime): Promise<void> => {
-          const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
-          const calls = await this.rs.getRuntimeCalls(network, (runtime as pst.Runtime).specVersion);
-
-          if (pallets) {
-            pallets.forEach((pallet) => {
-              this.extrinsicsFilters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
-            });
-            this.cd.markForCheck();
-          }
-        });
+    if (this.runtimesSubscription) {
+      this.runtimesSubscription.unsubscribe();
+      this.runtimesSubscription = null;
     }
+
+    if (network && !this.onDestroyCalled) {
+      // Load all pallets and calls for current runtime version.
+      this.loadExtrinsicsFilters(network);
+      // Load all runtime versions and set the runtime control to the version in the route.
+      this.runtimesSubscription = this.rs.getRuntimes(network).pipe(
+        takeUntil(this.destroyer)
+      ).subscribe(runtimes => {
+        this.specVersions.next(runtimes.map(r => r.specVersion));
+        const params = this.route.snapshot.queryParamMap;
+        const specVersion: number | undefined = parseInt(params.get('runtime') as string, 10) || undefined;
+        if (specVersion) {
+          // If a runtime was set in the route, update the control.
+          this.rs.getRuntime(network, specVersion).pipe(
+            takeUntil(this.destroyer),
+            first()
+          ).subscribe((runtime: pst.Runtime | null) => {
+            if (runtime && runtime.specVersion !== this.specVersionControl.value) {
+              this.specVersionControl.setValue(runtime.specVersion);
+            }
+          });
+        }
+      });
+    }
+  }
+
+
+  loadExtrinsicsFilters(network: string, specVersion?: number): void {
+    this.rs.getRuntime(network, specVersion)
+      .pipe(
+        takeUntil(this.destroyer),
+        filter((r) => r !== null),
+        first()
+      )
+      .subscribe(async (runtime): Promise<void> => {
+        const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
+        const calls = await this.rs.getRuntimeCalls(network, (runtime as pst.Runtime).specVersion);
+
+        if (pallets) {
+          pallets.forEach((pallet) => {
+            this.extrinsicsFilters.set(pallet, calls ? calls.filter((call) => pallet.pallet === call.pallet).sort() : []);
+          });
+          this.cd.markForCheck();
+        }
+      });
   }
 
 
@@ -189,8 +304,24 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
       filters.callName = this.callNameControl.value;
     }
     if (this.addressControl.value) {
-      const accountIdHex = u8aToHex(decodeAddress(this.addressControl.value))
-      filters.multiAddressAccountId = accountIdHex;
+      filters.multiAddressAccountId = u8aToHex(decodeAddress(this.addressControl.value));
+    }
+    if (this.specVersionControl.value) {
+      filters.specVersion = this.specVersionControl.value;
+    }
+    if (this.dateRangeBeginControl.value) {
+      filters.dateRangeBegin = this.dateRangeBeginControl.value;
+    }
+    const dateRangeEnd = this.dateRangeEndControl.value;
+    if (dateRangeEnd) {
+      // Add an entire day (minus 1 millisecond), so it will become inclusive.
+      filters.dateRangeEnd = new Date(dateRangeEnd.getTime() + 24 * 60 * 60 * 1000 - 1);
+    }
+    if (this.blockRangeBeginControl.value) {
+      filters.blockRangeBegin = this.blockRangeBeginControl.value;
+    }
+    if (this.blockRangeEndControl.value) {
+      filters.blockRangeEnd = this.blockRangeEndControl.value;
     }
 
     return filters;
