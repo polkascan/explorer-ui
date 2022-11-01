@@ -22,42 +22,64 @@ import { IconTheme } from '../../identicon/identicon.types';
 @Component({
   selector: 'attribute-struct',
   template: `
-    <ng-container [ngSwitch]="attributeIsObject">
-      <ng-container *ngSwitchCase="true">
-        <ng-container *ngFor="let item of parsedAttribute | keyvalue">
-          <ng-container *ngIf="{ isObject: isObject(item.value), isArray: isArray(item.value), hasType: $any(item.value)?.type } as itemCheck">
-            <label>{{ itemCheck.isObject && itemCheck.hasType ? $any(item.value).name : item.key }}</label>
+      <ng-container [ngSwitch]="attributeIsObject">
+          <ng-container *ngSwitchCase="true">
+              <ng-container *ngFor="let item of parsedAttribute | keyvalue; let i = index">
+                  <ng-container
+                          *ngIf="{ isObject: isObject(item.value), isArray: isArray(item.value), hasType: $any(item.value)?.type } as itemCheck">
+                      <label>{{ itemCheck.hasType ? $any(item.value).name : item.key }}
+                          <ng-container *ngIf="itemCheck.isArray && $any(item.value).length || itemCheck.isObject">
+                              <button mat-icon-button (click)="toggleHidden(i)">
+                                  <mat-icon class="mat-icon-rtl-mirror">
+                                      {{hidden[i] ? 'chevron_right' : 'expand_more'}}
+                                  </mat-icon>
+                              </button>
+                          </ng-container>
+                      </label>
 
-            <ng-container [ngSwitch]="itemCheck.isObject || itemCheck.isArray">
-              <ng-container *ngSwitchCase="true">
-                <ng-container [ngSwitch]="itemCheck.hasType">
-                  <attributes *ngSwitchCase="true" [attributes]="$any(item.value)" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></attributes>
-                  <ng-container *ngSwitchDefault>
-                    <ng-container [ngSwitch]="itemCheck.isArray">
-                      <ng-container *ngSwitchCase="true">
-                        <attribute-struct *ngFor="let subItem of $any(item.value)"
-                                          [attribute]="subItem" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></attribute-struct>
-                      </ng-container>
-                      <ng-container *ngSwitchDefault>
-                        <attribute-struct [attribute]="item.value" [iconSize]="iconSize" [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals" [tokenSymbol]="tokenSymbol"></attribute-struct>
-                      </ng-container>
-                    </ng-container>
 
+                      <ng-container [ngSwitch]="itemCheck.isObject || itemCheck.isArray">
+                          <ng-container *ngSwitchCase="true">
+                              <!-- An Object or and Array -->
+                              <ng-container *ngIf="!hidden[i]">
+
+                                  <div *ngIf="itemCheck.isArray && $any(item.value).length === 0">[&nbsp;]</div>
+
+                                  <ng-container [ngSwitch]="itemCheck.isObject || itemCheck.isArray">
+                                      <ng-container *ngSwitchCase="true">
+                                          <attributes *ngIf="$any(item.value).length !== 0"
+                                                      [attributes]="$any(item.value)"
+                                                      [iconSize]="iconSize"
+                                                      [iconTheme]="iconTheme" [tokenDecimals]="tokenDecimals"
+                                                      [tokenSymbol]="tokenSymbol"></attributes>
+                                      </ng-container>
+
+                                      <ng-container *ngSwitchDefault>
+                                          <attribute-struct [attribute]="item.value" [iconSize]="iconSize"
+                                                            [iconTheme]="iconTheme"
+                                                            [tokenDecimals]="tokenDecimals"
+                                                            [tokenSymbol]="tokenSymbol"></attribute-struct>
+
+                                      </ng-container>
+                                  </ng-container>
+                              </ng-container>
+                          </ng-container>
+
+                          <div *ngSwitchDefault>
+                              <!-- IS A VALUE -->
+                              <span class="attribute-value-null" *ngIf="item.value === null">null</span>
+                              {{item.value}}
+                          </div>
+                      </ng-container>
                   </ng-container>
-                </ng-container>
               </ng-container>
-
-              <div *ngSwitchDefault>{{ item.value }}</div>
-            </ng-container>
-
           </ng-container>
-        </ng-container>
-      </ng-container>
 
-      <div *ngSwitchDefault>
-        {{ parsedAttribute }}
-      </div>
-    </ng-container>
+          <div *ngSwitchDefault>
+              <span class="attribute-value-null" *ngIf="parsedAttribute === null">null</span>
+              {{parsedAttribute}}
+          </div>
+      </ng-container>
   `,
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -68,6 +90,8 @@ export class AttributeStructComponent implements OnChanges {
   @Input() iconSize: number;
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
+
+  hidden: {[i: number]: boolean} = {};
 
   parsedAttribute: any;
   attributeIsObject: boolean;
@@ -99,5 +123,9 @@ export class AttributeStructComponent implements OnChanges {
 
   isArray(attribute: any): boolean {
     return Array.isArray(attribute);
+  }
+
+  toggleHidden(i: number): void {
+    this.hidden[i] = !this.hidden[i];
   }
 }
