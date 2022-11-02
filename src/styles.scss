@@ -45,22 +45,67 @@ a {
   color: inherit;
 }
 
-attributes .attribute {
-  border-left: solid 1px #aaa;
+attributes {
+  position: relative;
+  font-size: 12px;
+
+  .mat-icon-button {
+    margin-top: -10px;
+    margin-bottom: -10px;
+  }
+
+  attributes {
+    display: block;
+    position: relative;
+    margin-top: 8px;
+    margin-left: 18px;
+  }
+
+  .attribute {
+    border-bottom: solid 1px #aaa;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .attribute .attribute {
+    border-left: solid 1px #aaa;
+  }
+
+  .attributes-index {
+    display: block;
+    position: absolute;
+    left: 3px;
+    font-size: 10px;
+    opacity: 0.7;
+    font-weight: normal;
+    font-style: normal;
+    margin-top: -9px;
+  }
 }
 
 attributes .attribute,
 attribute-struct {
   display: block;
-  //padding: 0.5rem;
-  //margin-bottom: 0.5rem;
 
   label {
-    font-size: 12px;
     display: block;
+    padding-top: 0.5rem;
     font-style: italic;
     font-weight: bold;
-    padding-top: 0.5rem;
+  }
+
+  .attribute-struct-label-text {
+    font-style: italic;
+    font-weight: bold;
+  }
+
+  .attribute-struct-array-count {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 10px;
+    opacity: 0.7;
+    font-weight: normal;
+    font-style: normal;
   }
 
   > div {
@@ -69,12 +114,17 @@ attribute-struct {
 
   child-attributes,
   attribute-struct {
-    margin-left: 16px;
     display: block;
+
+    attribute-struct {
+      margin-left: 16px;
+    }
   }
 
-  .attribute-value-null {
+  .attribute-struct-value-null {
+    font-size: 10px;
     font-style: italic;
+    opacity: 0.7;
   }
 }
 
