@@ -28,6 +28,7 @@ import { IconTheme } from '../identicon/identicon.types';
 import { Prefix } from '@polkadot/util-crypto/address/types';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 import { attributesConfig } from './attributes.config';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'attributes',
@@ -43,6 +44,8 @@ export class AttributesComponent implements OnChanges {
   @Input() tokenSymbol: string;
   @Input() ss58Prefix: Prefix;
   @Input() runtimeEventAttributes: pst.RuntimeEventAttribute[] | null | undefined;
+
+  isArray = new BehaviorSubject<boolean>(false);
 
   parsedAttributes: any[] = [];
   attributesConfig = attributesConfig;
@@ -61,6 +64,7 @@ export class AttributesComponent implements OnChanges {
             const parsed = JSON.parse(currentValue);
             if (Array.isArray(parsed)) {
               attrs = parsed;
+              this.isArray.next(true);
             } else if (typeof parsed === 'object' && Object.keys(parsed).length) {
               attrs = [parsed];
             }
@@ -68,6 +72,7 @@ export class AttributesComponent implements OnChanges {
             // Do nothing
           }
         } else if (Array.isArray(currentValue)) {
+          this.isArray.next(true);
           attrs = currentValue;
         } else if (typeof currentValue === 'object') {
           attrs = [currentValue];

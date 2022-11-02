@@ -37,6 +37,8 @@ import { BalanceCommonComponent } from './balance/balance.common.component';
 import { AttributesComponent } from './attributes/attributes.component';
 import { RouterModule } from '@angular/router';
 import { TimeAgoCommonComponent } from './time-ago/time-ago.common.component';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 @NgModule({
   declarations: [
@@ -61,7 +63,9 @@ import { TimeAgoCommonComponent } from './time-ago/time-ago.common.component';
   ],
   imports: [
     CommonModule,
-    RouterModule
+    RouterModule,
+    MatButtonModule,
+    MatIconModule
   ],
   exports: [
     IdenticonComponent,
