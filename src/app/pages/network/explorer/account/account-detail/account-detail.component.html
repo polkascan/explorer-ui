@@ -415,6 +415,10 @@
 
       </table>
     </mat-tab>
+
+    <mat-tab label="Historical Balance" *ngIf="accountId">
+      <app-historical-balance [accountId]="accountId | async"></app-historical-balance>
+    </mat-tab>
   </mat-tab-group>
 
 </ng-container>

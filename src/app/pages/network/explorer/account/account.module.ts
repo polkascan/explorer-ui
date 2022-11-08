@@ -28,10 +28,14 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
+import { HistoricalBalanceComponent } from './historical-balance/historical-balance.component';
 
 
 @NgModule({
-  declarations: [AccountDetailComponent],
+  declarations: [
+    AccountDetailComponent,
+    HistoricalBalanceComponent
+  ],
   imports: [
     CommonModule,
     AccountRoutingModule,
