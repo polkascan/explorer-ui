@@ -28,10 +28,15 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
+import { AccountEventsComponent } from './account-detail/account-events/account-events.component';
+import { ReactiveFormsModule } from '@angular/forms';
 
 
 @NgModule({
-  declarations: [AccountDetailComponent],
+  declarations: [
+    AccountDetailComponent,
+    AccountEventsComponent
+  ],
   imports: [
     CommonModule,
     AccountRoutingModule,
@@ -41,7 +46,8 @@ import { MatButtonModule } from '@angular/material/button';
     MatDividerModule,
     MatTabsModule,
     MatToolbarModule,
-    MatButtonModule
+    MatButtonModule,
+    ReactiveFormsModule
   ]
 })
 export class AccountModule {

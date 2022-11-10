@@ -348,6 +348,11 @@
       </table>
     </mat-tab>
 
+    <mat-tab label="Events">
+      <ng-container *ngIf="validAddress | async as account">
+        <app-account-events [account]="account" [listSize]="listsSize"></app-account-events>
+      </ng-container>
+    </mat-tab>
 
     <mat-tab label="Balance Transfers">
 
