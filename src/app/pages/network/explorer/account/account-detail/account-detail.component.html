@@ -294,7 +294,7 @@
 
       <mat-toolbar *ngIf="(id | async) as address">
         <button mat-stroked-button [routerLink]="'../../extrinsic'" [queryParams]="{'address': address}"
-                [disabled]="!address">Open Extrinsics list
+                [disabled]="!address">Open Extrinsics List
         </button>
       </mat-toolbar>
 
@@ -349,8 +349,8 @@
     </mat-tab>
 
     <mat-tab label="Events">
-      <ng-container *ngIf="validAddress | async as account">
-        <app-account-events [account]="account" [listSize]="listsSize"></app-account-events>
+      <ng-container *ngIf="id | async as address">
+        <app-account-events [address]="address" [listSize]="listsSize"></app-account-events>
       </ng-container>
     </mat-tab>
 

@@ -16,11 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 import { FormControl, FormGroup } from '@angular/forms';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
+import {u8aToHex} from "@polkadot/util";
+import {decodeAddress} from "@polkadot/util-crypto";
 
 
 @Component({
@@ -29,8 +31,8 @@ import { PolkadaptService } from '../../../../../../services/polkadapt.service';
   styleUrls: ['./account-events.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AccountEventsComponent implements OnInit, OnChanges, OnDestroy {
-  @Input() account: string;
+export class AccountEventsComponent implements OnChanges, OnDestroy {
+  @Input() address: string;
   @Input() listSize: number;
 
   events = new BehaviorSubject<pst.EventIndexAccount[]>([]);
@@ -59,9 +61,6 @@ export class AccountEventsComponent implements OnInit, OnChanges, OnDestroy {
   constructor(private pa: PolkadaptService) {
   }
 
-  ngOnInit(): void {
-  }
-
   ngOnDestroy(): void {
     this.unsubscribeFns.forEach((unsub) => unsub());
     this.unsubscribeFns.clear();
@@ -71,15 +70,16 @@ export class AccountEventsComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     this.events.next([]);
-    this.fetchAndSubscribeEvents(changes.account.currentValue);
+    this.fetchAndSubscribeEvents(changes.address.currentValue);
   }
 
-  async fetchAndSubscribeEvents(idHex: string): Promise<void> {
+  async fetchAndSubscribeEvents(address: string): Promise<void> {
     const existingUnsubscribe = this.unsubscribeFns.get('eventsUnsubscribeFn');
     if (existingUnsubscribe) {
       existingUnsubscribe();
     }
 
+    const idHex: string = u8aToHex(decodeAddress(address));
     const filterParams = {};
 
     const events = await this.pa.run().polkascan.chain.getEventsForAccount(idHex, filterParams, this.listSize);
@@ -90,7 +90,7 @@ export class AccountEventsComponent implements OnInit, OnChanges, OnDestroy {
       filterParams,
       (event: pst.EventIndexAccount) => {
         const events = this.events.value;
-        if (events && events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx) === false) {
+        if (events && !events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx)) {
           const merged = [event, ...events];
           merged.sort((a: pst.EventIndexAccount, b: pst.EventIndexAccount) => {
             return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
