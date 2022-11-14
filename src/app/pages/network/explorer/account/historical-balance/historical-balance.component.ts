@@ -36,14 +36,15 @@ import {
 import { map } from 'rxjs/operators';
 import { AccountInfo } from '@polkadot/types/interfaces/system/types';
 import { AccountData } from '@polkadot/types/interfaces/balances/types';
+import { BN } from '@polkadot/util';
 
 
 type HistoricalBalance = {
-  locked?: number;
-  total?: number;
-  transferable?: number;
-  free?: number;
-  reserved?: number;
+  locked?: BN;
+  total?: BN;
+  transferable?: BN;
+  free?: BN;
+  reserved?: BN;
 }
 
 type BalancesObservableItem = {
@@ -185,11 +186,11 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
     try {
       systemAccount = await this.pa.run(runParams).query.system.account.at(blockHash, this.accountId);
       if (systemAccount && systemAccount.data) {
-        balances.free = systemAccount.data.free.toNumber();
-        balances.reserved = systemAccount.data.reserved.toNumber();
-        balances.total = systemAccount.data.free.add(systemAccount.data.reserved).toNumber();
-        balances.transferable = systemAccount.data.free.sub(systemAccount.data.feeFrozen).toNumber();
-        balances.locked = systemAccount.data.feeFrozen.toNumber();
+        balances.free = systemAccount.data.free;
+        balances.reserved = systemAccount.data.reserved;
+        balances.total = systemAccount.data.free.add(systemAccount.data.reserved);
+        balances.transferable = systemAccount.data.free.sub(systemAccount.data.feeFrozen);
+        balances.locked = systemAccount.data.feeFrozen;
 
         observable.next(balances);
         return;
@@ -212,30 +213,30 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
 
     if (accountData) {
       // Possible accountData will be a generated object with all zero balances.
-      balances.free = accountData.free.toNumber();
-      balances.reserved = accountData.reserved.toNumber();
-      balances.total = accountData.free.add(accountData.reserved).toNumber();
-      balances.transferable = accountData.free.sub(accountData.feeFrozen).toNumber();
-      balances.locked = accountData.feeFrozen.toNumber();
+      balances.free = accountData.free;
+      balances.reserved = accountData.reserved;
+      balances.total = accountData.free.add(accountData.reserved);
+      balances.transferable = accountData.free.sub(accountData.feeFrozen);
+      balances.locked = accountData.feeFrozen;
     } else {
 
       // Check if freeBalance or reservedBalance exist if balances.account was not available.
 
       if (freeBalance) {
-        balances.free = freeBalance.toNumber();
+        balances.free = freeBalance;
       }
       if (reservedBalance) {
-        balances.reserved = reservedBalance.toNumber();
+        balances.reserved = reservedBalance;
       }
       if (freeBalance && reservedBalance) {
-        balances.total = freeBalance.add(reservedBalance).toNumber();
+        balances.total = freeBalance.add(reservedBalance);
       }
       if (locks && locks.length) {
-        locks.sort((a, b) => b.amount.sub(a.amount).toNumber());
-        balances.locked = locks[0].amount.toNumber();
+        locks.sort((a, b) => b.amount.sub(a.amount).isNeg() ? -1 : 1);
+        balances.locked = locks[0].amount;
 
         if (freeBalance) {
-          balances.transferable = freeBalance.sub(locks[0].amount).toNumber();
+          balances.transferable = freeBalance.sub(locks[0].amount);
         }
       }
     }
