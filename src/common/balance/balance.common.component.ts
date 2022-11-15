@@ -17,29 +17,38 @@
  */
 
 import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, ViewEncapsulation } from '@angular/core';
+import { BN } from '@polkadot/util';
 
 @Component({
   selector: 'balance',
   template: `
-    <ng-container *ngIf="convertedValue !== null">
-      {{ convertedValue }} {{ tokenSymbol }}
-    </ng-container>
+    <span *ngIf="partOne.length" [title]="partTwo.length ? partOne + '.' + partTwo : partOne">
+      {{ partOne }}<ng-container *ngIf="partTwoCapped.length">.<span class="balance-decimal-numbers">{{partTwoCapped}}</span></ng-container> {{ tokenSymbol }}
+    </span>
   `,
   styles: [`
     balance {
       white-space: nowrap;
+
+      .balance-decimal-numbers {
+        font-size: 70%;
+        opacity: 0.7;
+      }
     }
   `],
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BalanceCommonComponent implements OnChanges {
-  @Input() value: number;
+  @Input() value: number | BN;
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
 
-  convertedValue: number | null = null;
   private decimals: number;
+
+  partOne: string;
+  partTwo: string;
+  partTwoCapped: string;
 
   constructor() {
   }
@@ -50,19 +59,24 @@ export class BalanceCommonComponent implements OnChanges {
     }
 
     if (changes['tokenDecimals'] || changes['value']) {
-      let converted: number | null;
+      let val = this.value;
 
-      try {
-        converted = Math.max(0, this.value) / Math.pow(10, this.decimals);
-        if (isNaN(converted)) {
-          converted = null;
-        }
-      } catch (e) {
-        converted = null;
+      if (BN.isBN(this.value) === false) {
+        val = new BN(this.value as number);
       }
 
+      const stringified = val.toString();
+      const l = stringified.length;
+      const partOne = stringified.substring(0, l - this.decimals);
+      let partTwo = stringified.substring(l - this.decimals);
+      while (partTwo.endsWith('0') === true) {
+        // Remove trailing zeros.
+        partTwo = partTwo.substring(0, partTwo.length - 1);
+      }
 
-      this.convertedValue = converted;
+      this.partOne = partOne.length ? partOne : '';
+      this.partTwo = partTwo.length ? partTwo : '';
+      this.partTwoCapped = partTwo.length ? partTwo.substring(0, 3) : '';
     }
   }
 }
