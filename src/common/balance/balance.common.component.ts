@@ -22,8 +22,14 @@ import { BN } from '@polkadot/util';
 @Component({
   selector: 'balance',
   template: `
-    <span *ngIf="partOne.length" [title]="partTwo.length ? partOne + '.' + partTwo : partOne">
-      {{ partOne }}<ng-container *ngIf="partTwoCapped.length">.<span class="balance-decimal-numbers">{{partTwoCapped}}</span></ng-container> {{ tokenSymbol }}
+      <span *ngIf="intergralPart && intergralPart.length"
+            [title]="decimalPart.length ? intergralPart + '.' + decimalPart : intergralPart">
+      <span>{{ intergralPart }}</span>
+      <span *ngIf="decimalPartCapped && decimalPartCapped.length">.<span class="balance-decimal-numbers">
+            <span>{{decimalPartCapped}}</span><span *ngIf="decimalPart.length > decimalPartCapped.length">&mldr;</span>
+      </span>
+      </span>
+          {{ tokenSymbol }}
     </span>
   `,
   styles: [`
@@ -43,12 +49,13 @@ export class BalanceCommonComponent implements OnChanges {
   @Input() value: number | BN;
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
+  @Input() maxDecimals: number;
 
   private decimals: number;
 
-  partOne: string;
-  partTwo: string;
-  partTwoCapped: string;
+  intergralPart: string;
+  decimalPart: string;
+  decimalPartCapped: string;
 
   constructor() {
   }
@@ -59,24 +66,30 @@ export class BalanceCommonComponent implements OnChanges {
     }
 
     if (changes['tokenDecimals'] || changes['value']) {
-      let val = this.value;
-
-      if (BN.isBN(this.value) === false) {
+      let val: BN;
+      if (BN.isBN(this.value)) {
+        val = this.value;
+      } else {
         val = new BN(this.value as number);
       }
 
-      const stringified = val.toString();
-      const l = stringified.length;
-      const partOne = stringified.substring(0, l - this.decimals);
-      let partTwo = stringified.substring(l - this.decimals);
-      while (partTwo.endsWith('0') === true) {
-        // Remove trailing zeros.
-        partTwo = partTwo.substring(0, partTwo.length - 1);
-      }
+      if (val.isZero()) {
+        this.intergralPart = '0';
+        this.decimalPart = '';
+        this.decimalPartCapped = '';
+      } else {
+        const stringified = val.toString(undefined, this.decimals + 1); // String gets added preceding zeros.
 
-      this.partOne = partOne.length ? partOne : '';
-      this.partTwo = partTwo.length ? partTwo : '';
-      this.partTwoCapped = partTwo.length ? partTwo.substring(0, 3) : '';
+        const l = stringified.length;
+        // Split the string in two parts where the decimal point is expected.
+        this.intergralPart = stringified.substring(0, l - this.decimals).replace(/^0+\B/, ''); // remove preceding zeros, but allow a value of '0'.
+        this.decimalPart = stringified.substring(l - this.decimals).replace(/0+$/, ''); // remove leading zeros
+
+        // Make a short readable decimal value.
+        // /(^0{1}[1-9]{1}\d{1})|(^0{2}[1-9]{1})|(^0+[1-9]{1})|(^\d{1,3})/  earlier used regex.
+        const cappedResult = this.decimalPart.match(new RegExp(`\\d{0,${this.maxDecimals === undefined ? 5 : this.maxDecimals}}`));
+        this.decimalPartCapped = cappedResult && cappedResult[0] ? cappedResult[0] : '';
+      }
     }
   }
 }
