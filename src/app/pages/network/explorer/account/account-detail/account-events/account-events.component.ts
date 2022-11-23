@@ -23,6 +23,7 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 import {u8aToHex} from "@polkadot/util";
 import {decodeAddress} from "@polkadot/util-crypto";
+import {NetworkService} from "../../../../../../services/network.service";
 
 
 @Component({
@@ -34,6 +35,8 @@ import {decodeAddress} from "@polkadot/util-crypto";
 export class AccountEventsComponent implements OnChanges, OnDestroy {
   @Input() address: string;
   @Input() listSize: number;
+  @Input() eventTypes: {[pallet: string]: string[]}
+  @Input() columns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'amount', 'details'];
 
   events = new BehaviorSubject<pst.AccountEvent[]>([]);
 
@@ -53,12 +56,14 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     blockRangeEnd: this.blockRangeEndControl
   });
 
-  eventsColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'details'];
+  queryParams = new BehaviorSubject<{[p: string]: string}>({})
+  networkProperties = this.ns.currentNetworkProperties
 
   private unsubscribeFns: Map<string, (() => void)> = new Map();
   private destroyer: Subject<undefined> = new Subject();
 
-  constructor(private pa: PolkadaptService) {
+  constructor(private pa: PolkadaptService,
+              private ns: NetworkService) {
   }
 
   ngOnDestroy(): void {
@@ -69,8 +74,17 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    const address: string = changes.address.currentValue;
     this.events.next([]);
-    this.fetchAndSubscribeEvents(changes.address.currentValue);
+    this.fetchAndSubscribeEvents(address);
+    const queryParams: {[p: string]: string} = {'address': address};
+    if (this.eventTypes) {
+      for (let [pallet, eventNames] of Object.entries(this.eventTypes)) {
+        queryParams.pallet = pallet;
+        queryParams.eventName = eventNames[0];
+      }
+    }
+    this.queryParams.next(queryParams);
   }
 
   async fetchAndSubscribeEvents(address: string): Promise<void> {
@@ -80,7 +94,13 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     }
 
     const idHex: string = u8aToHex(decodeAddress(address));
-    const filterParams = {};
+    const filterParams: any = {};
+    if (this.eventTypes) {
+      for (let [pallet, eventNames] of Object.entries(this.eventTypes)) {
+        filterParams.pallet = pallet;
+        filterParams.eventName = eventNames[0];
+      }
+    }
 
     const events = await this.pa.run().polkascan.chain.getEventsByAccount(idHex, filterParams, this.listSize);
 
@@ -105,5 +125,17 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
 
   eventTrackBy(i: any, event: pst.AccountEvent): string {
     return `${event.blockNumber}-${event.eventIdx}`;
+  }
+
+  getAmountsFromAttributes(data: string): [string, number][] {
+    const attrNames = ['amount', 'actual_fee', 'tip'];
+    const amounts: [string, number][] = [];
+    for (let name of attrNames) {
+      const match = new RegExp(`"${name}": (\\d+)`).exec(data);
+      if (match) {
+        amounts.push([name, parseInt(match[1], 10)]);
+      }
+    }
+    return amounts;
   }
 }

@@ -164,7 +164,6 @@
         </table>
       </ng-container>
 
-
       <ng-container *ngIf="$any((accountBalances | async)) as balances">
         <h3>Balances</h3>
         <table class="detail-table">
@@ -419,6 +418,12 @@
         <tr mat-row *matRowDef="let myRowData; columns: balanceTransferColumns"></tr>
 
       </table>
+    </mat-tab>
+
+    <mat-tab label="Staking">
+      <ng-container *ngIf="id | async as address">
+        <app-account-events [address]="address" [listSize]="listsSize" [eventTypes]="{'Staking': ['Rewarded']}" [columns]="['icon', 'age', 'event', 'amount', 'details']"></app-account-events>
+      </ng-container>
     </mat-tab>
   </mat-tab-group>
 
