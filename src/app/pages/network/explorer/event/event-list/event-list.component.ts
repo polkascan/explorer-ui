@@ -26,6 +26,8 @@ import { types as pst } from '@polkadapt/polkascan-explorer';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { BehaviorSubject, Subscription } from 'rxjs';
+import {u8aToHex} from "@polkadot/util";
+import {decodeAddress} from "@polkadot/util-crypto";
 
 
 @Component({
@@ -34,7 +36,7 @@ import { BehaviorSubject, Subscription } from 'rxjs';
   styleUrls: ['./event-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EventListComponent extends PaginatedListComponentBase<pst.Event> implements OnInit {
+export class EventListComponent extends PaginatedListComponentBase<pst.Event | pst.AccountEvent> implements OnInit {
   listSize = 100;
   eventFilters = new Map();
   specVersions = new BehaviorSubject<number[]>([]);
@@ -47,6 +49,7 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
   dateRangeEndControl = new FormControl<Date | ''>('');
   blockRangeBeginControl = new FormControl<number | ''>('');
   blockRangeEndControl = new FormControl<number | ''>('');
+  addressControl = new FormControl<string>('');
 
   filtersFormGroup: FormGroup = new FormGroup({
     pallet: this.palletControl,
@@ -55,10 +58,12 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
     dateRangeBegin: this.dateRangeBeginControl,
     dateRangeEnd: this.dateRangeEndControl,
     blockRangeBegin: this.blockRangeBeginControl,
-    blockRangeEnd: this.blockRangeEndControl
+    blockRangeEnd: this.blockRangeEndControl,
+    address: this.addressControl,
   });
 
-  visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'events', 'details'];
+  visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'details'];
+  visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
@@ -80,9 +85,10 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
         params.get('dateRangeBegin') ? new Date(`${params.get('dateRangeBegin') as string}T00:00`) : '',
         params.get('dateRangeEnd') ? new Date(`${params.get('dateRangeEnd') as string}T00:00`) : '',
         parseInt(params.get('blockRangeBegin') as string, 10) || '',
-        parseInt(params.get('blockRangeEnd') as string, 10) || ''
-      ] as [number | '', string, string, Date | '', Date | '', number | '', number | ''])
-    ).subscribe(([specVersion, pallet, eventName, dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd]) => {
+        parseInt(params.get('blockRangeEnd') as string, 10) || '',
+        params.get('address') as string || ''
+      ] as [number | '', string, string, Date | '', Date | '', number | '', number | '', string])
+    ).subscribe(([specVersion, pallet, eventName, dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd, address]) => {
       if (pallet !== this.palletControl.value) {
         this.palletControl.setValue(pallet);
       }
@@ -105,6 +111,9 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
       }
       if (blockRangeEnd !== this.blockRangeEndControl.value) {
         this.blockRangeEndControl.setValue(blockRangeEnd);
+      }
+      if (address !== this.addressControl.value) {
+        this.addressControl.setValue(address);
       }
     });
 
@@ -142,11 +151,26 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
         if (values.blockRangeEnd) {
           queryParams.blockRangeEnd = values.blockRangeEnd;
         }
+        if (values.address) {
+          queryParams.address = values.address;
+        }
 
         this.router.navigate(['.'], {
           relativeTo: this.route,
           queryParams
         });
+      });
+
+    this.addressControl.valueChanges
+      .pipe(
+        takeUntil(this.destroyer)
+      )
+      .subscribe((address) => {
+        this.specVersionControl.reset('', {emitEvent: false});
+        this.eventFilters.clear();
+        if (this.network) {
+          this.loadEventFilters(this.network);
+        }
       });
 
     this.specVersionControl.valueChanges
@@ -192,7 +216,8 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
         dateRangeBegin: '',
         dateRangeEnd: '',
         blockRangeBegin: '',
-        blockRangeEnd: ''
+        blockRangeEnd: '',
+        address: ''
       }, {emitEvent: false});
 
       this.router.navigate(['.'], {
@@ -256,21 +281,39 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
   }
 
 
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Event>> {
-    return this.pa.run(this.network).polkascan.chain.getEvents(
-      this.filters,
-      this.listSize,
-      pageKey,
-      blockLimitOffset
-    );
+  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Event | pst.AccountEvent>> {
+    if (this.addressControl.value) {
+      return this.pa.run(this.network).polkascan.chain.getEventsByAccount(
+        u8aToHex(decodeAddress(this.addressControl.value)),
+        this.filters,
+        this.listSize,
+        pageKey,
+        blockLimitOffset
+      );
+    } else {
+      return this.pa.run(this.network).polkascan.chain.getEvents(
+        this.filters,
+        this.listSize,
+        pageKey,
+        blockLimitOffset
+      );
+    }
   }
 
 
-  createNewItemSubscription(handleItemFn: (item: pst.Event) => void): Promise<() => void> {
-    return this.pa.run(this.network).polkascan.chain.subscribeNewEvent(
-      this.filters,
-      handleItemFn
-    );
+  createNewItemSubscription(handleItemFn: (item: pst.Event | pst.AccountEvent) => void): Promise<() => void> {
+    if (this.addressControl.value) {
+      return this.pa.run(this.network).polkascan.chain.subscribeNewEventByAccount(
+        u8aToHex(decodeAddress(this.addressControl.value)),
+        this.filters,
+        handleItemFn
+      );
+    } else {
+      return this.pa.run(this.network).polkascan.chain.subscribeNewEvent(
+        this.filters,
+        handleItemFn
+      );
+    }
   }
 
 
@@ -287,7 +330,7 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
   get filters(): any {
     const filters: any = {};
     if (this.palletControl.value) {
-      filters.eventModule = this.palletControl.value;
+      filters.eventModule = filters.pallet = this.palletControl.value;
     }
     if (this.eventNameControl.value) {
       filters.eventName = this.eventNameControl.value;
@@ -314,7 +357,7 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event> im
   }
 
 
-  track(i: any, event: pst.Event): string {
+  track(i: any, event: pst.Event | pst.AccountEvent): string {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 }

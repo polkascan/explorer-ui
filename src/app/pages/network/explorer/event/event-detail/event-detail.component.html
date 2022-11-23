@@ -14,11 +14,6 @@
         <td><a [routerLink]="'../../block/' + event.blockNumber">{{event.blockNumber}}</a></td>
       </tr>
 
-      <tr>
-        <td class="detail-table--label-cell">Referenced Transaction</td>
-        <td><a [routerLink]="'../../transaction/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber + '-' + event.extrinsicIdx}}</a></td>
-      </tr>
-
       <tr *ngIf="event.extrinsicIdx !== null">
         <td class="detail-table--label-cell">Extrinsic</td>
         <td>

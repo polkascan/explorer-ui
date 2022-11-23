@@ -91,6 +91,7 @@ function calcBonded(stakingInfo?: DeriveStakingAccount, bonded?: boolean | BN[])
 })
 export class AccountDetailComponent implements OnInit, OnDestroy {
   id: Observable<string | null>;
+  validAddress = new BehaviorSubject<string | null>(null);
   account: Observable<AccountInfo>;
   subs: Observable<any>;
   identity: Observable<any>;
@@ -125,7 +126,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   balanceTransferColumns = ['icon', 'block', 'from', 'to', 'value', 'details']
   signedExtrinsicsColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'details'];
 
-  private listsSize = 50;
+  listsSize = 50;
 
   private unsubscribeFns: Map<string, (() => void)> = new Map();
   private destroyer: Subject<undefined> = new Subject();
@@ -205,6 +206,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         if (validAddress) {
           try {
             const accountIdHex = u8aToHex(decodeAddress(id));
+            this.validAddress.next(accountIdHex);
             this.fetchAndSubscribeFromTransfers(accountIdHex);
             this.fetchAndSubscribeToTransfers(accountIdHex);
             this.fetchAndSubscribeExtrinsics(accountIdHex);
@@ -213,10 +215,12 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           }
         } else {
           // Not a valid address.
+          this.validAddress.next(null);
           this.errors.next('Not a valid address.');
         }
       } else {
         // Account not found.
+        this.validAddress.next(null);
         this.errors.next('Account not found.');
       }
     });
