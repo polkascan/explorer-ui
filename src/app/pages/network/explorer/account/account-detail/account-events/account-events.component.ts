@@ -35,7 +35,7 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   @Input() address: string;
   @Input() listSize: number;
 
-  events = new BehaviorSubject<pst.EventIndexAccount[]>([]);
+  events = new BehaviorSubject<pst.AccountEvent[]>([]);
 
   palletControl = new FormControl('');
   eventNameControl = new FormControl('');
@@ -82,17 +82,17 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     const idHex: string = u8aToHex(decodeAddress(address));
     const filterParams = {};
 
-    const events = await this.pa.run().polkascan.chain.getEventsForAccount(idHex, filterParams, this.listSize);
+    const events = await this.pa.run().polkascan.chain.getEventsByAccount(idHex, filterParams, this.listSize);
 
     this.events.next(events.objects);
 
-    const eventsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewEventForAccount(idHex,
+    const eventsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewEventByAccount(idHex,
       filterParams,
-      (event: pst.EventIndexAccount) => {
+      (event: pst.AccountEvent) => {
         const events = this.events.value;
         if (events && !events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx)) {
           const merged = [event, ...events];
-          merged.sort((a: pst.EventIndexAccount, b: pst.EventIndexAccount) => {
+          merged.sort((a: pst.AccountEvent, b: pst.AccountEvent) => {
             return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
           });
           merged.length = this.listSize;
@@ -103,7 +103,7 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     this.unsubscribeFns.set('eventsUnsubscribeFn', eventsUnsubscribeFn);
   }
 
-  eventTrackBy(i: any, event: pst.EventIndexAccount): string {
+  eventTrackBy(i: any, event: pst.AccountEvent): string {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 }

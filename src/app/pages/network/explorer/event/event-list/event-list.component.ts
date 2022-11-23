@@ -36,7 +36,7 @@ import {decodeAddress} from "@polkadot/util-crypto";
   styleUrls: ['./event-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EventListComponent extends PaginatedListComponentBase<pst.Event | pst.EventIndexAccount> implements OnInit {
+export class EventListComponent extends PaginatedListComponentBase<pst.Event | pst.AccountEvent> implements OnInit {
   listSize = 100;
   eventFilters = new Map();
   specVersions = new BehaviorSubject<number[]>([]);
@@ -281,9 +281,9 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
   }
 
 
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Event | pst.EventIndexAccount>> {
+  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Event | pst.AccountEvent>> {
     if (this.addressControl.value) {
-      return this.pa.run(this.network).polkascan.chain.getEventsForAccount(
+      return this.pa.run(this.network).polkascan.chain.getEventsByAccount(
         u8aToHex(decodeAddress(this.addressControl.value)),
         this.filters,
         this.listSize,
@@ -301,9 +301,9 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
   }
 
 
-  createNewItemSubscription(handleItemFn: (item: pst.Event | pst.EventIndexAccount) => void): Promise<() => void> {
+  createNewItemSubscription(handleItemFn: (item: pst.Event | pst.AccountEvent) => void): Promise<() => void> {
     if (this.addressControl.value) {
-      return this.pa.run(this.network).polkascan.chain.subscribeNewEventForAccount(
+      return this.pa.run(this.network).polkascan.chain.subscribeNewEventByAccount(
         u8aToHex(decodeAddress(this.addressControl.value)),
         this.filters,
         handleItemFn
@@ -357,7 +357,7 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
   }
 
 
-  track(i: any, event: pst.Event | pst.EventIndexAccount): string {
+  track(i: any, event: pst.Event | pst.AccountEvent): string {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 }
