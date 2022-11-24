@@ -78,6 +78,7 @@
   </button>
 </div>
 
+<ng-container *ngIf="(networkProperties | async) as props">
 <ng-container *ngIf="(itemsObservable | async) as dataSource">
   <table mat-table [dataSource]="dataSource" [trackBy]="track">
 
@@ -124,9 +125,19 @@
     </ng-container>
 
     <ng-container matColumnDef="attribute" *ngIf="addressControl.value">
-      <th mat-header-cell *matHeaderCellDef>Attribute</th>
+      <th mat-header-cell *matHeaderCellDef>Attribute With Account</th>
       <td mat-cell *matCellDef="let event">
         {{event.attributeName}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="amount">
+      <th mat-header-cell *matHeaderCellDef>Amount</th>
+      <td mat-cell *matCellDef="let event">
+        <ng-container *ngFor="let nameAndAmount of getAmountsFromAttributes(event.attributes)">
+          <ng-container *ngIf="nameAndAmount[0] !== 'amount'">{{nameAndAmount[0]}}:</ng-container>
+          <balance [value]="nameAndAmount[1]" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
+        </ng-container>
       </td>
     </ng-container>
 
@@ -153,6 +164,7 @@
     </ng-container>
   </div>
 
+</ng-container>
 </ng-container>
 
 <div *ngIf="loadingObservable | async">

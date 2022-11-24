@@ -62,8 +62,8 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
     address: this.addressControl,
   });
 
-  visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'details'];
-  visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'details'];
+  visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'amount', 'details'];
+  visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'amount', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
@@ -359,5 +359,18 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
 
   track(i: any, event: pst.Event | pst.AccountEvent): string {
     return `${event.blockNumber}-${event.eventIdx}`;
+  }
+
+
+  getAmountsFromAttributes(data: string): [string, number][] {
+    const attrNames = ['amount', 'actual_fee', 'tip'];
+    const amounts: [string, number][] = [];
+    for (let name of attrNames) {
+      const match = new RegExp(`"${name}": (\\d+)`).exec(data);
+      if (match) {
+        amounts.push([name, parseInt(match[1], 10)]);
+      }
+    }
+    return amounts;
   }
 }
