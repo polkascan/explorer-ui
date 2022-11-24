@@ -422,7 +422,9 @@
 
     <mat-tab label="Staking">
       <ng-container *ngIf="id | async as address">
-        <app-account-events [address]="address" [listSize]="listsSize" [eventTypes]="{'Staking': ['Rewarded']}" [columns]="['icon', 'age', 'event', 'amount', 'details']"></app-account-events>
+        <app-account-events [address]="address" [listSize]="listsSize"
+                            [eventTypes]="{'Staking': ['Bonded', 'Chilled', 'Kicked', 'Rewarded', 'Slashed', 'Unbonded', 'Withdrawn']}"
+                            [columns]="['icon', 'age', 'event', 'amount', 'details']"></app-account-events>
       </ng-container>
     </mat-tab>
   </mat-tab-group>

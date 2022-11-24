@@ -79,9 +79,8 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     this.fetchAndSubscribeEvents(address);
     const queryParams: {[p: string]: string} = {'address': address};
     if (this.eventTypes) {
-      for (let [pallet, eventNames] of Object.entries(this.eventTypes)) {
+      for (let pallet of Object.keys(this.eventTypes)) {
         queryParams.pallet = pallet;
-        queryParams.eventName = eventNames[0];
       }
     }
     this.queryParams.next(queryParams);
@@ -94,13 +93,7 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     }
 
     const idHex: string = u8aToHex(decodeAddress(address));
-    const filterParams: any = {};
-    if (this.eventTypes) {
-      for (let [pallet, eventNames] of Object.entries(this.eventTypes)) {
-        filterParams.pallet = pallet;
-        filterParams.eventName = eventNames[0];
-      }
-    }
+    const filterParams: any = {eventTypes: this.eventTypes};
 
     const events = await this.pa.run().polkascan.chain.getEventsByAccount(idHex, filterParams, this.listSize);
 
