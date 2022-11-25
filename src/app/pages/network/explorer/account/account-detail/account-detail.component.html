@@ -39,8 +39,7 @@
               </span>
 
               <ng-container [ngSwitch]="!!idn.parent">
-                <ng-container *ngSwitchCase="true"><span class="account-name">{{ idn.displayParent }}</span>
-                </ng-container>
+                <ng-container *ngSwitchCase="true"><span class="account-name">{{ idn.displayParent }}</span></ng-container>
                 <ng-container *ngSwitchDefault><span class="account-name">{{ idn.display }}</span></ng-container>
               </ng-container>
               <ng-container *ngIf="idn.displayParent && idn.display"> / {{ idn.display }}</ng-container>
@@ -61,8 +60,7 @@
           <tr *ngIf="pai.tagType">
             <td class="detail-table--label-cell">Type</td>
             <td>
-              <i class="fas fa-exclamation-triangle" *ngIf="pai.riskLevel && pai.riskLevel > 0"
-                 title="{{pai.riskLevelVerbose}}"></i>
+              <i class="fas fa-exclamation-triangle" *ngIf="pai.riskLevel && pai.riskLevel > 0" title="{{pai.riskLevelVerbose}}"></i>
               {{ pai.tagType }} <span *ngIf="pai.tagSubType">({{pai.tagSubType}})</span>
             </td>
           </tr>
@@ -168,7 +166,6 @@
         </table>
       </ng-container>
 
-
       <ng-container *ngIf="$any((accountBalances | async)) as balances">
         <h3>Balances</h3>
         <table class="detail-table">
@@ -261,8 +258,7 @@
             <div mat-subheader>Parent</div>
             <mat-list-item>
               <div mat-line>
-                <account-id [address]="$any(dai.identity.parent)" [iconTheme]="props.iconTheme" [iconSize]="24"
-                            [ss58Prefix]="props.ss58Format"></account-id>
+                <account-id [address]="$any(dai.identity.parent)" [iconTheme]="props.iconTheme" [iconSize]="24" [ss58Prefix]="props.ss58Format"></account-id>
               </div>
             </mat-list-item>
           </mat-list>
@@ -276,8 +272,7 @@
                 <div mat-subheader *ngIf="subsMap.length">Subs</div>
                 <mat-list-item *ngFor="let sub of (subsMap); let i = index">
                   <div mat-line>
-                    <account-id [address]="$any(sub.key)" [iconTheme]="props.iconTheme" [iconSize]="24"
-                                [ss58Prefix]="props.ss58Format"></account-id>
+                    <account-id [address]="$any(sub.key)" [iconTheme]="props.iconTheme" [iconSize]="24" [ss58Prefix]="props.ss58Format"></account-id>
                   </div>
                 </mat-list-item>
               </mat-list>
@@ -296,11 +291,16 @@
   <mat-divider></mat-divider>
 
   <mat-tab-group dynamicHeight animationDuration="0ms">
+
+    <mat-tab label="Historical Balance" *ngIf="accountId">
+      <app-historical-balance [accountId]="accountId | async"></app-historical-balance>
+    </mat-tab>
+
     <mat-tab label="Signed Extrinsics">
 
       <mat-toolbar *ngIf="(id | async) as address">
         <button mat-stroked-button [routerLink]="'../../extrinsic'" [queryParams]="{'address': address}"
-                [disabled]="!address">Open Extrinsics list
+                [disabled]="!address">Open Extrinsics List
         </button>
       </mat-toolbar>
 
@@ -316,8 +316,7 @@
         <ng-container matColumnDef="extrinsicID">
           <th mat-header-cell *matHeaderCellDef>Extrinsic ID</th>
           <td mat-cell *matCellDef="let extrinsic">
-            <a
-              [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
+            <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
           </td>
         </ng-container>
 
@@ -345,8 +344,7 @@
         <ng-container matColumnDef="details">
           <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
           <td mat-cell *matCellDef="let extrinsic">
-            <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx"><span
-              class="material-icons">chevron_right</span></a>
+            <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
           </td>
         </ng-container>
 
@@ -356,6 +354,11 @@
       </table>
     </mat-tab>
 
+    <mat-tab label="Events">
+      <ng-container *ngIf="id | async as address">
+        <app-account-events [address]="address" [listSize]="listsSize"></app-account-events>
+      </ng-container>
+    </mat-tab>
 
     <mat-tab label="Balance Transfers">
 
@@ -407,16 +410,14 @@
         <ng-container matColumnDef="value">
           <th mat-header-cell *matHeaderCellDef>Value</th>
           <td mat-cell *matCellDef="let transfer">
-            <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
-                     [value]="transfer.value"></balance>
+            {{transfer.value}}
           </td>
         </ng-container>
 
         <ng-container matColumnDef="details">
           <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
           <td mat-cell *matCellDef="let transfer">
-            <a [routerLink]="'../../balances/transfer/' + transfer.blockNumber + '-' + transfer.eventIdx"><span
-              class="material-icons">chevron_right</span></a>
+            <a [routerLink]="'../../balances/transfer/' + transfer.blockNumber + '-' + transfer.eventIdx"><span class="material-icons">chevron_right</span></a>
           </td>
         </ng-container>
 
@@ -426,9 +427,14 @@
       </table>
     </mat-tab>
 
-    <mat-tab label="Historical Balance" *ngIf="accountId">
-      <app-historical-balance [accountId]="accountId | async"></app-historical-balance>
+    <mat-tab label="Staking">
+      <ng-container *ngIf="id | async as address">
+        <app-account-events [address]="address" [listSize]="listsSize"
+                            [eventTypes]="{'Staking': ['Bonded', 'Chilled', 'Kicked', 'Rewarded', 'Slashed', 'Unbonded', 'Withdrawn']}"
+                            [columns]="['icon', 'age', 'event', 'amount', 'details']"></app-account-events>
+      </ng-container>
     </mat-tab>
+
   </mat-tab-group>
 
 </ng-container>
