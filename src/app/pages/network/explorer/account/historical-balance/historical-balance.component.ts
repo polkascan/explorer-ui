@@ -47,7 +47,7 @@ type HistoricalBalance = {
 }
 
 type BalancesItem = {
-  event: pst.EventIndexAccount;
+  event: pst.AccountEvent;
   balances: BehaviorSubject<HistoricalBalance>;
 }
 
@@ -69,7 +69,7 @@ type ChartItem = {
   styleUrls: ['./historical-balance.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.EventIndexAccount> implements OnInit, OnChanges {
+export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.AccountEvent> implements OnInit, OnChanges {
 
   @Input() accountId: AccountId | null | undefined;
 
@@ -99,7 +99,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
 
     this.balancesObservable = this.itemsObservable.pipe(
       takeUntil(this.destroyer),
-      map<pst.EventIndexAccount[], BalancesItem[]>((items) => {
+      map<pst.AccountEvent[], BalancesItem[]>((items) => {
         const result = items
           .map((event) => {
             if (this.balancesPerBlock.has(event.blockNumber) === false) {
@@ -122,7 +122,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
         (bis): Observable<(ChartItem | null)[]> => combineLatest(
           bis.map(
             (bi) => combineLatest([of(bi.event), bi.balances]).pipe(
-              map<[pst.EventIndexAccount, HistoricalBalance], ChartItem | null>(([event, balances]): ChartItem | null => {
+              map<[pst.AccountEvent, HistoricalBalance], ChartItem | null>(([event, balances]): ChartItem | null => {
                 if (event && event.blockDatetime) {
                   const total = this.convertBNforChart(balances.total);
                   const free = this.convertBNforChart(balances.free);
@@ -230,9 +230,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
   }
 
 
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.EventIndexAccount>> {
+  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.AccountEvent>> {
     if (this.accountId) {
-      return this.pa.run(this.network).polkascan.chain.getEventsForAccount(
+      return this.pa.run(this.network).polkascan.chain.getEventsByAccount(
         this.accountId.toHex(),
         this.filters,
         this.listSize,
@@ -244,9 +244,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
   }
 
 
-  createNewItemSubscription(handleItemFn: (item: pst.EventIndexAccount) => void): Promise<() => void> {
+  createNewItemSubscription(handleItemFn: (item: pst.AccountEvent) => void): Promise<() => void> {
     if (this.accountId) {
-      return this.pa.run(this.network).polkascan.chain.subscribeNewEventForAccount(
+      return this.pa.run(this.network).polkascan.chain.subscribeNewEventByAccount(
         this.accountId?.toJSON(),
         this.filters,
         handleItemFn
@@ -256,12 +256,12 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
   }
 
 
-  sortCompareFn(a: pst.EventIndexAccount, b: pst.EventIndexAccount): number {
+  sortCompareFn(a: pst.AccountEvent, b: pst.AccountEvent): number {
     return b.blockNumber - a.blockNumber;
   }
 
 
-  equalityCompareFn(a: pst.EventIndexAccount, b: pst.EventIndexAccount): boolean {
+  equalityCompareFn(a: pst.AccountEvent, b: pst.AccountEvent): boolean {
     return a.blockNumber === b.blockNumber;
   }
 
