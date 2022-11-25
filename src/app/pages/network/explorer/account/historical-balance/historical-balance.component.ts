@@ -184,7 +184,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           },
           series: [
             {
-              type: 'spline',
+              type: 'line',
               color: '#350659',
               name: 'Total',
               data: items,
