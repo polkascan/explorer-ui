@@ -31,6 +31,13 @@
       </td>
     </ng-container>
 
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef>Date Activated</th>
+      <td mat-cell *matCellDef="let runtime" [title]="blockDates[runtime.blockNumber] | async">
+        {{blockDates[runtime.blockNumber] | async | date}}
+      </td>
+    </ng-container>
+
     <ng-container matColumnDef="pallets">
       <th mat-header-cell *matHeaderCellDef>Pallets</th>
       <td mat-cell *matCellDef="let runtime">
