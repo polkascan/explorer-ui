@@ -31,6 +31,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { HistoricalBalanceComponent } from './historical-balance/historical-balance.component';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { HighchartsChartModule } from 'highcharts-angular';
 
 
 @NgModule({
@@ -49,7 +50,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    HighchartsChartModule
   ]
 })
 export class AccountModule {

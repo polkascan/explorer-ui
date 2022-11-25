@@ -16,27 +16,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  Input,
+  OnChanges,
+  OnInit,
+  SimpleChanges
+} from '@angular/core';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
-import { BehaviorSubject, Observable } from 'rxjs';
-import {
-  AccountId,
-  ActiveEraInfo, Balance, BalanceLock,
-  BlockHash,
-  EraIndex,
-  SessionIndex,
-  ValidatorCount
-} from '@polkadot/types/interfaces';
-import {
-  EventIndexAccount
-} from '../../../../../../../polkadapt/projects/polkascan-explorer/src/lib/polkascan-explorer.types';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, Observable, of } from 'rxjs';
+import { AccountId, Balance, BalanceLock, BlockHash } from '@polkadot/types/interfaces';
+import { debounceTime, map, shareReplay, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { AccountInfo } from '@polkadot/types/interfaces/system/types';
 import { AccountData } from '@polkadot/types/interfaces/balances/types';
 import { BN } from '@polkadot/util';
+import * as Highcharts from 'highcharts';
 
 
 type HistoricalBalance = {
@@ -47,9 +46,20 @@ type HistoricalBalance = {
   reserved?: BN;
 }
 
-type BalancesObservableItem = {
-  event: EventIndexAccount;
+type BalancesItem = {
+  event: pst.EventIndexAccount;
   balances: BehaviorSubject<HistoricalBalance>;
+}
+
+type ChartItem = {
+  x: number;
+  y: number | null;
+  blockNumber: number;
+  total: string | null;
+  free: string | null;
+  reserved: string | null;
+  locked: string | null;
+  transferable: string | null;
 }
 
 
@@ -66,32 +76,136 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
   listSize = 100;
 
   balancesPerBlock = new Map<number, BehaviorSubject<HistoricalBalance>>();
-  balancesObservable: Observable<BalancesObservableItem[]>;
+  balancesObservable: Observable<BalancesItem[]>;
+
+  chartDataObservable: Observable<Highcharts.Options | null>;
 
   visibleColumns = ['blockNumber', 'total', 'free', 'reserved', 'locked', 'transferable'];
 
   networkProperties = this.ns.currentNetworkProperties;
 
+  Highcharts: typeof Highcharts = Highcharts; // required
+  chartConstructor = 'chart'; // optional string, defaults to 'chart'
+  chartCallback: Highcharts.ChartCallbackFunction = (chart) => {
+  } // optional function, defaults to null
+  updateFlag = false; // optional boolean
+  oneToOneFlag = true; // optional boolean, defaults to false
+
+
   constructor(private ns: NetworkService,
-              private pa: PolkadaptService) {
+              private pa: PolkadaptService,
+              private cd: ChangeDetectorRef) {
     super(ns);
 
     this.balancesObservable = this.itemsObservable.pipe(
-      map<EventIndexAccount[], BalancesObservableItem[]>((items) => {
+      takeUntil(this.destroyer),
+      map<pst.EventIndexAccount[], BalancesItem[]>((items) => {
         const result = items
           .map((event) => {
             if (this.balancesPerBlock.has(event.blockNumber) === false) {
               this.balancesPerBlock.set(event.blockNumber, new BehaviorSubject<HistoricalBalance>({}));
               this.getBalanceAtBlock(event.blockNumber);
-              return {event: event, balances: this.balancesPerBlock.get(event.blockNumber)} as BalancesObservableItem;
+              return {event: event, balances: this.balancesPerBlock.get(event.blockNumber)} as BalancesItem;
             } else {
               return null;
             }
           })
           .filter((item) => item !== null);
-        return result as BalancesObservableItem[];
-      })
+        return result as BalancesItem[];
+      }),
+      shareReplay(1)
     );
+
+    this.chartDataObservable = this.balancesObservable.pipe(
+      takeUntil(this.destroyer),
+      switchMap<BalancesItem[], Observable<(ChartItem | null)[]>>(
+        (bis): Observable<(ChartItem | null)[]> => combineLatest(
+          bis.map(
+            (bi) => combineLatest([of(bi.event), bi.balances]).pipe(
+              map<[pst.EventIndexAccount, HistoricalBalance], ChartItem | null>(([event, balances]): ChartItem | null => {
+                if (event && event.blockDatetime) {
+                  const total = this.convertBNforChart(balances.total);
+                  const free = this.convertBNforChart(balances.free);
+                  const reserved = this.convertBNforChart(balances.reserved);
+                  const locked = this.convertBNforChart(balances.locked);
+                  const transferable = this.convertBNforChart(balances.transferable);
+                  const date = new Date(event.blockDatetime);
+                  if (total !== null) {
+                    return {
+                      x: date.getTime(),
+                      y: total !== null ? parseFloat(total.split('.').map((b, i) => i === 1 ? b.substring(0, 2) : b).join('.')) : null,  // Only two decimals in the chart
+                      blockNumber: event.blockNumber,
+                      total: total,
+                      free: free,
+                      reserved: reserved,
+                      locked: locked,
+                      transferable: transferable
+                    }
+                  }
+                }
+                return null;
+              })
+            )
+          )
+        )
+      ),
+      debounceTime(300),
+      map<(ChartItem | null)[], ChartItem[]>((items) => items.filter((i) => i !== null) as ChartItem[]),
+      map<ChartItem[], Highcharts.Options | null>((items): Highcharts.Options | null => {
+        if (items.length === 0) {
+          return null;
+        }
+
+        return {
+          chart: {
+            zooming: {
+              type: 'x'
+            }
+          },
+          title: {
+            text: ''
+          },
+          xAxis: {
+            type: 'datetime'
+          },
+          yAxis: {
+            title: {
+              text: this.networkProperties.value?.tokenSymbol
+            }
+          },
+          tooltip: {
+            headerFormat: '',
+          },
+          credits: {
+            enabled: false
+          },
+          legend: {
+            enabled: false
+          },
+          series: [
+            {
+              type: 'spline',
+              color: '#350659',
+              name: 'Total',
+              data: items,
+              tooltip: {
+                pointFormat: '<b>{point.x:%Y-%m-%d %H:%M:%S}</b><br>' +
+                  'Block: {point.blockNumber}<br>' +
+                  'Total: <b>{point.total}</b><br>' +
+                  'Free: {point.free}<br>' +
+                  'Reserved: {point.reserved}<br>' +
+                  'Locked: {point.locked}<br>' +
+                  'Transferable: {point.transferable}'
+              }
+            }
+          ]
+        }
+      }),
+      tap(() => {
+        this.updateFlag = true;
+        this.cd.markForCheck();
+      })
+    )
   }
 
   ngOnInit(): void {
@@ -160,7 +274,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
   }
 
 
-  track(i: any, item: BalancesObservableItem): string {
+  track(i: any, item: BalancesItem): string {
     return `${item.event.blockNumber}-${item.event.extrinsicIdx}`;
   }
 
@@ -210,7 +324,6 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
     ])).map((p) => p.status === 'fulfilled' ? p.value : null) as
       [AccountData | null, BalanceLock[] | null, Balance | null, Balance | null];
 
-
     if (accountData) {
       // Possible accountData will be a generated object with all zero balances.
       balances.free = accountData.free;
@@ -218,10 +331,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
       balances.total = accountData.free.add(accountData.reserved);
       balances.transferable = accountData.free.sub(accountData.feeFrozen);
       balances.locked = accountData.feeFrozen;
+
     } else {
-
       // Check if freeBalance or reservedBalance exist if balances.account was not available.
-
       if (freeBalance) {
         balances.free = freeBalance;
       }
@@ -242,5 +354,27 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.E
     }
 
     observable.next(balances);
+  }
+
+  convertBNforChart(val: BN | number | undefined | null): string | null {
+    if (BN.isBN(val)) {
+      if (val.isZero()) {
+        return '0';
+      }
+
+      try {
+        const decimals = this.networkProperties.value?.tokenDecimals || 0;
+        const stringified = val.toString(undefined, decimals + 1); // String gets added preceding zeros.
+        const l = stringified.length;
+        // Split the string in two parts where the decimal point is expected.
+        const intergralPart = stringified.substring(0, l - decimals).replace(/^0+\B/, ''); // remove preceding zeros, but allow a value of '0'.
+        const decimalPart = stringified.substring(l - decimals).replace(/0+$/, ''); // remove leading zeros
+        return decimalPart.length ? `${intergralPart}.${decimalPart}` : intergralPart;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    return null;
   }
 }

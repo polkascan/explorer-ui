@@ -1,7 +1,21 @@
 <ng-container *ngIf="(networkProperties | async) as props">
 
-  <ng-container *ngIf="(balancesObservable | async) as dataSource">
+  <div *ngIf="(chartDataObservable | async) as chartOptions" class="historical-balance-chart">
+    <highcharts-chart class="historical-balance-highcharts-chart"
+      [Highcharts]="Highcharts"
 
+      [constructorType]="chartConstructor"
+      [options]="chartOptions"
+      [callbackFunction]="chartCallback"
+
+      [(update)]="updateFlag"
+      [oneToOne]="oneToOneFlag"
+
+      style="width: 1220px; height: 300px; display: block; max-width: 100%;">
+    </highcharts-chart>
+  </div>
+
+  <ng-container *ngIf="(balancesObservable | async) as dataSource">
     <table mat-table [dataSource]="dataSource" [trackBy]="track">
 
       <ng-container matColumnDef="blockNumber">
@@ -14,35 +28,40 @@
       <ng-container matColumnDef="total">
         <th mat-header-cell *matHeaderCellDef>Total</th>
         <td mat-cell *matCellDef="let item">
-          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol" [value]="$any(item.balances | async)?.total"></balance>
+          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                   [value]="$any(item.balances | async)?.total"></balance>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="free">
         <th mat-header-cell *matHeaderCellDef>Free</th>
         <td mat-cell *matCellDef="let item">
-          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol" [value]="$any(item.balances | async)?.free"></balance>
+          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                   [value]="$any(item.balances | async)?.free"></balance>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="reserved">
         <th mat-header-cell *matHeaderCellDef>Reserved</th>
         <td mat-cell *matCellDef="let item">
-          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol" [value]="$any(item.balances | async)?.reserved"></balance>
+          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                   [value]="$any(item.balances | async)?.reserved"></balance>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="transferable">
         <th mat-header-cell *matHeaderCellDef>Transferable</th>
         <td mat-cell *matCellDef="let item">
-          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol" [value]="$any(item.balances | async)?.transferable"></balance>
+          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                   [value]="$any(item.balances | async)?.transferable"></balance>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="locked">
         <th mat-header-cell *matHeaderCellDef>Locked</th>
         <td mat-cell *matCellDef="let item">
-          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol" [value]="$any(item.balances | async)?.locked"></balance>
+          <balance [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                   [value]="$any(item.balances | async)?.locked"></balance>
         </td>
       </ng-container>
 
