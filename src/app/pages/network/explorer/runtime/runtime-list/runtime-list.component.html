@@ -24,6 +24,20 @@
       </td>
     </ng-container>
 
+    <ng-container matColumnDef="blockNumber">
+      <th mat-header-cell *matHeaderCellDef>Block Activated</th>
+      <td mat-cell *matCellDef="let runtime" [title]="'Block hash: ' + runtime.blockHash">
+        {{runtime.blockNumber}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef>Date Activated</th>
+      <td mat-cell *matCellDef="let runtime" [title]="blockDates[runtime.blockNumber] | async">
+        {{blockDates[runtime.blockNumber] | async | date}}
+      </td>
+    </ng-container>
+
     <ng-container matColumnDef="pallets">
       <th mat-header-cell *matHeaderCellDef>Pallets</th>
       <td mat-cell *matCellDef="let runtime">
