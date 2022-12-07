@@ -354,70 +354,11 @@
     </mat-tab>
 
     <mat-tab label="Balance Transfers">
-
-      <mat-toolbar *ngIf="(id | async) as address">
-        <button mat-stroked-button [routerLink]="'../../balances/transfer'" [queryParams]="{'fromAddress': address}"
-                [disabled]="!address">Open From Transfers list
-        </button>
-        <button mat-stroked-button [routerLink]="'../../balances/transfer'" [queryParams]="{'toAddress': address}"
-                [disabled]="!address">Open To Transfers list
-        </button>
-      </mat-toolbar>
-
-      <table mat-table [dataSource]="(balanceTransfers | async) || []" [trackBy]="balanceTransfersTrackBy">
-
-        <ng-container matColumnDef="icon">
-          <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
-          <td mat-cell *matCellDef>
-            <i class="fas fa-file-signature"></i>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="block">
-          <th mat-header-cell *matHeaderCellDef>Block</th>
-          <td mat-cell *matCellDef="let transfer">
-            <a [routerLink]="'../../block/' + transfer.blockNumber">{{transfer.blockNumber}}</a>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="from">
-          <th mat-header-cell *matHeaderCellDef>From</th>
-          <td mat-cell *matCellDef="let transfer">
-            <ng-container *ngIf="transfer.fromMultiAddressAccountId">
-              <account-id [address]="transfer.fromMultiAddressAccountId" [iconTheme]="props.iconTheme" [iconSize]="16"
-                          [ss58Prefix]="props.ss58Format"></account-id>
-            </ng-container>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="to">
-          <th mat-header-cell *matHeaderCellDef>To</th>
-          <td mat-cell *matCellDef="let transfer">
-            <ng-container *ngIf="transfer.toMultiAddressAccountId">
-              <account-id [address]="transfer.toMultiAddressAccountId" [iconTheme]="props.iconTheme" [iconSize]="16"
-                          [ss58Prefix]="props.ss58Format"></account-id>
-            </ng-container>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="value">
-          <th mat-header-cell *matHeaderCellDef>Value</th>
-          <td mat-cell *matCellDef="let transfer">
-            {{transfer.value}}
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="details">
-          <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
-          <td mat-cell *matCellDef="let transfer">
-            <a [routerLink]="'../../balances/transfer/' + transfer.blockNumber + '-' + transfer.eventIdx"><span class="material-icons">chevron_right</span></a>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="balanceTransferColumns; sticky: true"></tr>
-        <tr mat-row *matRowDef="let myRowData; columns: balanceTransferColumns"></tr>
-
-      </table>
+      <ng-container *ngIf="id | async as address">
+        <app-account-events [address]="address" [listSize]="listsSize"
+                            [eventTypes]="{'Balances': ['Transfer']}"
+                            [columns]="['icon', 'age', 'address', 'inOut', 'amount', 'details']"></app-account-events>
+      </ng-container>
     </mat-tab>
 
     <mat-tab label="Staking">

@@ -24,6 +24,7 @@ import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 import {u8aToHex} from "@polkadot/util";
 import {decodeAddress} from "@polkadot/util-crypto";
 import {NetworkService} from "../../../../../../services/network.service";
+import {TooltipsService} from "../../../../../../services/tooltips.service";
 
 
 @Component({
@@ -63,7 +64,8 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
 
   constructor(private pa: PolkadaptService,
-              private ns: NetworkService) {
+              private ns: NetworkService,
+              private ts: TooltipsService) {
   }
 
   ngOnDestroy(): void {
@@ -105,11 +107,9 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
         const events = this.events.value;
         if (events && !events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx)) {
           const merged = [event, ...events];
-          merged.sort((a: pst.AccountEvent, b: pst.AccountEvent) => {
-            return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
-          });
+          merged.sort((a, b) => (b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx));
           merged.length = this.listSize;
-          this.events.next([event].concat(events));
+          this.events.next(merged);
         }
       });
 
@@ -130,5 +130,26 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
       }
     }
     return amounts;
+  }
+
+  getAddressFromEvent(event: pst.AccountEvent): string {
+    if (event.attributes) {
+      const data: any = JSON.parse(event.attributes);
+      let address: string = '';
+      if (event.eventName === 'Transfer') {
+        if (event.attributeName === 'from') {
+          address = data.to;
+        } else {
+          address = data.from;
+        }
+        return address;
+      }
+    }
+    return '';
+  }
+
+  copied(address: string) {
+    this.ts.notify.next(
+      `Address copied.<br><span class="mono">${address}</span>`);
   }
 }

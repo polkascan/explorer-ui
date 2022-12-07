@@ -115,9 +115,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
   networkProperties = this.ns.currentNetworkProperties;
 
-  fromBalanceTransfers = new BehaviorSubject<pst.Transfer[]>([]);
-  toBalanceTransfers = new BehaviorSubject<pst.Transfer[]>([]);
-  balanceTransfers: Observable<pst.Transfer[]>;
   signedExtrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
 
   fetchAccountInfoStatus = new BehaviorSubject<any>(null);
@@ -184,8 +181,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       this.unsubscribeFns.forEach((unsub) => unsub());
       this.unsubscribeFns.clear();
 
-      this.fromBalanceTransfers.next([]);
-      this.toBalanceTransfers.next([]);
       this.signedExtrinsics.next([]);
 
       if (id) {
@@ -207,8 +202,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           try {
             const accountIdHex = u8aToHex(decodeAddress(id));
             this.validAddress.next(accountIdHex);
-            this.fetchAndSubscribeFromTransfers(accountIdHex);
-            this.fetchAndSubscribeToTransfers(accountIdHex);
             this.fetchAndSubscribeExtrinsics(accountIdHex);
             this.fetchTaggedAccounts(accountIdHex);
           } catch (e) {
@@ -384,16 +377,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       })
     )
 
-    this.balanceTransfers = combineLatest(
-      this.toBalanceTransfers,
-      this.fromBalanceTransfers
-    ).pipe(
-      takeUntil(this.destroyer),
-      map(([to, from]) => [...to, ...from]
-        .sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx)
-        .slice(0, this.listsSize))
-    )
-
     this.accountJudgement = this.derivedAccountInfo.pipe(
       map((dai) => {
         if (dai && dai.identity && dai.identity.judgements) {
@@ -442,57 +425,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.unsubscribeFns.set('signedExtrinsicsUnsubscribeFn', signedExtrinsicsUnsubscribeFn);
   }
 
-
-  async fetchAndSubscribeFromTransfers(idHex: string): Promise<void> {
-    const fromTransfers = await this.pa.run().polkascan.chain.getTransfers(
-      {
-        fromMultiAddressAccountId: idHex
-      }, this.listsSize);
-    this.fromBalanceTransfers.next(fromTransfers.objects);
-    const fromBalanceTransfersUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewTransfer(
-      {
-        fromMultiAddressAccountId: idHex
-      },
-      (transfer: pst.Transfer) => {
-        const transfers = this.fromBalanceTransfers.value;
-        if (transfers && transfers.some((t) => t.blockNumber !== transfer.blockNumber && t.eventIdx !== transfer.eventIdx) === false) {
-          const result = [transfer,  ...transfers];
-          result.sort((a: pst.Transfer, b: pst.Transfer) => {
-            return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
-          });
-          result.length = this.listsSize
-          this.fromBalanceTransfers.next(result);
-        }
-      });
-
-    this.unsubscribeFns.set('fromBalanceTransfersUnsubscribeFn', fromBalanceTransfersUnsubscribeFn);
-  }
-
-
-  async fetchAndSubscribeToTransfers(idHex: string): Promise<void> {
-    const toTransfers = await this.pa.run().polkascan.chain.getTransfers({
-      toMultiAddressAccountId: idHex
-    }, this.listsSize);
-    this.toBalanceTransfers.next(toTransfers.objects);
-    const toBalanceTransfersUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewTransfer(
-      {
-        toMultiAddressAccountId: idHex
-      },
-      (transfer: pst.Transfer) => {
-        const transfers = this.toBalanceTransfers.value;
-        if (transfers && transfers.some((t) => t.blockNumber !== transfer.blockNumber && t.eventIdx !== transfer.eventIdx) === false) {
-          const result = [transfer, ...transfers];
-          result.sort((a: pst.Transfer, b: pst.Transfer) => {
-            return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
-          });
-          result.length = this.listsSize
-          this.toBalanceTransfers.next(result);
-        }
-      });
-
-    this.unsubscribeFns.set('toBalanceTransfersUnsubscribeFn', toBalanceTransfersUnsubscribeFn);
-  }
-
   fetchTaggedAccounts(accountIdHex: string): void {
     this.pa.run().polkascan.state.getTaggedAccount(accountIdHex).then(
       (account) => this.polkascanAccountInfo.next(account)
@@ -509,11 +441,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
   signedExtrinsicTrackBy(i: any, extrinsic: pst.Extrinsic): string {
     return `${extrinsic.blockNumber}-${extrinsic.extrinsicIdx}`;
-  }
-
-
-  balanceTransfersTrackBy(i: any, transfer: pst.Transfer): string {
-    return `${transfer.blockNumber}-${transfer.eventIdx}`;
   }
 
 
