@@ -68,6 +68,15 @@
     <mat-label>Account</mat-label>
     <input matInput type="text" placeholder="Address" [formControl]="addressControl">
   </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Signature</mat-label>
+    <mat-select [formControl]="signatureControl">
+      <mat-option [value]="'signed'">Signed only</mat-option>
+      <mat-option [value]="'all'">All extrinsics</mat-option>
+      <mat-option [value]="'unsigned'">Unsigned only</mat-option>
+    </mat-select>
+  </mat-form-field>
 </div>
 
 <div class="centered-button-bar" *ngIf="(pageLiveObservable | async) === false">
