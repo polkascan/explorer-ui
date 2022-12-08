@@ -19,35 +19,38 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { InherentRoutingModule } from './inherent-routing.module';
-import { InherentListComponent } from './inherent-list/inherent-list.component';
-import { InherentDetailComponent } from './inherent-detail/inherent-detail.component';
+import { TransferRoutingModule } from './transfer-routing.module';
+import { TransferListComponent } from './transfer-list/transfer-list.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { PolkascanCommonModule } from '../../../../../common/polkascan-common.module';
 import { MatTableModule } from '@angular/material/table';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatDividerModule } from '@angular/material/divider';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 
 
 @NgModule({
-  declarations: [InherentListComponent, InherentDetailComponent],
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    InherentRoutingModule,
-    PolkascanCommonModule,
-    MatTableModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatProgressBarModule,
-    MatTabsModule,
-    MatDividerModule,
-    MatIconModule
-  ]
+  declarations: [
+    TransferListComponent
+  ],
+    imports: [
+        CommonModule,
+        TransferRoutingModule,
+        ReactiveFormsModule,
+        PolkascanCommonModule,
+        MatTableModule,
+        MatSelectModule,
+        MatButtonModule,
+        MatProgressBarModule,
+        MatDatepickerModule,
+        MatNativeDateModule,
+        MatInputModule,
+        MatIconModule
+    ]
 })
-export class InherentModule {
+export class TransferModule {
 }

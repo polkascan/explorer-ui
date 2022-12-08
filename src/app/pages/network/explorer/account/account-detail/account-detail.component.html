@@ -293,7 +293,7 @@
 
       <mat-toolbar *ngIf="(id | async) as address">
         <button mat-stroked-button [routerLink]="'../../extrinsic'" [queryParams]="{'address': address}"
-                [disabled]="!address">Open Extrinsics List
+                [disabled]="!address">Show all
         </button>
       </mat-toolbar>
 
@@ -353,11 +353,11 @@
       </ng-container>
     </mat-tab>
 
-    <mat-tab label="Balance Transfers">
+    <mat-tab label="Transfers">
       <ng-container *ngIf="id | async as address">
         <app-account-events [address]="address" [listSize]="listsSize"
                             [eventTypes]="{'Balances': ['Transfer']}"
-                            [columns]="['icon', 'age', 'address', 'inOut', 'amount', 'details']"></app-account-events>
+                            [columns]="['icon', 'referencedTransaction', 'age', 'direction', 'address', 'amount', 'detailsExtrinsic']"></app-account-events>
       </ng-container>
     </mat-tab>
 

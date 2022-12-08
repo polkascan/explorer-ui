@@ -57,8 +57,9 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     blockRangeEnd: this.blockRangeEndControl
   });
 
-  queryParams = new BehaviorSubject<{[p: string]: string}>({})
-  networkProperties = this.ns.currentNetworkProperties
+  routerLink = new BehaviorSubject<string>('../../event');
+  queryParams = new BehaviorSubject<{[p: string]: string}>({});
+  networkProperties = this.ns.currentNetworkProperties;
 
   private unsubscribeFns: Map<string, (() => void)> = new Map();
   private destroyer: Subject<undefined> = new Subject();
@@ -69,7 +70,7 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.unsubscribeFns.forEach((unsub) => unsub());
+    this.unsubscribeFns.forEach(unsub => unsub());
     this.unsubscribeFns.clear();
     this.destroyer.next(undefined);
     this.destroyer.complete();
@@ -83,7 +84,17 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     if (this.eventTypes) {
       for (let pallet of Object.keys(this.eventTypes)) {
         queryParams.pallet = pallet;
+        if (this.eventTypes[pallet].length === 1) {
+          queryParams.eventName = this.eventTypes[pallet][0];
+        }
       }
+    }
+    if (queryParams.pallet === 'Balances' && queryParams.eventName === 'Transfer') {
+      this.routerLink.next('../../transfer');
+      delete queryParams.pallet;
+      delete queryParams.eventName;
+    } else {
+      this.routerLink.next('../../event');
     }
     this.queryParams.next(queryParams);
   }

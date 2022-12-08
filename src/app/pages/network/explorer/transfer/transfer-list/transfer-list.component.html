@@ -1,0 +1,149 @@
+<h1>Transfers</h1>
+
+<div>
+  <mat-form-field appearance="fill">
+    <mat-label>Date range</mat-label>
+    <mat-date-range-input [rangePicker]="picker">
+      <input matStartDate [formControl]="dateRangeBeginControl" placeholder="Start date">
+      <input matEndDate [formControl]="dateRangeEndControl" placeholder="End date">
+    </mat-date-range-input>
+    <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+    <mat-date-range-picker #picker></mat-date-range-picker>
+
+    <mat-error *ngIf="dateRangeBeginControl.hasError('matStartDateInvalid')">Invalid start date</mat-error>
+    <mat-error *ngIf="dateRangeEndControl.hasError('matEndDateInvalid')">Invalid end date</mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Block start</mat-label>
+    <input matInput type="number" placeholder="Genesis" [formControl]="blockRangeBeginControl">
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Block end</mat-label>
+    <input matInput type="number" placeholder="Current" [formControl]="blockRangeEndControl">
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Account</mat-label>
+    <input matInput type="text" placeholder="Address" [formControl]="addressControl">
+  </mat-form-field>
+</div>
+
+<div class="centered-button-bar" *ngIf="(pageLiveObservable | async) === false">
+  <button [disabled]="loadingObservable | async" mat-stroked-button
+          aria-label="Show latest" (click)="gotoLatestItems()">
+    Show latest
+    <mat-icon>change_circle</mat-icon>
+  </button>
+</div>
+
+<ng-container *ngIf="(networkProperties | async) as props">
+<ng-container *ngIf="(itemsObservable | async) as dataSource">
+  <table mat-table [dataSource]="dataSource" [trackBy]="track">
+
+    <ng-container matColumnDef="icon">
+      <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
+      <td mat-cell *matCellDef>
+        <i class="fas fa-calendar-check"></i>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="age">
+      <th mat-header-cell *matHeaderCellDef>Time</th>
+      <td mat-cell *matCellDef="let event">
+        <time-ago [value]="event.blockDatetime"></time-ago>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="referencedTransaction">
+      <th mat-header-cell *matHeaderCellDef>Extrinsic</th>
+      <td mat-cell *matCellDef="let event">
+        <a *ngIf="event.extrinsicIdx !== null" [routerLink]="'../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber + '-' + event.extrinsicIdx}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="fromAddress">
+      <th mat-header-cell *matHeaderCellDef>From</th>
+      <td mat-cell *matCellDef="let event">
+        <ng-container *ngIf="getAddressFromEvent(event, 'from') as address">
+          <account-id [address]="address" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="arrow">
+      <th mat-header-cell *matHeaderCellDef>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+      <td mat-cell *matCellDef="let event"><i class="fas fa-arrow-right"></i></td>
+    </ng-container>
+
+    <ng-container matColumnDef="toAddress">
+      <th mat-header-cell *matHeaderCellDef>To</th>
+      <td mat-cell *matCellDef="let event">
+        <ng-container *ngIf="getAddressFromEvent(event, 'to') as address">
+          <account-id [address]="address" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="amount">
+      <th mat-header-cell *matHeaderCellDef>Amount</th>
+      <td mat-cell *matCellDef="let event">
+        <ng-container *ngFor="let nameAndAmount of getAmountsFromAttributes(event.attributes)">
+          <balance [value]="nameAndAmount[1]" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="details">
+      <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
+      <td mat-cell *matCellDef="let event">
+        <a [routerLink]="'../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="visibleColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
+
+  </table>
+
+  <div *ngIf="(loadingObservable | async) === false && dataSource.length === 0">
+    <ng-container [ngSwitch]="pageLiveObservable | async">
+      <ng-container *ngSwitchCase="true">
+        No items. Waiting for new blocks.
+      </ng-container>
+      <ng-container *ngSwitchDefault>
+        No items found.
+      </ng-container>
+    </ng-container>
+  </div>
+
+</ng-container>
+</ng-container>
+
+<div *ngIf="loadingObservable | async">
+  <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+</div>
+
+<div>
+  <ng-container *ngIf="(hasNextPageObservable | async)">
+    <button [disabled]="(loadingObservable | async)" mat-stroked-button aria-label="Next" (click)="loadMoreItems()">
+      <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
+        <ng-template #showMore>Show More</ng-template>
+        <ng-container *ngIf="searchInfo.endOfBlockRange; else showMore">
+          Increase search range
+        </ng-container>
+      </ng-container>
+      <mat-icon>expand_more</mat-icon>
+    </button>
+  </ng-container>
+
+  <ng-container class="list-block-range" *ngIf="(pageLiveObservable | async) === false">
+    <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
+      <span class="list-block-range" *ngIf="searchInfo.fromBlock">
+        Search range: Blocks {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}
+      </span>
+    </ng-container>
+  </ng-container>
+</div>
