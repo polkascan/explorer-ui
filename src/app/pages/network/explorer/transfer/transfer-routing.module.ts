@@ -1,4 +1,4 @@
-/*!
+/*
  * Polkascan Explorer UI
  * Copyright (C) 2018-2022 Polkascan Foundation (NL)
  *
@@ -16,22 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-table {
-  width: 100%;
-}
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { TransferListComponent } from './transfer-list/transfer-list.component';
 
-mat-progress-bar {
-  margin: 10px;
-}
+const routes: Routes = [
+  {
+    path: '',
+    component: TransferListComponent
+  }
+];
 
-[mat-stroked-button] {
-  margin: 10px;
-}
-
-.centered-button-bar {
-  text-align: center;
-}
-
-.list-block-range {
-  font-size: 12px;
+@NgModule({
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule]
+})
+export class TransferRoutingModule {
 }

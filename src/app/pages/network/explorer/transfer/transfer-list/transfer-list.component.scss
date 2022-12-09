@@ -1,4 +1,4 @@
-/*
+/*!
  * Polkascan Explorer UI
  * Copyright (C) 2018-2022 Polkascan Foundation (NL)
  *
@@ -16,25 +16,33 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { InherentListComponent } from './inherent-list/inherent-list.component';
-import { InherentDetailComponent } from './inherent-detail/inherent-detail.component';
 
-const routes: Routes = [
-  {
-    path: '',
-    component: InherentListComponent
-  },
-  {
-    path: ':id',
-    component: InherentDetailComponent
-  }
-];
+table {
+  width: 100%;
+}
 
-@NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
-})
-export class InherentRoutingModule {
+
+.mat-column-age {
+  white-space: nowrap;
+}
+
+.mat-column-blockHash div {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+mat-progress-bar {
+  margin: 10px;
+}
+
+[mat-stroked-button] {
+  margin: 10px;
+}
+
+.centered-button-bar {
+  text-align: center;
+}
+
+.list-block-range {
+  font-size: 12px;
 }
