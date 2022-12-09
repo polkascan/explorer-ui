@@ -22,14 +22,14 @@ import { BN } from '@polkadot/util';
 @Component({
   selector: 'balance',
   template: `
-      <span *ngIf="intergralPart && intergralPart.length"
-            [title]="decimalPart.length ? intergralPart + '.' + decimalPart : intergralPart">
+    <span *ngIf="intergralPart && intergralPart.length"
+          [title]="decimalPart.length ? intergralPart + '.' + decimalPart : intergralPart">
       <span>{{ intergralPart }}</span>
       <span *ngIf="decimalPartCapped && decimalPartCapped.length">.<span class="balance-decimal-numbers">
             <span>{{decimalPartCapped}}</span><span *ngIf="decimalPart.length > decimalPartCapped.length">&mldr;</span>
       </span>
       </span>
-          {{ tokenSymbol }}
+      {{ tokenSymbol }}
     </span>
   `,
   styles: [`
@@ -66,29 +66,38 @@ export class BalanceCommonComponent implements OnChanges {
     }
 
     if (changes['tokenDecimals'] || changes['value']) {
-      let val: BN;
+      let val: BN | undefined;
       if (BN.isBN(this.value)) {
         val = this.value;
-      } else {
-        val = new BN(this.value as number);
+      } else if (this.value) {
+        try {
+          val = new BN(this.value as number);
+        } catch (e) {
+          this.intergralPart = '';
+          this.decimalPart = '';
+          this.decimalPartCapped = '';
+          return;
+        }
       }
 
-      if (val.isZero()) {
-        this.intergralPart = '0';
-        this.decimalPart = '';
-        this.decimalPartCapped = '';
-      } else {
-        const stringified = val.toString(undefined, this.decimals + 1); // String gets added preceding zeros.
+      if (val) {
+        if (val.isZero()) {
+          this.intergralPart = '0';
+          this.decimalPart = '';
+          this.decimalPartCapped = '';
+        } else {
+          const stringified = val.toString(undefined, this.decimals + 1); // String gets added preceding zeros.
 
-        const l = stringified.length;
-        // Split the string in two parts where the decimal point is expected.
-        this.intergralPart = stringified.substring(0, l - this.decimals).replace(/^0+\B/, ''); // remove preceding zeros, but allow a value of '0'.
-        this.decimalPart = stringified.substring(l - this.decimals).replace(/0+$/, ''); // remove leading zeros
+          const l = stringified.length;
+          // Split the string in two parts where the decimal point is expected.
+          this.intergralPart = stringified.substring(0, l - this.decimals).replace(/^0+\B/, ''); // remove preceding zeros, but allow a value of '0'.
+          this.decimalPart = stringified.substring(l - this.decimals).replace(/0+$/, ''); // remove leading zeros
 
-        // Make a short readable decimal value.
-        // /(^0{1}[1-9]{1}\d{1})|(^0{2}[1-9]{1})|(^0+[1-9]{1})|(^\d{1,3})/  earlier used regex.
-        const cappedResult = this.decimalPart.match(new RegExp(`\\d{0,${this.maxDecimals === undefined ? 5 : this.maxDecimals}}`));
-        this.decimalPartCapped = cappedResult && cappedResult[0] ? cappedResult[0] : '';
+          // Make a short readable decimal value.
+          // /(^0{1}[1-9]{1}\d{1})|(^0{2}[1-9]{1})|(^0+[1-9]{1})|(^\d{1,3})/  earlier used regex.
+          const cappedResult = this.decimalPart.match(new RegExp(`\\d{0,${this.maxDecimals === undefined ? 5 : this.maxDecimals}}`));
+          this.decimalPartCapped = cappedResult && cappedResult[0] ? cappedResult[0] : '';
+        }
       }
     }
   }
