@@ -24,6 +24,7 @@ import { PolkadaptService } from '../../../../../../services/polkadapt.service';
 import {u8aToHex} from "@polkadot/util";
 import {decodeAddress} from "@polkadot/util-crypto";
 import {NetworkService} from "../../../../../../services/network.service";
+import {TooltipsService} from "../../../../../../services/tooltips.service";
 
 
 @Component({
@@ -56,18 +57,20 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     blockRangeEnd: this.blockRangeEndControl
   });
 
-  queryParams = new BehaviorSubject<{[p: string]: string}>({})
-  networkProperties = this.ns.currentNetworkProperties
+  routerLink = new BehaviorSubject<string>('../../event');
+  queryParams = new BehaviorSubject<{[p: string]: string}>({});
+  networkProperties = this.ns.currentNetworkProperties;
 
   private unsubscribeFns: Map<string, (() => void)> = new Map();
   private destroyer: Subject<undefined> = new Subject();
 
   constructor(private pa: PolkadaptService,
-              private ns: NetworkService) {
+              private ns: NetworkService,
+              private ts: TooltipsService) {
   }
 
   ngOnDestroy(): void {
-    this.unsubscribeFns.forEach((unsub) => unsub());
+    this.unsubscribeFns.forEach(unsub => unsub());
     this.unsubscribeFns.clear();
     this.destroyer.next(undefined);
     this.destroyer.complete();
@@ -81,7 +84,17 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     if (this.eventTypes) {
       for (let pallet of Object.keys(this.eventTypes)) {
         queryParams.pallet = pallet;
+        if (this.eventTypes[pallet].length === 1) {
+          queryParams.eventName = this.eventTypes[pallet][0];
+        }
       }
+    }
+    if (queryParams.pallet === 'Balances' && queryParams.eventName === 'Transfer') {
+      this.routerLink.next('../../transfer');
+      delete queryParams.pallet;
+      delete queryParams.eventName;
+    } else {
+      this.routerLink.next('../../event');
     }
     this.queryParams.next(queryParams);
   }
@@ -105,11 +118,9 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
         const events = this.events.value;
         if (events && !events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx)) {
           const merged = [event, ...events];
-          merged.sort((a: pst.AccountEvent, b: pst.AccountEvent) => {
-            return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
-          });
+          merged.sort((a, b) => (b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx));
           merged.length = this.listSize;
-          this.events.next([event].concat(events));
+          this.events.next(merged);
         }
       });
 
@@ -130,5 +141,26 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
       }
     }
     return amounts;
+  }
+
+  getAddressFromEvent(event: pst.AccountEvent): string {
+    if (event.attributes) {
+      const data: any = JSON.parse(event.attributes);
+      let address: string = '';
+      if (event.eventName === 'Transfer') {
+        if (event.attributeName === 'from') {
+          address = data.to;
+        } else {
+          address = data.from;
+        }
+        return address;
+      }
+    }
+    return '';
+  }
+
+  copied(address: string) {
+    this.ts.notify.next(
+      `Address copied.<br><span class="mono">${address}</span>`);
   }
 }

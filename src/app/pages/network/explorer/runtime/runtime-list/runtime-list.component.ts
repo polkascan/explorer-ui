@@ -21,7 +21,7 @@ import { RuntimeService } from '../../../../../services/runtime/runtime.service'
 import { BehaviorSubject, Subject } from 'rxjs';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 import { NetworkService } from '../../../../../services/network.service';
-import { filter, first, switchMap, takeUntil } from 'rxjs/operators';
+import {filter, first, map, switchMap, takeUntil} from 'rxjs/operators';
 
 
 @Component({
@@ -33,8 +33,9 @@ import { filter, first, switchMap, takeUntil } from 'rxjs/operators';
 export class RuntimeListComponent implements OnInit, OnDestroy {
   private destroyer: Subject<undefined> = new Subject();
   runtimes = new BehaviorSubject<pst.Runtime[]>([]);
+  blockDates: {[blockNumber: string]: BehaviorSubject<Date | null>} = {};
 
-  visibleColumns = ['icon', 'name', 'version', 'pallets', 'events', 'calls', 'storage', 'constants', 'details'];
+  visibleColumns = ['icon', 'name', 'version', 'blockNumber', 'date', 'pallets', 'events', 'calls', 'storage', 'constants', 'details'];
 
   constructor(private ns: NetworkService,
               private rs: RuntimeService) {
@@ -49,6 +50,27 @@ export class RuntimeListComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer)
       ))
     ).subscribe(runtimes => {
+      for (let runtime of runtimes) {
+        const datetimeBlockNumber: number = Math.max(1, runtime.blockNumber);
+        if (!this.blockDates[runtime.blockNumber]) {
+          this.blockDates[runtime.blockNumber] = new BehaviorSubject<Date | null>(null)
+        }
+        this.ns.blockHarvester.loadedNumber.pipe(
+          takeUntil(this.destroyer),
+          filter(_ => !!_),
+          first(),
+          switchMap(_ => this.ns.blockHarvester.blocks[datetimeBlockNumber].pipe(
+            takeUntil(this.destroyer),
+            filter(block => Boolean(block.datetime)),
+            map(block => block.datetime),
+            first()
+          ))
+        ).subscribe(datetime => {
+          if (datetime) {
+            this.blockDates[runtime.blockNumber].next(new Date(datetime));
+          }
+        });
+      }
       this.runtimes.next(runtimes);
     });
   }

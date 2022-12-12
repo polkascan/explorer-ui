@@ -50,6 +50,7 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
   dateRangeEndControl = new FormControl<Date | ''>('');
   blockRangeBeginControl = new FormControl<number | ''>('');
   blockRangeEndControl = new FormControl<number | ''>('');
+  signatureControl = new FormControl<string>('signed');
 
   filtersFormGroup = new FormGroup({
     pallet: this.palletControl,
@@ -59,7 +60,8 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
     dateRangeBegin: this.dateRangeBeginControl,
     dateRangeEnd: this.dateRangeEndControl,
     blockRangeBegin: this.blockRangeBeginControl,
-    blockRangeEnd: this.blockRangeEndControl
+    blockRangeEnd: this.blockRangeEndControl,
+    signature: this.signatureControl
   });
 
   visibleColumns = ['icon', 'extrinsicID', 'age', 'block', 'pallet', 'call', 'signed', 'details'];
@@ -85,9 +87,10 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
         params.get('dateRangeBegin') ? new Date(`${params.get('dateRangeBegin') as string}T00:00`) : '',
         params.get('dateRangeEnd') ? new Date(`${params.get('dateRangeEnd') as string}T00:00`) : '',
         parseInt(params.get('blockRangeBegin') as string, 10) || '',
-        parseInt(params.get('blockRangeEnd') as string, 10) || ''
-      ] as [string, number | '', string, string, Date | '', Date | '', number | '', number | ''])
-    ).subscribe(([address, specVersion, pallet, callName, dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd]) => {
+        parseInt(params.get('blockRangeEnd') as string, 10) || '',
+        params.get('signature') as string || 'signed'
+      ] as [string, number | '', string, string, Date | '', Date | '', number | '', number | '', string])
+    ).subscribe(([address, specVersion, pallet, callName, dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd, signature]) => {
       if (address !== this.addressControl.value) {
         this.addressControl.setValue(address);
       }
@@ -113,6 +116,9 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
       }
       if (blockRangeEnd !== this.blockRangeEndControl.value) {
         this.blockRangeEndControl.setValue(blockRangeEnd);
+      }
+      if (signature !== this.signatureControl.value) {
+        this.signatureControl.setValue(signature);
       }
     });
 
@@ -151,6 +157,9 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
         }
         if (values.blockRangeEnd) {
           queryParams.blockRangeEnd = values.blockRangeEnd;
+        }
+        if (values.signature !== 'signed') {
+          queryParams.signature = values.signature;
         }
 
         this.router.navigate(['.'], {
@@ -202,7 +211,8 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
         dateRangeBegin: '',
         dateRangeEnd: '',
         blockRangeBegin: '',
-        blockRangeEnd: ''
+        blockRangeEnd: '',
+        signature: 'signed'
       }, {emitEvent: false});
 
       this.router.navigate(['.'], {
@@ -322,6 +332,11 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
     }
     if (this.blockRangeEndControl.value) {
       filters.blockRangeEnd = this.blockRangeEndControl.value;
+    }
+    if (this.signatureControl.value === 'signed') {
+      filters.signed = 1;
+    } else if (this.signatureControl.value === 'unsigned') {
+      filters.signed = 0;
     }
 
     return filters;

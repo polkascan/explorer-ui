@@ -1,45 +1,6 @@
-<h1>Extrinsics</h1>
+<h1>Transfers</h1>
 
 <div>
-  <mat-form-field appearance="fill">
-    <mat-label>Runtime</mat-label>
-    <mat-select [formControl]="specVersionControl">
-      <mat-option *ngIf="(specVersions | async)?.length === 0" [value]="specVersionControl.value">Loading...</mat-option>
-      <mat-option [value]="''">All versions</mat-option>
-      <ng-container *ngFor="let specVersion of specVersions | async">
-        <mat-option [value]="specVersion">
-          {{specVersion}}
-        </mat-option>
-      </ng-container>
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="fill">
-    <mat-label>Pallet</mat-label>
-    <mat-select [formControl]="palletControl">
-      <mat-option *ngIf="extrinsicsFilters.size === 0" [value]="palletControl.value">Loading...</mat-option>
-      <mat-option [value]="''">All pallets</mat-option>
-      <mat-option *ngFor="let item of extrinsicsFilters | keyvalue" [value]="item.key.pallet">
-        {{item.key.pallet}}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="fill">
-    <mat-label>Call</mat-label>
-    <mat-select [formControl]="callNameControl">
-      <mat-option *ngIf="extrinsicsFilters.size === 0" [value]="callNameControl.value">Loading...</mat-option>
-      <mat-option [value]="''">All calls</mat-option>
-      <ng-container *ngFor="let item of extrinsicsFilters | keyvalue">
-        <ng-container *ngIf="item.key.pallet === palletControl.value">
-          <mat-option *ngFor="let call of item.value" [value]="call.callName">
-            {{call.callName}}
-          </mat-option>
-        </ng-container>
-      </ng-container>
-    </mat-select>
-  </mat-form-field>
-
   <mat-form-field appearance="fill">
     <mat-label>Date range</mat-label>
     <mat-date-range-input [rangePicker]="picker">
@@ -68,15 +29,6 @@
     <mat-label>Account</mat-label>
     <input matInput type="text" placeholder="Address" [formControl]="addressControl">
   </mat-form-field>
-
-  <mat-form-field appearance="fill">
-    <mat-label>Signature</mat-label>
-    <mat-select [formControl]="signatureControl">
-      <mat-option [value]="'signed'">Signed only</mat-option>
-      <mat-option [value]="'all'">All extrinsics</mat-option>
-      <mat-option [value]="'unsigned'">Unsigned only</mat-option>
-    </mat-select>
-  </mat-form-field>
 </div>
 
 <div class="centered-button-bar" *ngIf="(pageLiveObservable | async) === false">
@@ -87,63 +39,67 @@
   </button>
 </div>
 
+<ng-container *ngIf="(networkProperties | async) as props">
 <ng-container *ngIf="(itemsObservable | async) as dataSource">
   <table mat-table [dataSource]="dataSource" [trackBy]="track">
 
     <ng-container matColumnDef="icon">
       <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
       <td mat-cell *matCellDef>
-        <i class="fas fa-file-signature"></i>
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="extrinsicID">
-      <th mat-header-cell *matHeaderCellDef>Extrinsic ID</th>
-      <td mat-cell *matCellDef="let extrinsic">
-        <a
-          [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
+        <i class="fas fa-calendar-check"></i>
       </td>
     </ng-container>
 
     <ng-container matColumnDef="age">
       <th mat-header-cell *matHeaderCellDef>Time</th>
-      <td mat-cell *matCellDef="let extrinsic">
-        <time-ago [value]="extrinsic.blockDatetime"></time-ago>
+      <td mat-cell *matCellDef="let event">
+        <time-ago [value]="event.blockDatetime"></time-ago>
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="block">
-      <th mat-header-cell *matHeaderCellDef>Block</th>
-      <td mat-cell *matCellDef="let extrinsic">
-        <a [routerLink]="'../block/' + extrinsic.blockNumber">{{extrinsic.blockNumber}}</a>
+    <ng-container matColumnDef="referencedTransaction">
+      <th mat-header-cell *matHeaderCellDef>Extrinsic</th>
+      <td mat-cell *matCellDef="let event">
+        <a *ngIf="event.extrinsicIdx !== null" [routerLink]="'../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber + '-' + event.extrinsicIdx}}</a>
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="pallet">
-      <th mat-header-cell *matHeaderCellDef>Pallet</th>
-      <td mat-cell *matCellDef="let extrinsic">
-        {{extrinsic.callModule}}
+    <ng-container matColumnDef="fromAddress">
+      <th mat-header-cell *matHeaderCellDef>From</th>
+      <td mat-cell *matCellDef="let event">
+        <ng-container *ngIf="getAddressFromEvent(event, 'from') as address">
+          <account-id [address]="address" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+        </ng-container>
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="call">
-      <th mat-header-cell *matHeaderCellDef>Call</th>
-      <td mat-cell *matCellDef="let extrinsic">
-        {{extrinsic.callName}}
+    <ng-container matColumnDef="arrow">
+      <th mat-header-cell *matHeaderCellDef>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+      <td mat-cell *matCellDef="let event"><i class="fas fa-arrow-right"></i></td>
+    </ng-container>
+
+    <ng-container matColumnDef="toAddress">
+      <th mat-header-cell *matHeaderCellDef>To</th>
+      <td mat-cell *matCellDef="let event">
+        <ng-container *ngIf="getAddressFromEvent(event, 'to') as address">
+          <account-id [address]="address" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+        </ng-container>
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="signed">
-      <th mat-header-cell *matHeaderCellDef>Signed</th>
-      <td mat-cell *matCellDef="let extrinsic">
-        {{extrinsic.signed}}
+    <ng-container matColumnDef="amount">
+      <th mat-header-cell *matHeaderCellDef>Amount</th>
+      <td mat-cell *matCellDef="let event">
+        <ng-container *ngFor="let nameAndAmount of getAmountsFromAttributes(event.attributes)">
+          <balance [value]="nameAndAmount[1]" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
+        </ng-container>
       </td>
     </ng-container>
 
     <ng-container matColumnDef="details">
       <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
-      <td mat-cell *matCellDef="let extrinsic">
-        <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
+      <td mat-cell *matCellDef="let event">
+        <a [routerLink]="'../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
       </td>
     </ng-container>
 
@@ -163,6 +119,7 @@
     </ng-container>
   </div>
 
+</ng-container>
 </ng-container>
 
 <div *ngIf="loadingObservable | async">
