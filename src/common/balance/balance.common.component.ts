@@ -17,29 +17,45 @@
  */
 
 import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, ViewEncapsulation } from '@angular/core';
+import { BN } from '@polkadot/util';
 
 @Component({
   selector: 'balance',
   template: `
-    <ng-container *ngIf="convertedValue !== null">
-      {{ convertedValue }} {{ tokenSymbol }}
-    </ng-container>
+    <span *ngIf="intergralPart && intergralPart.length"
+          [title]="decimalPart.length ? intergralPart + '.' + decimalPart : intergralPart">
+      <span>{{ intergralPart }}</span>
+      <span *ngIf="decimalPartCapped && decimalPartCapped.length">.<span class="balance-decimal-numbers">
+            <span>{{decimalPartCapped}}</span><span *ngIf="decimalPart.length > decimalPartCapped.length">&mldr;</span>
+      </span>
+      </span>
+      {{ tokenSymbol }}
+    </span>
   `,
   styles: [`
     balance {
       white-space: nowrap;
+
+      .balance-decimal-numbers {
+        font-size: 70%;
+        opacity: 0.7;
+      }
     }
   `],
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BalanceCommonComponent implements OnChanges {
-  @Input() value: number;
+  @Input() value: number | BN;
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
+  @Input() maxDecimals: number;
 
-  convertedValue: number | null = null;
   private decimals: number;
+
+  intergralPart: string;
+  decimalPart: string;
+  decimalPartCapped: string;
 
   constructor() {
   }
@@ -50,19 +66,39 @@ export class BalanceCommonComponent implements OnChanges {
     }
 
     if (changes['tokenDecimals'] || changes['value']) {
-      let converted: number | null;
-
-      try {
-        converted = Math.max(0, this.value) / Math.pow(10, this.decimals);
-        if (isNaN(converted)) {
-          converted = null;
+      let val: BN | undefined;
+      if (BN.isBN(this.value)) {
+        val = this.value;
+      } else if (this.value) {
+        try {
+          val = new BN(this.value as number);
+        } catch (e) {
+          this.intergralPart = '';
+          this.decimalPart = '';
+          this.decimalPartCapped = '';
+          return;
         }
-      } catch (e) {
-        converted = null;
       }
 
+      if (val) {
+        if (val.isZero()) {
+          this.intergralPart = '0';
+          this.decimalPart = '';
+          this.decimalPartCapped = '';
+        } else {
+          const stringified = val.toString(undefined, this.decimals + 1); // String gets added preceding zeros.
 
-      this.convertedValue = converted;
+          const l = stringified.length;
+          // Split the string in two parts where the decimal point is expected.
+          this.intergralPart = stringified.substring(0, l - this.decimals).replace(/^0+\B/, ''); // remove preceding zeros, but allow a value of '0'.
+          this.decimalPart = stringified.substring(l - this.decimals).replace(/0+$/, ''); // remove leading zeros
+
+          // Make a short readable decimal value.
+          // /(^0{1}[1-9]{1}\d{1})|(^0{2}[1-9]{1})|(^0+[1-9]{1})|(^\d{1,3})/  earlier used regex.
+          const cappedResult = this.decimalPart.match(new RegExp(`\\d{0,${this.maxDecimals === undefined ? 5 : this.maxDecimals}}`));
+          this.decimalPartCapped = cappedResult && cappedResult[0] ? cappedResult[0] : '';
+        }
+      }
     }
   }
 }

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { debounceTime, distinctUntilChanged, filter, first, map, takeUntil } from 'rxjs/operators';
@@ -36,7 +36,7 @@ import {decodeAddress} from "@polkadot/util-crypto";
   styleUrls: ['./event-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EventListComponent extends PaginatedListComponentBase<pst.Event | pst.AccountEvent> implements OnInit {
+export class EventListComponent extends PaginatedListComponentBase<pst.Event | pst.AccountEvent> implements OnInit, OnDestroy {
   listSize = 100;
   eventFilters = new Map();
   specVersions = new BehaviorSubject<number[]>([]);

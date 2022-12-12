@@ -18,27 +18,37 @@
 
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-import { AccountRoutingModule } from './account-routing.module';
-import { AccountDetailComponent } from './account-detail/account-detail.component';
+import { ReactiveFormsModule } from '@angular/forms';
 import { PolkascanCommonModule } from '../../../../../common/polkascan-common.module';
+import { AccountRoutingModule } from './account-routing.module';
+
+import { AccountDetailComponent } from './account-detail/account-detail.component';
+import { HistoricalBalanceComponent } from './historical-balance/historical-balance.component';
+import { AccountEventsComponent } from './account-detail/account-events/account-events.component';
+
+import { HighchartsChartModule } from 'highcharts-angular';
+
 import { MatTableModule } from '@angular/material/table';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
-import { AccountEventsComponent } from './account-detail/account-events/account-events.component';
-import { ReactiveFormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+
+
 
 
 @NgModule({
   declarations: [
     AccountDetailComponent,
-    AccountEventsComponent
+    AccountEventsComponent,
+    HistoricalBalanceComponent
   ],
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     AccountRoutingModule,
     PolkascanCommonModule,
     MatTableModule,
@@ -47,7 +57,9 @@ import { ReactiveFormsModule } from '@angular/forms';
     MatTabsModule,
     MatToolbarModule,
     MatButtonModule,
-    ReactiveFormsModule
+    MatIconModule,
+    MatProgressBarModule,
+    HighchartsChartModule
   ]
 })
 export class AccountModule {
