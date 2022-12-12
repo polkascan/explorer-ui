@@ -31,7 +31,7 @@ import { types as pst } from '@polkadapt/polkascan-explorer';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { BehaviorSubject, combineLatest, from, Observable, of, ReplaySubject } from 'rxjs';
 import { AccountId, Balance, BalanceLock, BlockHash, Header } from '@polkadot/types/interfaces';
-import { combineLatestWith, debounceTime, map, shareReplay, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { combineLatestWith, debounceTime, map, shareReplay, switchMap, takeUntil, tap, skip } from 'rxjs/operators';
 import { AccountInfo } from '@polkadot/types/interfaces/system/types';
 import { AccountData } from '@polkadot/types/interfaces/balances/types';
 import { BN } from '@polkadot/util';
@@ -114,10 +114,14 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
       adapters: ['substrate-rpc']
     }).rpc.chain.getBlockHash(1).then((hash) => this.blockOne.next(hash));
 
+    // Load more items automatically.
+    this.itemsObservable.pipe(skip(1)).subscribe(() => this.loadMoreItems());
+
     // Start observables for data retrieval and conversion for table and charts.
     this.createItemAtBlockOneObservable();
     this.createBalancesObservable();
     this.createChartDataObservable();
+
   }
 
   ngOnInit(): void {
