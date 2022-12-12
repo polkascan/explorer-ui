@@ -108,13 +108,99 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
               private pricing: PricingService) {
     super(ns);
 
+    // Fetch the block hash for block 1.
+    this.pa.run({
+      chain: this.network,
+      adapters: ['substrate-rpc']
+    }).rpc.chain.getBlockHash(1).then((hash) => this.blockOne.next(hash));
+
+    // Start observables for data retrieval and conversion for table and charts.
+    this.createItemAtBlockOneObservable();
+    this.createBalancesObservable();
+    this.createChartDataObservable();
+  }
+
+  ngOnInit(): void {
+    this.accountIdObservable.next(this.accountId);
+    super.ngOnInit();
+  }
+
+
+  onNetworkChange(network: string, previous: string): void {
+    this.balancesPerBlock = new Map();
+    super.onNetworkChange(network);
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes.accountId.currentValue !== changes.accountId.previousValue) {
+      this.balancesPerBlock = new Map();
+
+      typeof this.unsubscribeNewItem === 'function' ? this.unsubscribeNewItem() : null;
+
+      this.accountIdObservable.next(this.accountId);
+
+      if (this.network) {
+        this.subscribeNewItem();
+        this.getItems();
+      }
+    }
+  }
+
+
+  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.AccountEvent>> {
+    if (this.accountId) {
+      return this.pa.run(this.network).polkascan.chain.getEventsByAccount(
+        this.accountId.toHex(),
+        this.filters,
+        this.listSize,
+        pageKey,
+        blockLimitOffset
+      );
+    }
+    return Promise.reject();
+  }
+
+
+  createNewItemSubscription(handleItemFn: (item: pst.AccountEvent) => void): Promise<() => void> {
+    if (this.accountId) {
+      return this.pa.run(this.network).polkascan.chain.subscribeNewEventByAccount(
+        this.accountId?.toJSON(),
+        this.filters,
+        handleItemFn
+      )
+    }
+    return Promise.reject();
+  }
+
+
+  sortCompareFn(a: pst.AccountEvent, b: pst.AccountEvent): number {
+    return b.blockNumber - a.blockNumber;
+  }
+
+
+  equalityCompareFn(a: pst.AccountEvent, b: pst.AccountEvent): boolean {
+    return a.blockNumber === b.blockNumber;
+  }
+
+
+  get filters(): any {
+    const filters: any = {
+      accountId: this.accountId
+    };
+    return filters;
+  }
+
+
+  track(i: any, item: BalancesItem): string {
+    return `${item.event.blockNumber}-${item.event.extrinsicIdx}`;
+  }
+
+
+  createItemAtBlockOneObservable(): void {
     const runParams = {
       chain: this.network,
       adapters: ['substrate-rpc']
     };
-
-    // Fetch the block hash at block 1.
-    this.pa.run(runParams).rpc.chain.getBlockHash(1).then((hash) => this.blockOne.next(hash));
 
     // Check if an account has balances at block 1.
     this.itemAtBlockOne = this.itemsObservable.pipe(
@@ -167,7 +253,10 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         return of(null);
       })
     )
+  }
 
+
+  createBalancesObservable(): void {
     this.balancesObservable = this.itemsObservable.pipe(
       takeUntil(this.destroyer),
       map<pst.AccountEvent[], pst.AccountEvent[]>((items) => { // Filter out double blocks
@@ -194,6 +283,14 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
       }),
       shareReplay(1)
     );
+  }
+
+
+  createChartDataObservable(): void {
+    const runParams = {
+      chain: this.network,
+      adapters: ['substrate-rpc']
+    };
 
     this.chartDataObservable = this.balancesObservable.pipe(
       takeUntil(this.destroyer),
@@ -361,15 +458,6 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
                   color: '#350659'
                 }
               }
-            },
-            {
-              title: {
-                text: this.variables.currency.value,
-                style: {
-                  color: '#426e24'
-                }
-              },
-              opposite: true
             }
           ],
           tooltip: {
@@ -396,6 +484,16 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         }
 
         if (historicPriceSeries) {
+          (options.yAxis! as any[]).push({
+            title: {
+              text: this.variables.currency.value,
+              style: {
+                color: '#426e24'
+              }
+            },
+            opposite: true
+          });
+
           options.series!.push({
             type: 'line',
             yAxis: 1,
@@ -412,81 +510,6 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         this.cd.markForCheck();
       })
     )
-  }
-
-  ngOnInit(): void {
-    this.accountIdObservable.next(this.accountId);
-    super.ngOnInit();
-  }
-
-
-  onNetworkChange(network: string, previous: string): void {
-    this.balancesPerBlock = new Map();
-    super.onNetworkChange(network);
-  }
-
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes.accountId.currentValue !== changes.accountId.previousValue) {
-      this.balancesPerBlock = new Map();
-
-      typeof this.unsubscribeNewItem === 'function' ? this.unsubscribeNewItem() : null;
-
-      this.accountIdObservable.next(this.accountId);
-
-      if (this.network) {
-        this.subscribeNewItem();
-        this.getItems();
-      }
-    }
-  }
-
-
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.AccountEvent>> {
-    if (this.accountId) {
-      return this.pa.run(this.network).polkascan.chain.getEventsByAccount(
-        this.accountId.toHex(),
-        this.filters,
-        this.listSize,
-        pageKey,
-        blockLimitOffset
-      );
-    }
-    return Promise.reject();
-  }
-
-
-  createNewItemSubscription(handleItemFn: (item: pst.AccountEvent) => void): Promise<() => void> {
-    if (this.accountId) {
-      return this.pa.run(this.network).polkascan.chain.subscribeNewEventByAccount(
-        this.accountId?.toJSON(),
-        this.filters,
-        handleItemFn
-      )
-    }
-    return Promise.reject();
-  }
-
-
-  sortCompareFn(a: pst.AccountEvent, b: pst.AccountEvent): number {
-    return b.blockNumber - a.blockNumber;
-  }
-
-
-  equalityCompareFn(a: pst.AccountEvent, b: pst.AccountEvent): boolean {
-    return a.blockNumber === b.blockNumber;
-  }
-
-
-  get filters(): any {
-    const filters: any = {
-      accountId: this.accountId
-    };
-    return filters;
-  }
-
-
-  track(i: any, item: BalancesItem): string {
-    return `${item.event.blockNumber}-${item.event.extrinsicIdx}`;
   }
 
 

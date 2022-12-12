@@ -121,7 +121,10 @@ export class PricingService {
       if (adapterAvailable) {
         const history = await this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 1);
         if (history) {
-          this.dailyHistoricPrices.next(history);
+          const prices = this.dailyHistoricPrices.value;
+          if (prices.find((p) => p[0] === history[0][0]) === undefined) {
+            this.dailyHistoricPrices.next([...prices, history[0]]);
+          }
         }
       }
     } catch (e) {
