@@ -80,7 +80,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   @Input() accountId: AccountId | null | undefined;
   accountIdObservable = new ReplaySubject<AccountId | null | undefined>(1);
 
-  listSize = 100;
+  listSize = 500000;
 
   balancesPerBlock = new Map<number, BehaviorSubject<HistoricalBalance>>();
   balancesObservable: Observable<BalancesItem[]>;
@@ -187,7 +187,6 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
       }),
       combineLatestWith(this.itemAtBlockOne),
       map<[BalancesItem[], BalancesItem | null], BalancesItem[]>(([balanceItems, itemAtBlockOne]) => {
-        console.log(balanceItems);
         if (itemAtBlockOne) {
           return [...balanceItems, itemAtBlockOne];
         }
@@ -269,7 +268,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         )
       ),
       debounceTime(300),
-      map<(ChartItem | null)[], ChartItem[]>((items) => items.filter((i) => i !== null) as ChartItem[]),
+      map<(ChartItem | null)[], ChartItem[]>((items) => items.filter((i) => i !== null).sort((a, b) => +a!.blockDate - +b!.blockDate) as ChartItem[]),
       combineLatestWith(this.pricing.dailyHistoricPrices),
       map<[ChartItem[], ([number, number][] | undefined)], Highcharts.Options | null>(([items, historicPrices]): Highcharts.Options | null => {
         if (items.length === 0) {
@@ -286,7 +285,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
         let min: number | null = null;
         let max: number | null = null;
-        let historicSeries: [number, number][] | null = null;
+        let historicPriceSeries: [number, number][] | null = null;
 
         if (historicPrices && historicPrices.length > 0) {
           // Try and set the historical value for the selected currency.
@@ -315,9 +314,12 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
           if (min !== null && max !== null) {
             // Create a second currency based historic series.
-            historicSeries = historicPrices
-              .filter((p) => p[0] >= min! && p[0] <= max!)  // limit to visible scope
-              .map((p, i) => {  //
+            const historicPricesInScope = historicPrices
+              .filter((p) => p[0] >= min! && p[0] <= max!)
+
+            const valuePerDay = historicPricesInScope
+              .slice(1)  // Remove the first day
+              .map((p, i) => {
                 let item = items.find((i) => p[0] >= i.utcStartOfDay)
                 if (i === 0 && !item) {
                   item = items[0];
@@ -326,8 +328,16 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
                   return [p[0], parseFloat((item.y * p[1]).toFixed(2))]
                 }
                 return null;
-              })
-              .filter((p) => p !== null) as [number, number][];
+              }).filter((p) => p !== null) as [number, number][];
+
+            const valuePerItem = items.map((item) => {
+              if (item.historicValue !== undefined && item.historicValue !== null) {
+                return [item.blockDate.getTime(), parseFloat(item.historicValue)];
+              }
+              return null;
+            }).filter((p) => p !== null) as [number, number][];
+
+            historicPriceSeries = [...valuePerDay, ...valuePerItem].sort((a, b) => +a[0] - +b[0]);
           }
         }
 
@@ -343,11 +353,25 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           xAxis: {
             type: 'datetime'
           },
-          yAxis: {
-            title: {
-              text: this.networkProperties.value?.tokenSymbol
+          yAxis: [
+            {
+              title: {
+                text: this.networkProperties.value?.tokenSymbol,
+                style: {
+                  color: '#350659'
+                }
+              }
+            },
+            {
+              title: {
+                text: this.variables.currency.value,
+                style: {
+                  color: '#426e24'
+                }
+              },
+              opposite: true
             }
-          },
+          ],
           tooltip: {
             headerFormat: '',
           },
@@ -360,6 +384,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           series: [
             {
               type: 'line',
+              yAxis: 0,
               color: '#350659',
               name: 'Total',
               data: items,
@@ -370,14 +395,15 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           ]
         }
 
-        // if (historicSeries) {
-        //   options.series!.push({
-        //     type: 'line',
-        //     color: '#065917',
-        //     name: this.variables.currency.value,
-        //     data: historicSeries
-        //   });
-        // }
+        if (historicPriceSeries) {
+          options.series!.push({
+            type: 'line',
+            yAxis: 1,
+            color: '#426e24',
+            name: this.variables.currency.value,
+            data: historicPriceSeries
+          });
+        }
 
         return options;
       }),
