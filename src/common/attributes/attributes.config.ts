@@ -28,6 +28,7 @@ export const attributesConfig: {[key: string]: string} = {
   'T::LookupSource': 'address',
   'AccountIdLookupOf' : 'address',
   'PropIndex': 'proposal',
+  'ProposalIndex': 'proposal',
   'ReferendumIndex': 'referendum',
   'Compact<ReferendumIndex>': 'referendum',
   'SessionIndex': 'session',

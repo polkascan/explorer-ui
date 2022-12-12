@@ -39,7 +39,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
   fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
   fetchEventAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-  visibleColumns = ['icon', 'type'];
+  visibleColumns = ['icon', 'type', 'typeComposition'];
 
   private destroyer: Subject<undefined> = new Subject();
 
@@ -110,11 +110,17 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
     this.eventAttributes = runtimeObservable.pipe(
       tap(() => this.fetchEventAttributesStatus.next('loading')),
       switchMap(([runtime, pallet, eventName]) => {
-        const subject: Subject<pst.RuntimeEventAttribute[]> = new Subject();
+        const subject: Subject<(pst.RuntimeEventAttribute & {parsedComposition?: any})[]> = new Subject();
         this.pa.run().polkascan.state.getRuntimeEventAttributes(runtime.specName, runtime.specVersion, pallet, eventName).then(
           (response) => {
             if (Array.isArray(response.objects)) {
-              subject.next(response.objects);
+              const objects: (pst.RuntimeEventAttribute & {parsedComposition?: any})[] = [...response.objects];
+              for (let obj of objects) {
+                if (obj.scaleTypeComposition) {
+                  obj.parsedComposition = JSON.parse(obj.scaleTypeComposition);
+                }
+              }
+              subject.next(objects);
               this.fetchEventAttributesStatus.next(null);
             } else {
               subject.error('Invalid response.')
@@ -137,7 +143,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
     this.destroyer.complete();
   }
 
-  trackEventAttribute(index: number, item: pst.RuntimeEventAttribute): number {
-    return item.eventAttributeIdx;
+  trackEventAttribute(index: number, item: pst.RuntimeEventAttribute): string {
+    return item.eventAttributeName;
   }
 }

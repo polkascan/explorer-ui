@@ -292,8 +292,24 @@
 
   <mat-tab-group dynamicHeight animationDuration="0ms">
 
-    <mat-tab label="Historical Balance" *ngIf="accountId">
+    <mat-tab label="Balance History" *ngIf="accountId">
       <app-historical-balance [accountId]="accountId | async"></app-historical-balance>
+    </mat-tab>
+
+    <mat-tab label="Transfers">
+      <ng-container *ngIf="id | async as address">
+        <app-account-events [address]="address" [listSize]="listsSize"
+                            [eventTypes]="{'Balances': ['Transfer']}"
+                            [columns]="['icon', 'referencedTransaction', 'age', 'direction', 'address', 'amount', 'detailsExtrinsic']"></app-account-events>
+      </ng-container>
+    </mat-tab>
+
+    <mat-tab label="Staking">
+      <ng-container *ngIf="id | async as address">
+        <app-account-events [address]="address" [listSize]="listsSize"
+                            [eventTypes]="{'Staking': ['Bonded', 'Chilled', 'Kicked', 'Rewarded', 'Slashed', 'Unbonded', 'Withdrawn']}"
+                            [columns]="['icon', 'age', 'event', 'amount', 'details']"></app-account-events>
+      </ng-container>
     </mat-tab>
 
     <mat-tab label="Signed Extrinsics">
@@ -357,22 +373,6 @@
     <mat-tab label="Events">
       <ng-container *ngIf="id | async as address">
         <app-account-events [address]="address" [listSize]="listsSize"></app-account-events>
-      </ng-container>
-    </mat-tab>
-
-    <mat-tab label="Transfers">
-      <ng-container *ngIf="id | async as address">
-        <app-account-events [address]="address" [listSize]="listsSize"
-                            [eventTypes]="{'Balances': ['Transfer']}"
-                            [columns]="['icon', 'referencedTransaction', 'age', 'direction', 'address', 'amount', 'detailsExtrinsic']"></app-account-events>
-      </ng-container>
-    </mat-tab>
-
-    <mat-tab label="Staking">
-      <ng-container *ngIf="id | async as address">
-        <app-account-events [address]="address" [listSize]="listsSize"
-                            [eventTypes]="{'Staking': ['Bonded', 'Chilled', 'Kicked', 'Rewarded', 'Slashed', 'Unbonded', 'Withdrawn']}"
-                            [columns]="['icon', 'age', 'event', 'amount', 'details']"></app-account-events>
       </ng-container>
     </mat-tab>
 

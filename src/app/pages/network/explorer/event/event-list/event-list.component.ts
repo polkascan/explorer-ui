@@ -31,7 +31,7 @@ import {decodeAddress} from "@polkadot/util-crypto";
 
 
 @Component({
-  selector: 'app-transfer-list',
+  selector: 'app-event-list',
   templateUrl: './event-list.component.html',
   styleUrls: ['./event-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -79,20 +79,31 @@ export class AttributesComponent implements OnChanges {
         }
 
         if (Array.isArray(this.runtimeEventAttributes)) {
-          attrs = attrs.map((value, index) => {
+          attrs = attrs.map(value => {
             if (value.type) {
               return value;
             }
 
-            const eventAttribute = (this.runtimeEventAttributes as pst.RuntimeEventAttribute[]).find((ea) => ea.eventAttributeIdx === index);
-            if (eventAttribute && eventAttribute.scaleType) {
-              return {
-                type: eventAttribute.scaleType,
-                value: value
-              };
+            if (typeof value === 'object' && !Array.isArray(value)) {
+              // This is an Object with (sub)attribute names and values.
+              value = Object.entries(value).map(([subName, subValue]) => {
+                const eventAttribute = (this.runtimeEventAttributes as pst.RuntimeEventAttribute[]).find((ea) => ea.eventAttributeName === subName);
+                if (eventAttribute && eventAttribute.scaleType) {
+                  return {
+                    name: subName,
+                    type: eventAttribute.scaleType,
+                    value: subValue
+                  };
+                } else {
+                  return subValue;
+                }
+              });
             }
             return value;
-          })
+          });
+          if (attrs.length === 1 && Array.isArray(attrs[0])) {
+            attrs = attrs[0];
+          }
         }
       }
       this.parsedAttributes = attrs;

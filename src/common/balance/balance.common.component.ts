@@ -22,9 +22,9 @@ import { BN } from '@polkadot/util';
 @Component({
   selector: 'balance',
   template: `
-    <span *ngIf="intergralPart && intergralPart.length"
-          [title]="decimalPart.length ? intergralPart + '.' + decimalPart : intergralPart">
-      <span>{{ intergralPart }}</span>
+    <span *ngIf="integralPart && integralPart.length"
+          [title]="decimalPart.length ? integralPart + '.' + decimalPart : integralPart">
+      <span>{{ integralPart }}</span>
       <span *ngIf="decimalPartCapped && decimalPartCapped.length">.<span class="balance-decimal-numbers">
             <span>{{decimalPartCapped}}</span><span *ngIf="decimalPart.length > decimalPartCapped.length">&mldr;</span>
       </span>
@@ -53,7 +53,7 @@ export class BalanceCommonComponent implements OnChanges {
 
   private decimals: number;
 
-  intergralPart: string;
+  integralPart: string;
   decimalPart: string;
   decimalPartCapped: string;
 
@@ -69,11 +69,11 @@ export class BalanceCommonComponent implements OnChanges {
       let val: BN | undefined;
       if (BN.isBN(this.value)) {
         val = this.value;
-      } else if (this.value) {
+      } else if (Number.isInteger(this.value)) {
         try {
           val = new BN(this.value as number);
         } catch (e) {
-          this.intergralPart = '';
+          this.integralPart = '';
           this.decimalPart = '';
           this.decimalPartCapped = '';
           return;
@@ -82,7 +82,7 @@ export class BalanceCommonComponent implements OnChanges {
 
       if (val) {
         if (val.isZero()) {
-          this.intergralPart = '0';
+          this.integralPart = '0';
           this.decimalPart = '';
           this.decimalPartCapped = '';
         } else {
@@ -90,7 +90,7 @@ export class BalanceCommonComponent implements OnChanges {
 
           const l = stringified.length;
           // Split the string in two parts where the decimal point is expected.
-          this.intergralPart = stringified.substring(0, l - this.decimals).replace(/^0+\B/, ''); // remove preceding zeros, but allow a value of '0'.
+          this.integralPart = stringified.substring(0, l - this.decimals).replace(/^0+\B/, ''); // remove preceding zeros, but allow a value of '0'.
           this.decimalPart = stringified.substring(l - this.decimals).replace(/0+$/, ''); // remove leading zeros
 
           // Make a short readable decimal value.
