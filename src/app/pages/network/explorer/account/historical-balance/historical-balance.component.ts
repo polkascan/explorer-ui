@@ -168,7 +168,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   createNewItemSubscription(handleItemFn: (item: pst.AccountEvent) => void): Promise<() => void> {
     if (this.accountId) {
       return this.pa.run(this.network).polkascan.chain.subscribeNewEventByAccount(
-        this.accountId?.toJSON(),
+        this.accountId?.toHex(),
         this.filters,
         handleItemFn
       )
