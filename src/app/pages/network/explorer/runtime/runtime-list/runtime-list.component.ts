@@ -21,7 +21,7 @@ import { RuntimeService } from '../../../../../services/runtime/runtime.service'
 import { BehaviorSubject, Subject } from 'rxjs';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 import { NetworkService } from '../../../../../services/network.service';
-import {filter, first, map, switchMap, takeUntil} from 'rxjs/operators';
+import {filter, first, map, switchMap, takeUntil, tap} from 'rxjs/operators';
 
 
 @Component({
@@ -55,16 +55,11 @@ export class RuntimeListComponent implements OnInit, OnDestroy {
         if (!this.blockDates[runtime.blockNumber]) {
           this.blockDates[runtime.blockNumber] = new BehaviorSubject<Date | null>(null)
         }
-        this.ns.blockHarvester.loadedNumber.pipe(
+        this.ns.blockHarvester.blocks[datetimeBlockNumber].pipe(
           takeUntil(this.destroyer),
-          filter(_ => !!_),
-          first(),
-          switchMap(_ => this.ns.blockHarvester.blocks[datetimeBlockNumber].pipe(
-            takeUntil(this.destroyer),
-            filter(block => Boolean(block.datetime)),
-            map(block => block.datetime),
-            first()
-          ))
+          filter(block => Boolean(block.datetime)),
+          map(block => block.datetime),
+          first()
         ).subscribe(datetime => {
           if (datetime) {
             this.blockDates[runtime.blockNumber].next(new Date(datetime));

@@ -3,7 +3,7 @@
 
   <ng-container [ngSwitch]="attributesConfig[attribute.type]">
 
-    <label *ngIf="attributesConfig[attribute.type] && (attribute.name || attribute.key)">{{ attribute.name || attribute.key }}</label>
+    <label *ngIf="attributesConfig[attribute.type] && (attribute.name || attribute.key)" [title]="attribute.type">{{ attribute.name || attribute.key }}</label>
 
     <attribute-address *ngSwitchCase="'address'" [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize"
                        [ss58Prefix]="ss58Prefix"></attribute-address>

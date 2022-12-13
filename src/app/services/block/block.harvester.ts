@@ -187,7 +187,6 @@ export class BlockHarvester {
         block.events = new Array(block.countEvents);
         block.status = 'loaded';
         cached.next(block);
-        cached.complete();
       } else {
         // Load data from substrate rpc.
         const runOnRpc = {chain: this.network, adapters: ['substrate-rpc']};
@@ -210,7 +209,7 @@ export class BlockHarvester {
           block.parentHash = signedBlock.block.header.parentHash.toString();
           block.extrinsicsRoot = signedBlock.block.header.extrinsicsRoot.toString();
           block.stateRoot = signedBlock.block.header.stateRoot.toString();
-          block.datetime = timestamp.toString();
+          block.datetime = new Date(parseInt(timestamp.toString(), 10)).toISOString();
           block.extrinsics = new Array(signedBlock.block.extrinsics.length);
           block.events = new Array((allEvents as any).length);  // temporary 'as any' fix until polkadot-js types are fixed.
           block.status = 'loaded';

@@ -52,10 +52,6 @@ const routes: Routes = [
   {
     path: 'account',
     loadChildren: () => import('./account/account.module').then(m => m.AccountModule)
-  },
-  {
-    path: 'balances',
-    loadChildren: () => import('./balances/balances.module').then(m => m.BalancesModule)
   }
 ];
 

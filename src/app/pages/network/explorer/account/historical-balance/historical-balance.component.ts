@@ -168,7 +168,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   createNewItemSubscription(handleItemFn: (item: pst.AccountEvent) => void): Promise<() => void> {
     if (this.accountId) {
       return this.pa.run(this.network).polkascan.chain.subscribeNewEventByAccount(
-        this.accountId?.toJSON(),
+        this.accountId?.toHex(),
         this.filters,
         handleItemFn
       )
@@ -605,9 +605,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         const stringified = val.toString(undefined, decimals + 1); // String gets added preceding zeros.
         const l = stringified.length;
         // Split the string in two parts where the decimal point is expected.
-        const intergralPart = stringified.substring(0, l - decimals).replace(/^0+\B/, ''); // remove preceding zeros, but allow a value of '0'.
+        const integralPart = stringified.substring(0, l - decimals).replace(/^0+\B/, ''); // remove preceding zeros, but allow a value of '0'.
         const decimalPart = stringified.substring(l - decimals).replace(/0+$/, ''); // remove leading zeros
-        return decimalPart.length ? `${intergralPart}.${decimalPart}` : intergralPart;
+        return decimalPart.length ? `${integralPart}.${decimalPart}` : integralPart;
       } catch (e) {
         return null;
       }

@@ -19,13 +19,12 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { debounceTime, distinctUntilChanged, filter, first, map, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { BehaviorSubject, Subscription } from 'rxjs';
 import {u8aToHex} from "@polkadot/util";
 import {decodeAddress} from "@polkadot/util-crypto";
 
