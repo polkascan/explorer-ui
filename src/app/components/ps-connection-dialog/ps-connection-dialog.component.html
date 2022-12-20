@@ -65,7 +65,7 @@
         </ng-container>
       </ng-container>
 
-      <span style="margin-left: 10px; color: red;" *ngIf="(pa.explorerDataErrors|async)?.length as dataErrorCount">{{ dataErrorCount }} errors</span>
+      <span style="margin-left: 10px; color: red; white-space: nowrap" *ngIf="(pa.explorerDataErrors|async)?.length as dataErrorCount">{{ dataErrorCount }} errors</span>
     </form>
 </div>
 <div mat-dialog-actions>

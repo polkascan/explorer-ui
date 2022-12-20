@@ -14,10 +14,10 @@
     <h2 class="home-buttons-heading">Choose your network</h2>
 
     <div class="home-buttons">
-      <mat-card *ngFor="let network of networks" [routerLink]="'/' + network" tabindex="0"
+      <mat-card appearance="outlined" *ngFor="let network of networks" [routerLink]="'/' + network" tabindex="0"
          matRipple
          class="home-button home-button--{{ network }}">
-        {{network}}
+        <mat-card-content class="home-button-content">{{network}}</mat-card-content>
       </mat-card>
     </div>
   </div>

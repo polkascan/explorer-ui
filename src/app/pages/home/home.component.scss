@@ -135,18 +135,20 @@
   .home-button {
     display: block;
     flex: 0 0 auto;
-    width: 150px;
+    width: 180px;
     padding-top: 186px;
-    background-size: 148px auto;
+    background-size: 80% auto;
     background-repeat: no-repeat;
     background-position: 50% 20px;
     background-color: rgba(255,255,255,.5);
+    box-shadow: 0 2px 1px -1px #0003,0 1px 1px #00000024,0 1px 3px #0000001f;
     color: #000;
     font-weight: bold;
     text-align: center;
     text-decoration: none;
     text-transform: uppercase;
     cursor: pointer;
+    border: none;
   }
 
   .home-button--polkadot {

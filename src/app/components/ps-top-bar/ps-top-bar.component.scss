@@ -28,6 +28,10 @@ ps-top-bar {
     align-items: center;
     justify-content: flex-end;
   }
+
+  .mat-mdc-button.mat-unthemed {
+    color: #fff;
+  }
 }
 
 .ps-top-bar-brand {
