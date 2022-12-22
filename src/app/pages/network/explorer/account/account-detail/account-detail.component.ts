@@ -116,6 +116,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   networkProperties = this.ns.currentNetworkProperties;
 
   signedExtrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
+  signedExtrinsicsLoading = new BehaviorSubject<boolean>(false);
 
   fetchAccountInfoStatus = new BehaviorSubject<any>(null);
   polkascanAccountInfo = new BehaviorSubject<pst.TaggedAccount| null>(null);
@@ -397,13 +398,51 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
 
   async fetchAndSubscribeExtrinsics(idHex: string): Promise<void> {
-    const extrinsics = await this.pa.run().polkascan.chain.getExtrinsics(
+    let extrinsics: pst.Extrinsic[] = [];
+    const listSize = this.listsSize || 50;
+    let pageNext: string | undefined = undefined
+    let blockLimitOffset: number | undefined = undefined;
+    let blockLimitCount: number | undefined = undefined;
+
+    this.signedExtrinsicsLoading.next(true);
+
+    while (extrinsics.length < listSize) {
+      const response: pst.ListResponse<pst.Extrinsic> = await await this.pa.run().polkascan.chain.getExtrinsics(
       {
         signed: 1,
         multiAddressAccountId: idHex
-      }, this.listsSize);
+      }, listSize, pageNext, blockLimitOffset);
 
-    this.signedExtrinsics.next(extrinsics.objects);
+      pageNext = response.pageInfo ? response.pageInfo.pageNext || undefined : undefined;
+      blockLimitCount = response.pageInfo ? response.pageInfo.blockLimitCount || undefined : undefined;
+      blockLimitOffset = response.pageInfo ? response.pageInfo.blockLimitOffset || undefined : undefined;
+
+      if (response.objects && response.objects.length > 0) {
+        extrinsics = [...extrinsics, ...response.objects];
+      }
+
+      if (extrinsics.length > listSize) {
+        // List size has been reached. List is done, limit to listsize.
+        extrinsics.length = listSize;
+        break;
+      }
+
+      if (pageNext) {
+        // There is a next page, continue while loop.
+      } else if (blockLimitOffset && blockLimitCount) {
+        const nextBlockLimitOffset = Math.max(0, blockLimitOffset - blockLimitCount)
+        if (nextBlockLimitOffset <= 0) {
+          // Genesis has been reached. Stop the while loop.
+          break;
+        }
+      } else {
+        // No more items to be expected.
+        break;
+      }
+    }
+
+    this.signedExtrinsicsLoading.next(false);
+    this.signedExtrinsics.next(extrinsics);
 
     const signedExtrinsicsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewExtrinsic(
       {

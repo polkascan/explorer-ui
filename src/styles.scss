@@ -200,3 +200,11 @@ mat-divider.mat-divider {
   font-family: Consolas, monaco, "Ubuntu Mono", "Liberation Mono", "Courier New", Courier, monospace;
   opacity: 66%;
 }
+
+.width-container {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1260px;
+  box-sizing: border-box;
+  padding: 0 20px;
+}

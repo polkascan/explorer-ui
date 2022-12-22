@@ -320,54 +320,64 @@
         </button>
       </mat-toolbar>
 
-      <table mat-table [dataSource]="(signedExtrinsics | async) || []" [trackBy]="signedExtrinsicTrackBy">
+      <ng-container *ngIf="((signedExtrinsics | async) || []) as signedExtrinsicsDatasource">
+        <table mat-table [dataSource]="signedExtrinsicsDatasource" [trackBy]="signedExtrinsicTrackBy">
 
-        <ng-container matColumnDef="icon">
-          <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
-          <td mat-cell *matCellDef>
-            <i class="fas fa-file-signature"></i>
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="icon">
+            <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
+            <td mat-cell *matCellDef>
+              <i class="fas fa-file-signature"></i>
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="extrinsicID">
-          <th mat-header-cell *matHeaderCellDef>Extrinsic ID</th>
-          <td mat-cell *matCellDef="let extrinsic">
-            <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="extrinsicID">
+            <th mat-header-cell *matHeaderCellDef>Extrinsic ID</th>
+            <td mat-cell *matCellDef="let extrinsic">
+              <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="block">
-          <th mat-header-cell *matHeaderCellDef>Block</th>
-          <td mat-cell *matCellDef="let extrinsic">
-            <a [routerLink]="'../../block/' + extrinsic.blockNumber">{{extrinsic.blockNumber}}</a>
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="block">
+            <th mat-header-cell *matHeaderCellDef>Block</th>
+            <td mat-cell *matCellDef="let extrinsic">
+              <a [routerLink]="'../../block/' + extrinsic.blockNumber">{{extrinsic.blockNumber}}</a>
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="pallet">
-          <th mat-header-cell *matHeaderCellDef>Pallet</th>
-          <td mat-cell *matCellDef="let extrinsic">
-            {{extrinsic.callModule}}
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="pallet">
+            <th mat-header-cell *matHeaderCellDef>Pallet</th>
+            <td mat-cell *matCellDef="let extrinsic">
+              {{extrinsic.callModule}}
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="call">
-          <th mat-header-cell *matHeaderCellDef>Call</th>
-          <td mat-cell *matCellDef="let extrinsic">
-            {{extrinsic.callName}}
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="call">
+            <th mat-header-cell *matHeaderCellDef>Call</th>
+            <td mat-cell *matCellDef="let extrinsic">
+              {{extrinsic.callName}}
+            </td>
+          </ng-container>
 
-        <ng-container matColumnDef="details">
-          <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
-          <td mat-cell *matCellDef="let extrinsic">
-            <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
-          </td>
-        </ng-container>
+          <ng-container matColumnDef="details">
+            <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
+            <td mat-cell *matCellDef="let extrinsic">
+              <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
+            </td>
+          </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="signedExtrinsicsColumns; sticky: true"></tr>
-        <tr mat-row *matRowDef="let myRowData; columns: signedExtrinsicsColumns"></tr>
+          <tr mat-header-row *matHeaderRowDef="signedExtrinsicsColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let myRowData; columns: signedExtrinsicsColumns"></tr>
 
-      </table>
+        </table>
+
+        <p *ngIf="(signedExtrinsicsLoading | async) === true">
+          Loading items...
+        </p>
+
+        <p *ngIf="signedExtrinsicsDatasource.length === 0 && (signedExtrinsicsLoading | async) === false">
+          No items found.
+        </p>
+      </ng-container>
     </mat-tab>
 
     <mat-tab label="Events">

@@ -54,15 +54,17 @@
     <mat-error *ngIf="dateRangeEndControl.hasError('matEndDateInvalid')">Invalid end date</mat-error>
   </mat-form-field>
 
-  <mat-form-field appearance="fill">
-    <mat-label>Block start</mat-label>
-    <input matInput type="number" placeholder="Genesis" [formControl]="blockRangeBeginControl">
-  </mat-form-field>
+  <div class="block-range-combination">
+    <mat-form-field appearance="fill">
+      <mat-label>Block start</mat-label>
+      <input matInput type="number" placeholder="Genesis" [formControl]="blockRangeBeginControl">
+    </mat-form-field>
 
-  <mat-form-field appearance="fill">
-    <mat-label>Block end</mat-label>
-    <input matInput type="number" placeholder="Current" [formControl]="blockRangeEndControl">
-  </mat-form-field>
+    <mat-form-field appearance="fill">
+      <mat-label>Block end</mat-label>
+      <input matInput type="number" placeholder="Current" [formControl]="blockRangeEndControl">
+    </mat-form-field>
+  </div>
 
   <mat-form-field appearance="fill">
     <mat-label>Account</mat-label>

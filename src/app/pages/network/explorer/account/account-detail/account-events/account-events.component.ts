@@ -21,10 +21,10 @@ import { BehaviorSubject, Subject } from 'rxjs';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 import { FormControl, FormGroup } from '@angular/forms';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
-import {u8aToHex} from "@polkadot/util";
-import {decodeAddress} from "@polkadot/util-crypto";
-import {NetworkService} from "../../../../../../services/network.service";
-import {TooltipsService} from "../../../../../../services/tooltips.service";
+import { u8aToHex } from "@polkadot/util";
+import { decodeAddress } from "@polkadot/util-crypto";
+import { NetworkService } from "../../../../../../services/network.service";
+import { TooltipsService } from "../../../../../../services/tooltips.service";
 
 
 @Component({
@@ -36,7 +36,7 @@ import {TooltipsService} from "../../../../../../services/tooltips.service";
 export class AccountEventsComponent implements OnChanges, OnDestroy {
   @Input() address: string;
   @Input() listSize: number;
-  @Input() eventTypes: {[pallet: string]: string[]}
+  @Input() eventTypes: { [pallet: string]: string[] }
   @Input() columns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'amount', 'details'];
 
   events = new BehaviorSubject<pst.AccountEvent[]>([]);
@@ -58,8 +58,10 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   });
 
   routerLink = new BehaviorSubject<string>('../../event');
-  queryParams = new BehaviorSubject<{[p: string]: string}>({});
+  queryParams = new BehaviorSubject<{ [p: string]: string }>({});
   networkProperties = this.ns.currentNetworkProperties;
+
+  loading = new BehaviorSubject<boolean>(false);
 
   private unsubscribeFns: Map<string, (() => void)> = new Map();
   private destroyer: Subject<undefined> = new Subject();
@@ -80,7 +82,7 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     const address: string = changes.address.currentValue;
     this.events.next([]);
     this.fetchAndSubscribeEvents(address);
-    const queryParams: {[p: string]: string} = {'address': address};
+    const queryParams: { [p: string]: string } = {'address': address};
     if (this.eventTypes) {
       for (let pallet of Object.keys(this.eventTypes)) {
         queryParams.pallet = pallet;
@@ -105,12 +107,50 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
       existingUnsubscribe();
     }
 
+    this.loading.next(true);
+
     const idHex: string = u8aToHex(decodeAddress(address));
     const filterParams: any = {eventTypes: this.eventTypes};
 
-    const events = await this.pa.run().polkascan.chain.getEventsByAccount(idHex, filterParams, this.listSize);
+    let events: pst.AccountEvent[] = [];
+    const listSize = this.listSize || 50;
+    let pageNext: string | undefined = undefined
+    let blockLimitOffset: number | undefined = undefined;
+    let blockLimitCount: number | undefined = undefined;
 
-    this.events.next(events.objects);
+    while (events.length < listSize) {
+      const response: pst.ListResponse<pst.AccountEvent> = await this.pa.run().polkascan.chain.getEventsByAccount(idHex, filterParams, listSize, pageNext, blockLimitOffset);
+
+      pageNext = response.pageInfo ? response.pageInfo.pageNext || undefined : undefined;
+      blockLimitCount = response.pageInfo ? response.pageInfo.blockLimitCount || undefined : undefined;
+      blockLimitOffset = response.pageInfo ? response.pageInfo.blockLimitOffset || undefined : undefined;
+
+      if (response.objects && response.objects.length > 0) {
+        events = [...events, ...response.objects];
+      }
+
+      if (events.length > listSize) {
+        // List size has been reached. List is done, limit to listsize.
+        events.length = listSize;
+        break;
+      }
+
+      if (pageNext) {
+        // There is a next page, continue while loop.
+      } else if (blockLimitOffset && blockLimitCount) {
+        const nextBlockLimitOffset = Math.max(0, blockLimitOffset - blockLimitCount)
+        if (nextBlockLimitOffset <= 0) {
+          // Genesis has been reached. Stop the while loop.
+          break;
+        }
+      } else {
+        // No more items to be expected.
+        break;
+      }
+    }
+
+    this.events.next(events);
+    this.loading.next(false);
 
     const eventsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewEventByAccount(idHex,
       filterParams,
