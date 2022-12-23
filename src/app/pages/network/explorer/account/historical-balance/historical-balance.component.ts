@@ -387,6 +387,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         let min: number | null = null;
         let max: number | null = null;
         let historicPriceSeries: [number, number][] | null = null;
+        let dailyPriceSeries: [number, number][] | null = null;
 
         if (historicPrices && historicPrices.length > 0) {
           // Try and set the historical value for the selected currency.
@@ -438,7 +439,8 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
               return null;
             }).filter((p) => p !== null) as [number, number][];
 
-            historicPriceSeries = [...valuePerDay, ...valuePerItem].sort((a, b) => +a[0] - +b[0]);
+            historicPriceSeries = valuePerItem.sort((a, b) => +a[0] - +b[0]);
+            dailyPriceSeries = valuePerDay.sort((a, b) => +a[0] - +b[0]);
           }
         }
 
@@ -471,17 +473,21 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
             enabled: false
           },
           legend: {
-            enabled: false
+            // enabled: false
           },
           series: [
             {
               type: 'line',
               yAxis: 0,
+              // step: 'left',
               color: '#350659',
-              name: 'Total',
+              name: this.networkProperties.value?.tokenSymbol + ' total',
               data: items,
               tooltip: {
                 pointFormat: pointFormat
+              },
+              marker: {
+                enabled: true
               }
             }
           ]
@@ -501,9 +507,38 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           options.series!.push({
             type: 'line',
             yAxis: 1,
+            // step: 'left',
             color: '#426e24',
             name: this.variables.currency.value,
-            data: historicPriceSeries
+            data: historicPriceSeries,
+            visible: false,
+            marker: {
+              enabled: true
+            }
+          });
+        }
+
+        if (dailyPriceSeries) {
+          (options.yAxis! as any[]).push({
+            title: {
+              text: this.variables.currency.value,
+              style: {
+                color: '#5f8ea2'
+              }
+            },
+            opposite: true
+          });
+
+          options.series!.push({
+            type: 'line',
+            yAxis: 2,
+            color: '#5f8ea2',
+            name: this.variables.currency.value + ' daily value',
+            data: dailyPriceSeries,
+            visible: false,
+            marker: {
+              enabled: false
+            }
           });
         }
 
