@@ -138,10 +138,13 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
       if (pageNext) {
         // There is a next page, continue while loop.
       } else if (blockLimitOffset && blockLimitCount) {
-        const nextBlockLimitOffset = Math.max(0, blockLimitOffset - blockLimitCount)
-        if (nextBlockLimitOffset <= 0) {
+        const nextBlockLimitOffset = Math.max(0, blockLimitOffset - blockLimitCount);
+        if (nextBlockLimitOffset === 0) {
           // Genesis has been reached. Stop the while loop.
           break;
+        } else {
+          // No more pages left in current block offset, move to the next offset.
+          blockLimitOffset = nextBlockLimitOffset;
         }
       } else {
         // No more items to be expected.
