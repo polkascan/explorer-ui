@@ -125,6 +125,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   signedExtrinsicsColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'details'];
 
   listsSize = 50;
+  loadedTabs: {[index: number]: boolean} = {0: true};
 
   private unsubscribeFns: Map<string, (() => void)> = new Map();
   private destroyer: Subject<undefined> = new Subject();
@@ -177,6 +178,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
     // Remove all active subscriptions when id changes.
     idObservable.subscribe((id) => {
+      this.loadedTabs = {0: true};
       this.errors.next(null);
       // Try to create the hex for accountId manually.
       this.unsubscribeFns.forEach((unsub) => unsub());
@@ -489,5 +491,12 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   copied(address: string) {
     this.ts.notify.next(
       `Address copied.<br><span class="mono">${address}</span>`);
+  }
+
+
+  tabChange(tabIndex: number): void {
+    if (!this.loadedTabs[tabIndex]) {
+      this.loadedTabs[tabIndex] = true;
+    }
   }
 }

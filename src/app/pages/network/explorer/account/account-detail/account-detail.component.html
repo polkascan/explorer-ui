@@ -60,7 +60,8 @@
           <tr *ngIf="pai.tagType">
             <td class="detail-table--label-cell">Type</td>
             <td>
-              <i class="fas fa-exclamation-triangle" *ngIf="pai.riskLevel && pai.riskLevel > 0" title="{{pai.riskLevelVerbose}}"></i>
+              <i class="fas fa-exclamation-triangle" *ngIf="pai.riskLevel && pai.riskLevel > 0"
+                 title="{{pai.riskLevelVerbose}}"></i>
               {{ pai.tagType }} <span *ngIf="pai.tagSubType">({{pai.tagSubType}})</span>
             </td>
           </tr>
@@ -258,7 +259,8 @@
             <div mat-subheader>Parent</div>
             <mat-list-item>
               <div mat-line>
-                <account-id [address]="$any(dai.identity.parent)" [iconTheme]="props.iconTheme" [iconSize]="24" [ss58Prefix]="props.ss58Format"></account-id>
+                <account-id [address]="$any(dai.identity.parent)" [iconTheme]="props.iconTheme" [iconSize]="24"
+                            [ss58Prefix]="props.ss58Format"></account-id>
               </div>
             </mat-list-item>
           </mat-list>
@@ -272,7 +274,8 @@
                 <div mat-subheader *ngIf="subsMap.length">Subs</div>
                 <mat-list-item *ngFor="let sub of (subsMap); let i = index">
                   <div mat-line>
-                    <account-id [address]="$any(sub.key)" [iconTheme]="props.iconTheme" [iconSize]="24" [ss58Prefix]="props.ss58Format"></account-id>
+                    <account-id [address]="$any(sub.key)" [iconTheme]="props.iconTheme" [iconSize]="24"
+                                [ss58Prefix]="props.ss58Format"></account-id>
                   </div>
                 </mat-list-item>
               </mat-list>
@@ -290,27 +293,7 @@
 
   <mat-divider></mat-divider>
 
-  <mat-tab-group dynamicHeight animationDuration="0ms">
-
-    <mat-tab label="Balance History" *ngIf="accountId">
-      <app-historical-balance [accountId]="accountId | async"></app-historical-balance>
-    </mat-tab>
-
-    <mat-tab label="Transfers">
-      <ng-container *ngIf="id | async as address">
-        <app-account-events [address]="address" [listSize]="listsSize"
-                            [eventTypes]="{'Balances': ['Transfer']}"
-                            [columns]="['icon', 'referencedTransaction', 'age', 'direction', 'address', 'amount', 'detailsExtrinsic']"></app-account-events>
-      </ng-container>
-    </mat-tab>
-
-    <mat-tab label="Staking">
-      <ng-container *ngIf="id | async as address">
-        <app-account-events [address]="address" [listSize]="listsSize"
-                            [eventTypes]="{'Staking': ['Bonded', 'Chilled', 'Kicked', 'Rewarded', 'Slashed', 'Unbonded', 'Withdrawn']}"
-                            [columns]="['icon', 'age', 'event', 'amount', 'details']"></app-account-events>
-      </ng-container>
-    </mat-tab>
+  <mat-tab-group dynamicHeight animationDuration="0ms" (selectedIndexChange)="tabChange($event)">
 
     <mat-tab label="Signed Extrinsics">
 
@@ -320,69 +303,99 @@
         </button>
       </mat-toolbar>
 
-      <ng-container *ngIf="((signedExtrinsics | async) || []) as signedExtrinsicsDatasource">
-        <table mat-table [dataSource]="signedExtrinsicsDatasource" [trackBy]="signedExtrinsicTrackBy">
+      <ng-container *ngIf="loadedTabs[0]">
+        <ng-container *ngIf="((signedExtrinsics | async) || []) as signedExtrinsicsDatasource">
+          <table mat-table [dataSource]="signedExtrinsicsDatasource" [trackBy]="signedExtrinsicTrackBy">
 
-          <ng-container matColumnDef="icon">
-            <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
-            <td mat-cell *matCellDef>
-              <i class="fas fa-file-signature"></i>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="icon">
+              <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
+              <td mat-cell *matCellDef>
+                <i class="fas fa-file-signature"></i>
+              </td>
+            </ng-container>
 
-          <ng-container matColumnDef="extrinsicID">
-            <th mat-header-cell *matHeaderCellDef>Extrinsic ID</th>
-            <td mat-cell *matCellDef="let extrinsic">
-              <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="extrinsicID">
+              <th mat-header-cell *matHeaderCellDef>Extrinsic ID</th>
+              <td mat-cell *matCellDef="let extrinsic">
+                <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
+              </td>
+            </ng-container>
 
-          <ng-container matColumnDef="block">
-            <th mat-header-cell *matHeaderCellDef>Block</th>
-            <td mat-cell *matCellDef="let extrinsic">
-              <a [routerLink]="'../../block/' + extrinsic.blockNumber">{{extrinsic.blockNumber}}</a>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="block">
+              <th mat-header-cell *matHeaderCellDef>Block</th>
+              <td mat-cell *matCellDef="let extrinsic">
+                <a [routerLink]="'../../block/' + extrinsic.blockNumber">{{extrinsic.blockNumber}}</a>
+              </td>
+            </ng-container>
 
-          <ng-container matColumnDef="pallet">
-            <th mat-header-cell *matHeaderCellDef>Pallet</th>
-            <td mat-cell *matCellDef="let extrinsic">
-              {{extrinsic.callModule}}
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="pallet">
+              <th mat-header-cell *matHeaderCellDef>Pallet</th>
+              <td mat-cell *matCellDef="let extrinsic">
+                {{extrinsic.callModule}}
+              </td>
+            </ng-container>
 
-          <ng-container matColumnDef="call">
-            <th mat-header-cell *matHeaderCellDef>Call</th>
-            <td mat-cell *matCellDef="let extrinsic">
-              {{extrinsic.callName}}
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="call">
+              <th mat-header-cell *matHeaderCellDef>Call</th>
+              <td mat-cell *matCellDef="let extrinsic">
+                {{extrinsic.callName}}
+              </td>
+            </ng-container>
 
-          <ng-container matColumnDef="details">
-            <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
-            <td mat-cell *matCellDef="let extrinsic">
-              <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="details">
+              <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
+              <td mat-cell *matCellDef="let extrinsic">
+                <a [routerLink]="'../../extrinsic/' + extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
+              </td>
+            </ng-container>
 
-          <tr mat-header-row *matHeaderRowDef="signedExtrinsicsColumns; sticky: true"></tr>
-          <tr mat-row *matRowDef="let myRowData; columns: signedExtrinsicsColumns"></tr>
+            <tr mat-header-row *matHeaderRowDef="signedExtrinsicsColumns; sticky: true"></tr>
+            <tr mat-row *matRowDef="let myRowData; columns: signedExtrinsicsColumns"></tr>
 
-        </table>
+          </table>
 
-        <p *ngIf="(signedExtrinsicsLoading | async) === true">
-          Loading items...
-        </p>
+          <p *ngIf="(signedExtrinsicsLoading | async) === true">
+            Loading items...
+          </p>
 
-        <p *ngIf="signedExtrinsicsDatasource.length === 0 && (signedExtrinsicsLoading | async) === false">
-          No items found.
-        </p>
+          <p *ngIf="signedExtrinsicsDatasource.length === 0 && (signedExtrinsicsLoading | async) === false">
+            No items found.
+          </p>
+        </ng-container>
+      </ng-container>
+    </mat-tab>
+
+    <mat-tab label="Transfers">
+      <ng-container *ngIf="loadedTabs[1]">
+        <ng-container *ngIf="id | async as address">
+          <app-account-events [address]="address" [listSize]="listsSize"
+                              [eventTypes]="{'Balances': ['Transfer']}"
+                              [columns]="['icon', 'referencedTransaction', 'age', 'direction', 'address', 'amount', 'detailsExtrinsic']"></app-account-events>
+        </ng-container>
+      </ng-container>
+    </mat-tab>
+
+    <mat-tab label="Staking">
+      <ng-container *ngIf="loadedTabs[2]">
+        <ng-container *ngIf="id | async as address">
+          <app-account-events [address]="address" [listSize]="listsSize"
+                              [eventTypes]="{'Staking': ['Bonded', 'Chilled', 'Kicked', 'Rewarded', 'Slashed', 'Unbonded', 'Withdrawn']}"
+                              [columns]="['icon', 'age', 'event', 'amount', 'details']"></app-account-events>
+        </ng-container>
+      </ng-container>
+    </mat-tab>
+
+    <mat-tab label="Balance History" *ngIf="accountId">
+      <ng-container *ngIf="loadedTabs[3]">
+        <app-historical-balance [accountId]="accountId | async"></app-historical-balance>
       </ng-container>
     </mat-tab>
 
     <mat-tab label="Events">
-      <ng-container *ngIf="id | async as address">
-        <app-account-events [address]="address" [listSize]="listsSize"></app-account-events>
+      <ng-container *ngIf="loadedTabs[4]">
+        <ng-container *ngIf="id | async as address">
+          <app-account-events [address]="address" [listSize]="listsSize"></app-account-events>
+        </ng-container>
       </ng-container>
     </mat-tab>
 

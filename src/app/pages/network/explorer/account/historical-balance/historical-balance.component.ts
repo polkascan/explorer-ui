@@ -31,7 +31,7 @@ import { types as pst } from '@polkadapt/polkascan-explorer';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { BehaviorSubject, combineLatest, from, Observable, of, ReplaySubject } from 'rxjs';
 import { AccountId, Balance, BalanceLock, BlockHash, Header } from '@polkadot/types/interfaces';
-import { combineLatestWith, debounceTime, map, shareReplay, switchMap, takeUntil, tap, skip } from 'rxjs/operators';
+import { combineLatestWith, debounceTime, map, shareReplay, switchMap, takeUntil, tap, skip, filter } from 'rxjs/operators';
 import { AccountInfo } from '@polkadot/types/interfaces/system/types';
 import { AccountData } from '@polkadot/types/interfaces/balances/types';
 import { BN } from '@polkadot/util';
@@ -340,7 +340,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           bis.map(
             (bi) => combineLatest([of(bi.event), bi.balances]).pipe(
               map<[pst.AccountEvent, HistoricalBalance], ChartItem | null>(([event, balances]): ChartItem | null => {
-                if (event && event.blockDatetime) {
+                if (event && event.blockDatetime && balances) {
                   const total = this.convertBNforChart(balances.total);
                   const free = this.convertBNforChart(balances.free);
                   const reserved = this.convertBNforChart(balances.reserved);
@@ -368,7 +368,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           )
         )
       ),
-      debounceTime(300),
+      debounceTime(500),
       map<(ChartItem | null)[], ChartItem[]>((items) => items.filter((i) => i !== null).sort((a, b) => +a!.blockDate - +b!.blockDate) as ChartItem[]),
       combineLatestWith(this.pricing.dailyHistoricPrices),
       map<[ChartItem[], ([number, number][] | undefined)], Highcharts.Options | null>(([items, historicPrices]): Highcharts.Options | null => {
