@@ -85,6 +85,10 @@
     <mat-tab-group dynamicHeight animationDuration="0ms">
       <mat-tab label="Events">
 
+        <mat-toolbar>
+          <button mat-stroked-button [routerLink]="'../../event'" [queryParams]="{'blockRangeBegin': extrinsic.blockNumber, 'blockRangeEnd': extrinsic.blockNumber}">Show all</button>
+        </mat-toolbar>
+
         <table mat-table [dataSource]="events" [trackBy]="trackEvent" class="mat-table--full-width">
 
           <ng-container matColumnDef="eventId">
