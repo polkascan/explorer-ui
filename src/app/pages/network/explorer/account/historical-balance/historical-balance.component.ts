@@ -80,7 +80,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   @Input() accountId: AccountId | null | undefined;
   accountIdObservable = new ReplaySubject<AccountId | null | undefined>(1);
 
-  listSize = 500000;
+  listSize = 100;
 
   balancesPerBlock = new Map<number, BehaviorSubject<HistoricalBalance>>();
   balancesObservable: Observable<BalancesItem[]>;
