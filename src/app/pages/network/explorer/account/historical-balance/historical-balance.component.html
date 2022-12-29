@@ -1,12 +1,11 @@
 <ng-container *ngIf="(networkProperties | async) as props">
   <mat-tab-group dynamicHeight animationDuration="0ms">
     <mat-tab label="Chart">
-      <ng-container [ngSwitch]="loadingObservable | async">
-        <p *ngSwitchCase="true">Loading chart data...</p>
+      <ng-container [ngSwitch]="(loadingObservable | async) || (chartLoadingObservable | async)">
+        <p *ngSwitchCase="true">Loading chart...</p>
 
         <ng-container *ngSwitchDefault>
-          <ng-template #noChartItems>No chart available</ng-template>
-          <div *ngIf="(chartDataObservable | async) as chartOptions; else noChartItems"
+          <div *ngIf="(chartDataObservable | async) as chartOptions"
                class="historical-balance-chart">
             <highcharts-chart class="historical-balance-highcharts-chart"
                               [Highcharts]="Highcharts"
@@ -93,34 +92,33 @@
         </div>
 
       </ng-container>
-
-      <div *ngIf="loadingObservable | async">
-        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-      </div>
-
-      <div>
-        <ng-container *ngIf="(hasNextPageObservable | async)">
-          <button [disabled]="(loadingObservable | async)" mat-stroked-button aria-label="Next"
-                  (click)="loadMoreItems()">
-            <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
-              <ng-template #showMore>Show More</ng-template>
-              <ng-container *ngIf="searchInfo.endOfBlockRange; else showMore">
-                Increase search range
-              </ng-container>
-            </ng-container>
-            <mat-icon>expand_more</mat-icon>
-          </button>
-        </ng-container>
-
-        <ng-container class="list-block-range" *ngIf="(pageLiveObservable | async) === false">
-          <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
-      <span class="list-block-range" *ngIf="searchInfo.fromBlock">
-        Search range: Blocks {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}
-      </span>
-          </ng-container>
-        </ng-container>
-      </div>
-
     </mat-tab>
   </mat-tab-group>
+
+  <div *ngIf="loadingObservable | async">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  </div>
+
+  <div>
+    <ng-container *ngIf="(hasNextPageObservable | async)">
+      <button [disabled]="(loadingObservable | async)" mat-stroked-button aria-label="Next"
+              (click)="loadMoreItems()">
+        <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
+          <ng-template #showMore>Show More</ng-template>
+          <ng-container *ngIf="searchInfo.endOfBlockRange; else showMore">
+            Increase search range
+          </ng-container>
+        </ng-container>
+        <mat-icon>expand_more</mat-icon>
+      </button>
+    </ng-container>
+
+    <ng-container class="list-block-range" *ngIf="(pageLiveObservable | async) === false">
+      <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
+        <span class="list-block-range" *ngIf="searchInfo.fromBlock">
+          Search range: Blocks {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}
+        </span>
+      </ng-container>
+    </ng-container>
+  </div>
 </ng-container>

@@ -80,12 +80,13 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   @Input() accountId: AccountId | null | undefined;
   accountIdObservable = new ReplaySubject<AccountId | null | undefined>(1);
 
-  listSize = 100;
+  listSize = 200;
 
   balancesPerBlock = new Map<number, BehaviorSubject<HistoricalBalance>>();
   balancesObservable: Observable<BalancesItem[]>;
 
-  chartDataObservable: Observable<Highcharts.Options | null>;
+  chartDataObservable: Observable<Highcharts.Options>;
+  chartItemPerBlock = new Map<number, ChartItem>();
 
   visibleColumns = ['blockNumber', 'total', 'free', 'reserved', 'locked', 'transferable'];
 
@@ -97,6 +98,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   } // optional function, defaults to null
   updateFlag = false; // optional boolean
   oneToOneFlag = true; // optional boolean, defaults to false
+  chartLoadingObservable = new BehaviorSubject<boolean>(false);
 
   blockOne = new ReplaySubject<BlockHash>(1);
   itemAtBlockOne: Observable<BalancesItem | null>;
@@ -115,7 +117,12 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     }).rpc.chain.getBlockHash(1).then((hash) => this.blockOne.next(hash));
 
     // Load more items automatically.
-    this.itemsObservable.pipe(skip(1)).subscribe(() => this.loadMoreItems());
+    this.itemsObservable.pipe(skip(1)).subscribe((items) => {
+      // Try to get at least the list size in items.
+      if (items.length <= this.listSize) {
+        this.loadMoreItems();
+      }
+    });
 
     // Start observables for data retrieval and conversion for table and charts.
     this.createItemAtBlockOneObservable();
@@ -138,6 +145,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   ngOnChanges(changes: SimpleChanges) {
     if (changes.accountId.currentValue !== changes.accountId.previousValue) {
       this.balancesPerBlock = new Map();
+      this.chartItemPerBlock = new Map();
 
       typeof this.unsubscribeNewItem === 'function' ? this.unsubscribeNewItem() : null;
 
@@ -263,6 +271,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   createBalancesObservable(): void {
     this.balancesObservable = this.itemsObservable.pipe(
       takeUntil(this.destroyer),
+      tap<pst.AccountEvent[]>(() => this.loading++),
       map<pst.AccountEvent[], pst.AccountEvent[]>((items) => { // Filter out double blocks
         return items.filter((item) => items.find((other) => other.blockNumber === item.blockNumber) === item)
       }),
@@ -278,6 +287,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           .filter((item) => item !== null);
         return result as BalancesItem[];
       }),
+      tap<BalancesItem[]>(() => this.loading--),
       combineLatestWith(this.itemAtBlockOne),
       map<[BalancesItem[], BalancesItem | null], BalancesItem[]>(([balanceItems, itemAtBlockOne]) => {
         if (itemAtBlockOne) {
@@ -298,6 +308,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
     this.chartDataObservable = this.balancesObservable.pipe(
       takeUntil(this.destroyer),
+      tap<BalancesItem[]>(() => this.chartLoadingObservable.next(true)),
       combineLatestWith( // Check if the account has a balance at the latest block height.
         from(this.pa.run(runParams).rpc.chain.getFinalizedHead()).pipe(
           switchMap((hash) =>
@@ -339,7 +350,12 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         (bis): Observable<(ChartItem | null)[]> => combineLatest(
           bis.map(
             (bi) => combineLatest([of(bi.event), bi.balances]).pipe(
+              filter(([event, balances]) => Boolean(event && balances)),
               map<[pst.AccountEvent, HistoricalBalance], ChartItem | null>(([event, balances]): ChartItem | null => {
+                if (this.chartItemPerBlock.has(event.blockNumber)) {
+                  return this.chartItemPerBlock.get(event.blockNumber) as ChartItem;
+                }
+
                 if (event && event.blockDatetime && balances) {
                   const total = this.convertBNforChart(balances.total);
                   const free = this.convertBNforChart(balances.free);
@@ -348,7 +364,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
                   const transferable = this.convertBNforChart(balances.transferable);
                   const date = new Date(event.blockDatetime);
                   if (total !== null) {
-                    return {
+                    const chartItem = {
                       x: date.getTime(),
                       y: total !== null ? parseFloat(total.split('.').map((b, i) => i === 1 ? b.substring(0, 2) : b).join('.')) : null,  // Only two decimals in the chart
                       blockNumber: event.blockNumber,
@@ -360,6 +376,8 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
                       blockDate: date,
                       utcStartOfDay: Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
                     }
+                    this.chartItemPerBlock.set(event.blockNumber, chartItem);
+                    return chartItem;
                   }
                 }
                 return null;
@@ -368,14 +386,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           )
         )
       ),
-      debounceTime(500),
       map<(ChartItem | null)[], ChartItem[]>((items) => items.filter((i) => i !== null).sort((a, b) => +a!.blockDate - +b!.blockDate) as ChartItem[]),
       combineLatestWith(this.pricing.dailyHistoricPrices),
-      map<[ChartItem[], ([number, number][] | undefined)], Highcharts.Options | null>(([items, historicPrices]): Highcharts.Options | null => {
-        if (items.length === 0) {
-          return null;
-        }
-
+      map<[ChartItem[], ([number, number][] | undefined)], Highcharts.Options>(([items, historicPrices]): Highcharts.Options => {
         let pointFormat = '<b>{point.x:%Y-%m-%d %H:%M:%S}</b><br>' +
           'Block: {point.blockNumber}<br>' +
           'Total: <b>{point.total}</b><br>' +
@@ -493,7 +506,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           ]
         }
 
-        if (historicPriceSeries) {
+        if (historicPriceSeries && historicPriceSeries.length > 0) {
           (options.yAxis! as any[]).push({
             title: {
               text: this.variables.currency.value,
@@ -518,7 +531,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           });
         }
 
-        if (dailyPriceSeries) {
+        if (dailyPriceSeries && dailyPriceSeries.length > 1) {
           (options.yAxis! as any[]).push({
             title: {
               text: this.variables.currency.value,
@@ -544,15 +557,18 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
         return options;
       }),
-      tap(() => {
+      tap<Highcharts.Options | null>(() => {
+        this.chartLoadingObservable.next(false);
         this.updateFlag = true;
         this.cd.markForCheck();
       })
-    )
+    ) as Observable<Highcharts.Options>
   }
 
 
   async getBalanceAtBlock(blockNumber: number): Promise<void> {
+    this.loading++;
+
     const observable = this.balancesPerBlock.get(blockNumber)!;
     const runParams = {
       chain: this.network,
@@ -566,6 +582,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     try {
       blockHash = await this.pa.run(runParams).rpc.chain.getBlockHash(blockNumber);
     } catch (e) {
+      this.loading--;
       throw (`[HistoricalBalance] Could not fetch block hash for block ${blockNumber}. ${e}`);
     }
 
@@ -579,6 +596,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         balances.transferable = systemAccount.data.free.sub(systemAccount.data.feeFrozen);
         balances.locked = systemAccount.data.feeFrozen;
 
+        this.loading--;
         observable.next(balances);
         return;
       }
@@ -626,6 +644,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
       }
     }
 
+    this.loading--;
     observable.next(balances);
   }
 
