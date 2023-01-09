@@ -77,6 +77,10 @@
 
               <mat-tab-group dynamicHeight animationDuration="0ms">
                 <mat-tab label="Extrinsics">
+                  <mat-toolbar>
+                    <button mat-stroked-button [routerLink]="'../../extrinsic'" [queryParams]="{'blockRangeBegin': block.number, 'blockRangeEnd': block.number}">Show all</button>
+                  </mat-toolbar>
+
                   <table class="table--full-width detail-table" *ngIf="extrinsics|async as extrinsics">
                     <thead>
                     <tr>
@@ -103,6 +107,10 @@
                 </mat-tab>
 
                 <mat-tab label="Events">
+                  <mat-toolbar>
+                    <button mat-stroked-button [routerLink]="'../../event'" [queryParams]="{'blockRangeBegin': block.number, 'blockRangeEnd': block.number}">Show all</button>
+                  </mat-toolbar>
+
                   <table class="table--full-width detail-table" *ngIf="events|async as events">
                     <thead>
                     <tr>

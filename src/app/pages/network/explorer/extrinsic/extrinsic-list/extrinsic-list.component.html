@@ -2,8 +2,22 @@
 
 <div>
   <mat-form-field appearance="fill">
+    <mat-label>Runtime</mat-label>
+    <mat-select [formControl]="specVersionControl">
+      <mat-option *ngIf="(specVersions | async)?.length === 0" [value]="specVersionControl.value">Loading...</mat-option>
+      <mat-option [value]="''">All versions</mat-option>
+      <ng-container *ngFor="let specVersion of specVersions | async">
+        <mat-option [value]="specVersion">
+          {{specVersion}}
+        </mat-option>
+      </ng-container>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
     <mat-label>Pallet</mat-label>
     <mat-select [formControl]="palletControl">
+      <mat-option *ngIf="extrinsicsFilters.size === 0" [value]="palletControl.value">Loading...</mat-option>
       <mat-option [value]="''">All pallets</mat-option>
       <mat-option *ngFor="let item of extrinsicsFilters | keyvalue" [value]="item.key.pallet">
         {{item.key.pallet}}
@@ -14,6 +28,7 @@
   <mat-form-field appearance="fill">
     <mat-label>Call</mat-label>
     <mat-select [formControl]="callNameControl">
+      <mat-option *ngIf="extrinsicsFilters.size === 0" [value]="callNameControl.value">Loading...</mat-option>
       <mat-option [value]="''">All calls</mat-option>
       <ng-container *ngFor="let item of extrinsicsFilters | keyvalue">
         <ng-container *ngIf="item.key.pallet === palletControl.value">
@@ -24,6 +39,54 @@
       </ng-container>
     </mat-select>
   </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Date range</mat-label>
+    <mat-date-range-input [rangePicker]="picker">
+      <input matStartDate [formControl]="dateRangeBeginControl" placeholder="Start date">
+      <input matEndDate [formControl]="dateRangeEndControl" placeholder="End date">
+    </mat-date-range-input>
+    <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+    <mat-date-range-picker #picker></mat-date-range-picker>
+
+    <mat-error *ngIf="dateRangeBeginControl.hasError('matStartDateInvalid')">Invalid start date</mat-error>
+    <mat-error *ngIf="dateRangeEndControl.hasError('matEndDateInvalid')">Invalid end date</mat-error>
+  </mat-form-field>
+
+  <div class="block-range-combination">
+    <mat-form-field appearance="fill">
+      <mat-label>Block start</mat-label>
+      <input matInput type="number" placeholder="Genesis" [formControl]="blockRangeBeginControl">
+    </mat-form-field>
+
+    <mat-form-field appearance="fill">
+      <mat-label>Block end</mat-label>
+      <input matInput type="number" placeholder="Current" [formControl]="blockRangeEndControl">
+    </mat-form-field>
+  </div>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Account</mat-label>
+    <input matInput type="text" placeholder="Address" [formControl]="addressControl">
+  </mat-form-field>
+
+  <mat-form-field appearance="fill">
+    <mat-label>Signature</mat-label>
+    <mat-select [formControl]="signatureControl">
+      <mat-option [value]="'signed'">Signed only</mat-option>
+      <mat-option [value]="'all'">All extrinsics</mat-option>
+      <mat-option [value]="'unsigned'">Unsigned only</mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<div class="centered-button-bar" *ngIf="(pageLiveObservable | async) === false">
+  <button [disabled]="loadingObservable | async" mat-stroked-button
+          aria-label="Show latest" (click)="gotoLatestItems()">
+    Show latest
+    <mat-icon>change_circle</mat-icon>
+  </button>
 </div>
 
 <ng-container *ngIf="(itemsObservable | async) as dataSource">
@@ -32,14 +95,15 @@
     <ng-container matColumnDef="icon">
       <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
       <td mat-cell *matCellDef>
-          <i class="fas fa-file-signature"></i>
+        <i class="fas fa-file-signature"></i>
       </td>
     </ng-container>
 
     <ng-container matColumnDef="extrinsicID">
       <th mat-header-cell *matHeaderCellDef>Extrinsic ID</th>
       <td mat-cell *matCellDef="let extrinsic">
-        <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
+        <a
+          [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx">{{extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx}}</a>
       </td>
     </ng-container>
 
@@ -81,7 +145,7 @@
     <ng-container matColumnDef="details">
       <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
       <td mat-cell *matCellDef="let extrinsic">
-          <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
+        <a [routerLink]="extrinsic.blockNumber + '-' + extrinsic.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
       </td>
     </ng-container>
 
@@ -89,11 +153,42 @@
     <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
 
   </table>
+
+  <div *ngIf="(loadingObservable | async) === false && dataSource.length === 0">
+    <ng-container [ngSwitch]="pageLiveObservable | async">
+      <ng-container *ngSwitchCase="true">
+        No items. Waiting for new blocks.
+      </ng-container>
+      <ng-container *ngSwitchDefault>
+        No items found.
+      </ng-container>
+    </ng-container>
+  </div>
+
 </ng-container>
 
 <div *ngIf="loadingObservable | async">
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>
 </div>
 
-<button [disabled]="(((loadingObservable | async) || 0) > 0) || (!pagePrev && pageLive)" mat-stroked-button aria-label="Previous" (click)="getPrevPage()">Previous</button>
-<button [disabled]="(((loadingObservable | async) || 0) > 0) || !pageNext" mat-stroked-button aria-label="Next" (click)="getNextPage()">Next</button>
+<div>
+  <ng-container *ngIf="(hasNextPageObservable | async)">
+    <button [disabled]="(loadingObservable | async)" mat-stroked-button aria-label="Next" (click)="loadMoreItems()">
+      <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
+        <ng-template #showMore>Show More</ng-template>
+        <ng-container *ngIf="searchInfo.endOfBlockRange; else showMore">
+          Increase search range
+        </ng-container>
+      </ng-container>
+      <mat-icon>expand_more</mat-icon>
+    </button>
+  </ng-container>
+
+  <ng-container class="list-block-range" *ngIf="(pageLiveObservable | async) === false">
+    <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
+      <span class="list-block-range" *ngIf="searchInfo.fromBlock">
+        Search range: Blocks {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}
+      </span>
+    </ng-container>
+  </ng-container>
+</div>

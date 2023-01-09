@@ -38,7 +38,6 @@ type RuntimeCacheAttributes = {
   runtimeEventAttributes?: pst.RuntimeEventAttribute[];
   runtimePallets?: pst.RuntimePallet[];
   runtimeStorages?: pst.RuntimeStorage[];
-  runtimeTypes?: pst.RuntimeType[];
 };
 
 type RuntimeCacheMap = Map<SpecVersion, RuntimeCache & RuntimeCacheAttributes>;
@@ -233,19 +232,6 @@ export class RuntimeService {
     }
 
     return cache.runtimeConstants as pst.RuntimeConstant[];
-  }
-
-
-  async getRuntimeTypes(network: string, specVersion: number): Promise<pst.RuntimeType[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
-
-    if (!cache.hasOwnProperty('runtimeType')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeTypes(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeTypes = response.objects;
-    }
-
-    return cache.runtimeTypes as pst.RuntimeType[];
   }
 
 

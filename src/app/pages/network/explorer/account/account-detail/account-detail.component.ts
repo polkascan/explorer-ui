@@ -91,6 +91,7 @@ function calcBonded(stakingInfo?: DeriveStakingAccount, bonded?: boolean | BN[])
 })
 export class AccountDetailComponent implements OnInit, OnDestroy {
   id: Observable<string | null>;
+  validAddress = new BehaviorSubject<string | null>(null);
   account: Observable<AccountInfo>;
   subs: Observable<any>;
   identity: Observable<any>;
@@ -114,10 +115,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
   networkProperties = this.ns.currentNetworkProperties;
 
-  fromBalanceTransfers = new BehaviorSubject<pst.Transfer[]>([]);
-  toBalanceTransfers = new BehaviorSubject<pst.Transfer[]>([]);
-  balanceTransfers: Observable<pst.Transfer[]>;
   signedExtrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
+  signedExtrinsicsLoading = new BehaviorSubject<boolean>(false);
 
   fetchAccountInfoStatus = new BehaviorSubject<any>(null);
   polkascanAccountInfo = new BehaviorSubject<pst.TaggedAccount| null>(null);
@@ -125,7 +124,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   balanceTransferColumns = ['icon', 'block', 'from', 'to', 'value', 'details']
   signedExtrinsicsColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'details'];
 
-  private listsSize = 50;
+  listsSize = 50;
+  loadedTabs: {[index: number]: boolean} = {0: true};
 
   private unsubscribeFns: Map<string, (() => void)> = new Map();
   private destroyer: Subject<undefined> = new Subject();
@@ -178,13 +178,12 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
     // Remove all active subscriptions when id changes.
     idObservable.subscribe((id) => {
+      this.loadedTabs = {0: true};
       this.errors.next(null);
       // Try to create the hex for accountId manually.
       this.unsubscribeFns.forEach((unsub) => unsub());
       this.unsubscribeFns.clear();
 
-      this.fromBalanceTransfers.next([]);
-      this.toBalanceTransfers.next([]);
       this.signedExtrinsics.next([]);
 
       if (id) {
@@ -205,18 +204,19 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         if (validAddress) {
           try {
             const accountIdHex = u8aToHex(decodeAddress(id));
-            this.fetchAndSubscribeFromTransfers(accountIdHex);
-            this.fetchAndSubscribeToTransfers(accountIdHex);
+            this.validAddress.next(accountIdHex);
             this.fetchAndSubscribeExtrinsics(accountIdHex);
             this.fetchTaggedAccounts(accountIdHex);
           } catch (e) {
           }
         } else {
           // Not a valid address.
+          this.validAddress.next(null);
           this.errors.next('Not a valid address.');
         }
       } else {
         // Account not found.
+        this.validAddress.next(null);
         this.errors.next('Account not found.');
       }
     });
@@ -380,16 +380,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       })
     )
 
-    this.balanceTransfers = combineLatest(
-      this.toBalanceTransfers,
-      this.fromBalanceTransfers
-    ).pipe(
-      takeUntil(this.destroyer),
-      map(([to, from]) => [...to, ...from]
-        .sort((a, b) => b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx)
-        .slice(0, this.listsSize))
-    )
-
     this.accountJudgement = this.derivedAccountInfo.pipe(
       map((dai) => {
         if (dai && dai.identity && dai.identity.judgements) {
@@ -410,13 +400,54 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
 
   async fetchAndSubscribeExtrinsics(idHex: string): Promise<void> {
-    const extrinsics = await this.pa.run().polkascan.chain.getExtrinsics(
+    let extrinsics: pst.Extrinsic[] = [];
+    const listSize = this.listsSize || 50;
+    let pageNext: string | undefined = undefined
+    let blockLimitOffset: number | undefined = undefined;
+    let blockLimitCount: number | undefined = undefined;
+
+    this.signedExtrinsicsLoading.next(true);
+
+    while (extrinsics.length < listSize) {
+      const response: pst.ListResponse<pst.Extrinsic> = await await this.pa.run().polkascan.chain.getExtrinsics(
       {
         signed: 1,
         multiAddressAccountId: idHex
-      }, this.listsSize);
+      }, listSize, pageNext, blockLimitOffset);
 
-    this.signedExtrinsics.next(extrinsics.objects);
+      pageNext = response.pageInfo ? response.pageInfo.pageNext || undefined : undefined;
+      blockLimitCount = response.pageInfo ? response.pageInfo.blockLimitCount || undefined : undefined;
+      blockLimitOffset = response.pageInfo ? response.pageInfo.blockLimitOffset || undefined : undefined;
+
+      if (response.objects && response.objects.length > 0) {
+        extrinsics = [...extrinsics, ...response.objects];
+      }
+
+      if (extrinsics.length > listSize) {
+        // List size has been reached. List is done, limit to listsize.
+        extrinsics.length = listSize;
+        break;
+      }
+
+      if (pageNext) {
+        // There is a next page, continue while loop.
+      } else if (blockLimitOffset && blockLimitCount) {
+        const nextBlockLimitOffset = Math.max(0, blockLimitOffset - blockLimitCount)
+        if (nextBlockLimitOffset <= 0) {
+          // Genesis has been reached. Stop the while loop.
+          break;
+        } else {
+          // No more pages left in current block offset, move to the next offset.
+          blockLimitOffset = nextBlockLimitOffset;
+        }
+      } else {
+        // No more items to be expected.
+        break;
+      }
+    }
+
+    this.signedExtrinsicsLoading.next(false);
+    this.signedExtrinsics.next(extrinsics);
 
     const signedExtrinsicsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewExtrinsic(
       {
@@ -438,57 +469,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.unsubscribeFns.set('signedExtrinsicsUnsubscribeFn', signedExtrinsicsUnsubscribeFn);
   }
 
-
-  async fetchAndSubscribeFromTransfers(idHex: string): Promise<void> {
-    const fromTransfers = await this.pa.run().polkascan.chain.getTransfers(
-      {
-        fromMultiAddressAccountId: idHex
-      }, this.listsSize);
-    this.fromBalanceTransfers.next(fromTransfers.objects);
-    const fromBalanceTransfersUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewTransfer(
-      {
-        fromMultiAddressAccountId: idHex
-      },
-      (transfer: pst.Transfer) => {
-        const transfers = this.fromBalanceTransfers.value;
-        if (transfers && transfers.some((t) => t.blockNumber !== transfer.blockNumber && t.eventIdx !== transfer.eventIdx) === false) {
-          const result = [transfer,  ...transfers];
-          result.sort((a: pst.Transfer, b: pst.Transfer) => {
-            return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
-          });
-          result.length = this.listsSize
-          this.fromBalanceTransfers.next(result);
-        }
-      });
-
-    this.unsubscribeFns.set('fromBalanceTransfersUnsubscribeFn', fromBalanceTransfersUnsubscribeFn);
-  }
-
-
-  async fetchAndSubscribeToTransfers(idHex: string): Promise<void> {
-    const toTransfers = await this.pa.run().polkascan.chain.getTransfers({
-      toMultiAddressAccountId: idHex
-    }, this.listsSize);
-    this.toBalanceTransfers.next(toTransfers.objects);
-    const toBalanceTransfersUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewTransfer(
-      {
-        toMultiAddressAccountId: idHex
-      },
-      (transfer: pst.Transfer) => {
-        const transfers = this.toBalanceTransfers.value;
-        if (transfers && transfers.some((t) => t.blockNumber !== transfer.blockNumber && t.eventIdx !== transfer.eventIdx) === false) {
-          const result = [transfer, ...transfers];
-          result.sort((a: pst.Transfer, b: pst.Transfer) => {
-            return b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx;
-          });
-          result.length = this.listsSize
-          this.toBalanceTransfers.next(result);
-        }
-      });
-
-    this.unsubscribeFns.set('toBalanceTransfersUnsubscribeFn', toBalanceTransfersUnsubscribeFn);
-  }
-
   fetchTaggedAccounts(accountIdHex: string): void {
     this.pa.run().polkascan.state.getTaggedAccount(accountIdHex).then(
       (account) => this.polkascanAccountInfo.next(account)
@@ -508,13 +488,15 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   }
 
 
-  balanceTransfersTrackBy(i: any, transfer: pst.Transfer): string {
-    return `${transfer.blockNumber}-${transfer.eventIdx}`;
-  }
-
-
   copied(address: string) {
     this.ts.notify.next(
       `Address copied.<br><span class="mono">${address}</span>`);
+  }
+
+
+  tabChange(tabIndex: number): void {
+    if (!this.loadedTabs[tabIndex]) {
+      this.loadedTabs[tabIndex] = true;
+    }
   }
 }

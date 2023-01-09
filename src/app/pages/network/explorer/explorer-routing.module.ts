@@ -30,16 +30,12 @@ const routes: Routes = [
     loadChildren: () => import('./block/block.module').then(m => m.BlockModule)
   },
   {
-    path: 'transaction',
-    loadChildren: () => import('./transaction/transaction.module').then(m => m.TransactionModule)
-  },
-  {
-    path: 'inherent',
-    loadChildren: () => import('./inherent/inherent.module').then(m => m.InherentModule)
-  },
-  {
     path: 'extrinsic',
     loadChildren: () => import('./extrinsic/extrinsic.module').then(m => m.ExtrinsicModule)
+  },
+  {
+    path: 'transfer',
+    loadChildren: () => import('./transfer/transfer.module').then(m => m.TransferModule)
   },
   {
     path: 'event',
@@ -56,10 +52,6 @@ const routes: Routes = [
   {
     path: 'account',
     loadChildren: () => import('./account/account.module').then(m => m.AccountModule)
-  },
-  {
-    path: 'balances',
-    loadChildren: () => import('./balances/balances.module').then(m => m.BalancesModule)
   }
 ];
 

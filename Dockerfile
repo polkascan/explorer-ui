@@ -1,6 +1,6 @@
 # STAGE 1: layered build of PolkADAPT submodule and Polkascan Explorer application.
 
-FROM node:lts-alpine as builder
+FROM node:lts as builder
 
 # The application depends on PolkADAPT, so we have to install and build PolkADAPT first.
 

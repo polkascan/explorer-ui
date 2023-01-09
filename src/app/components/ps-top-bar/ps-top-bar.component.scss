@@ -22,12 +22,16 @@ ps-top-bar {
   background: var(--ps-top-bar-bg-color);
   color: var(--ps-top-bar-text-color);
 
-  .width-container {
-    display: flex;
-    height: 50px;
-    align-items: center;
-    justify-content: flex-end;
+  .mat-mdc-button.mat-unthemed {
+    color: #fff;
   }
+}
+
+.ps-topbar-container {
+  display: flex;
+  height: 50px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .ps-top-bar-brand {
