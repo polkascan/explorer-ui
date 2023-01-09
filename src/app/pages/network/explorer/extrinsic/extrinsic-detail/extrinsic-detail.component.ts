@@ -94,7 +94,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchEventsStatus.next('loading')),
       switchMap(([blockNr, extrinsicIdx]) => {
         const subject = new Subject<pst.Event[]>();
-        this.pa.run().polkascan.chain.getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}).then(
+        this.pa.run().polkascan.chain.getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100).then(
           (response) => {
             if (Array.isArray(response.objects)) {
               subject.next(response.objects);

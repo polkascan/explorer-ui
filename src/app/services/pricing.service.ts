@@ -18,8 +18,9 @@
 
 import { Injectable } from '@angular/core';
 import { PolkadaptService } from './polkadapt.service';
-import { ReplaySubject, Subject } from 'rxjs';
+import { BehaviorSubject, ReplaySubject, Subject } from 'rxjs';
 import { VariablesService } from './variables.service';
+
 
 @Injectable({providedIn: 'root'})
 export class PricingService {
@@ -28,6 +29,8 @@ export class PricingService {
   currency: string | null;
   network: string | null;
   interval: number | null;
+
+  dailyHistoricPrices = new BehaviorSubject<[number, number][]>([]);
 
   constructor(private pa: PolkadaptService,
               private vs: VariablesService) {
@@ -51,8 +54,11 @@ export class PricingService {
     this.currency = currency;
     this.price.next(null);
 
-    this.fetchAndSetPrice();
     this.startPriceWatch();
+    if (this.interval) {
+      this.fetchAndSetPrice(this.interval);
+      this.fetchDailyHistoricPrices(this.interval);
+    }
   }
 
 
@@ -61,13 +67,25 @@ export class PricingService {
     this.network = null;
     this.currency = null;
     this.price.next(null);
+    this.dailyHistoricPrices.next([]);
   }
 
 
   async startPriceWatch(): Promise<void> {
-      this.interval = window.setInterval(async () => {
-        this.fetchAndSetPrice();
-      }, 15000);
+    let storedDate = new Date().getUTCDate();
+    this.interval = window.setInterval(async () => {
+      if (this.interval) {
+        // Get the latest price.
+        this.fetchAndSetPrice(this.interval);
+
+        // Check if a new day has started and update the historic prices array.
+        const date = new Date().getUTCDate();
+        if (storedDate !== date) {
+          storedDate = date;
+          void this.addLatestHistoricPrice(this.interval);
+        }
+      }
+    }, 60000);
   }
 
 
@@ -79,20 +97,47 @@ export class PricingService {
   }
 
 
-  async fetchAndSetPrice(): Promise<void> {
+  async fetchAndSetPrice(interval: number): Promise<void> {
     try {
       const adapterAvailable = await this.pa.availableAdapters[this.network as string].coingeckoApi.isReady;
       if (adapterAvailable) {
         const price = await this.pa.run(this.network as string).prices.getPrice(this.currency as string);
 
-        if (this.interval) {
-          // Only set price if not destroyed.
+        if (this.interval === interval) { // Check if interval has not been destroyed.
           this.price.next(price as number);
         }
       }
     } catch (e) {
       this.price.next(null);
       // console.error(e);
+    }
+  }
+
+  async fetchDailyHistoricPrices(interval: number): Promise<void> {
+    try {
+      const adapterAvailable = await this.pa.availableAdapters[this.network as string].coingeckoApi.isReady;
+      if (adapterAvailable) {
+        const history = await this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 'max');
+        if (this.interval === interval && history) { // Check if interval has not been destroyed.
+          this.dailyHistoricPrices.next(history);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async addLatestHistoricPrice(interval: number): Promise<void | number> {
+    const adapterAvailable = await this.pa.availableAdapters[this.network as string].coingeckoApi.isReady;
+    if (adapterAvailable) {
+      const history = await this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 1);
+      if (this.interval === interval && history) { // Check if interval has not been destroyed.
+        const prices = this.dailyHistoricPrices.value;
+        if (prices.find((p) => p[0] === history[0][0]) === undefined) {
+          this.dailyHistoricPrices.next([...prices, history[0]]);
+          return history[0][0];
+        }
+      }
     }
   }
 }

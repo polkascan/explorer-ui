@@ -16,8 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+
 table {
   width: 100%;
+}
+
+
+.mat-column-age {
+  white-space: nowrap;
+}
+
+.mat-column-blockHash div {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 mat-progress-bar {
@@ -26,4 +37,16 @@ mat-progress-bar {
 
 [mat-stroked-button] {
   margin: 10px;
+}
+
+.centered-button-bar {
+  text-align: center;
+}
+
+.list-block-range {
+  font-size: 12px;
+}
+
+.block-range-combination {
+  display: inline-block;
 }

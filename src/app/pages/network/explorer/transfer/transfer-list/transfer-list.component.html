@@ -1,45 +1,6 @@
-<h1>Events</h1>
+<h1>Transfers</h1>
 
 <div>
-  <mat-form-field appearance="fill" *ngIf="!addressControl.value">
-    <mat-label>Runtime</mat-label>
-    <mat-select [formControl]="specVersionControl">
-      <mat-option *ngIf="(specVersions | async)?.length === 0" [value]="specVersionControl.value">Loading...</mat-option>
-      <mat-option [value]="''">All versions</mat-option>
-      <ng-container *ngFor="let specVersion of specVersions | async">
-        <mat-option [value]="specVersion">
-          {{specVersion}}
-        </mat-option>
-      </ng-container>
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="fill">
-    <mat-label>Pallet</mat-label>
-    <mat-select [formControl]="palletControl">
-      <mat-option *ngIf="eventFilters.size === 0" [value]="palletControl.value">Loading...</mat-option>
-      <mat-option [value]="''">All pallets</mat-option>
-      <mat-option *ngFor="let item of eventFilters | keyvalue" [value]="item.key.pallet">
-        {{item.key.pallet}}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-
-  <mat-form-field appearance="fill">
-    <mat-label>Event</mat-label>
-    <mat-select [formControl]="eventNameControl">
-      <mat-option *ngIf="eventFilters.size === 0" [value]="eventNameControl.value">Loading...</mat-option>
-      <mat-option [value]="''">All events</mat-option>
-      <ng-container *ngFor="let item of eventFilters | keyvalue">
-        <ng-container *ngIf="item.key.pallet === palletControl.value">
-          <mat-option *ngFor="let event of item.value" [value]="event.eventName">
-            {{event.eventName}}
-          </mat-option>
-        </ng-container>
-      </ng-container>
-    </mat-select>
-  </mat-form-field>
-
   <mat-form-field appearance="fill">
     <mat-label>Date range</mat-label>
     <mat-date-range-input [rangePicker]="picker">
@@ -91,13 +52,6 @@
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="eventID">
-      <th mat-header-cell *matHeaderCellDef>Event ID</th>
-      <td mat-cell *matCellDef="let event">
-        <a [routerLink]="event.blockNumber + '-' + event.eventIdx">{{event.blockNumber + '-' + event.eventIdx}}</a>
-      </td>
-    </ng-container>
-
     <ng-container matColumnDef="age">
       <th mat-header-cell *matHeaderCellDef>Time</th>
       <td mat-cell *matCellDef="let event">
@@ -112,24 +66,26 @@
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="pallet">
-      <th mat-header-cell *matHeaderCellDef>Pallet</th>
+    <ng-container matColumnDef="fromAddress">
+      <th mat-header-cell *matHeaderCellDef>From</th>
       <td mat-cell *matCellDef="let event">
-        {{event.pallet || event.eventPallet || event.eventModule}}
+        <ng-container *ngIf="getAddressFromEvent(event, 'from') as address">
+          <account-id [address]="address" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+        </ng-container>
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="event">
-      <th mat-header-cell *matHeaderCellDef>Event Name</th>
-      <td mat-cell *matCellDef="let event">
-        {{event.eventName}}
-      </td>
+    <ng-container matColumnDef="arrow">
+      <th mat-header-cell *matHeaderCellDef>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+      <td mat-cell *matCellDef="let event"><i class="fas fa-arrow-right"></i></td>
     </ng-container>
 
-    <ng-container matColumnDef="attribute" *ngIf="addressControl.value">
-      <th mat-header-cell *matHeaderCellDef>Attribute With Account</th>
+    <ng-container matColumnDef="toAddress">
+      <th mat-header-cell *matHeaderCellDef>To</th>
       <td mat-cell *matCellDef="let event">
-        {{event.attributeName}}
+        <ng-container *ngIf="getAddressFromEvent(event, 'to') as address">
+          <account-id [address]="address" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+        </ng-container>
       </td>
     </ng-container>
 
@@ -137,7 +93,6 @@
       <th mat-header-cell *matHeaderCellDef>Amount</th>
       <td mat-cell *matCellDef="let event">
         <ng-container *ngFor="let nameAndAmount of getAmountsFromAttributes(event.attributes)">
-          <ng-container *ngIf="nameAndAmount[0] !== 'amount'">{{nameAndAmount[0]}}:</ng-container>
           <balance [value]="nameAndAmount[1]" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
         </ng-container>
       </td>
@@ -146,12 +101,12 @@
     <ng-container matColumnDef="details">
       <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
       <td mat-cell *matCellDef="let event">
-        <a [routerLink]="event.blockNumber + '-' + event.eventIdx"><span class="material-icons">chevron_right</span></a>
+        <a [routerLink]="'../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
       </td>
     </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="addressControl.value ? visibleColumnsForAccount : visibleColumns; sticky: true"></tr>
-    <tr mat-row *matRowDef="let myRowData; columns: addressControl.value ? visibleColumnsForAccount : visibleColumns"></tr>
+    <tr mat-header-row *matHeaderRowDef="visibleColumns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
 
   </table>
 

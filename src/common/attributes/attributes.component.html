@@ -1,7 +1,9 @@
-<div class="attribute" *ngFor="let attribute of parsedAttributes">
+<div class="attribute" *ngFor="let attribute of parsedAttributes; let i = index">
+  <div *ngIf="isArray | async" class="attributes-index">{{i}}</div>
+
   <ng-container [ngSwitch]="attributesConfig[attribute.type]">
 
-    <label *ngIf="attributesConfig[attribute.type] && (attribute.name || attribute.key)">{{ attribute.name || attribute.key }}</label>
+    <label *ngIf="attributesConfig[attribute.type] && (attribute.name || attribute.key)" [title]="attribute.type">{{ attribute.name || attribute.key }}</label>
 
     <attribute-address *ngSwitchCase="'address'" [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize"
                        [ss58Prefix]="ss58Prefix"></attribute-address>

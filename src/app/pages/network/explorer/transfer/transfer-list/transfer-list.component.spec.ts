@@ -1,4 +1,4 @@
-/*!
+/*
  * Polkascan Explorer UI
  * Copyright (C) 2018-2022 Polkascan Foundation (NL)
  *
@@ -16,14 +16,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-table {
-  width: 100%;
-}
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-mat-progress-bar {
-  margin: 10px;
-}
+import { TransferListComponent } from './transfer-list.component';
 
-[mat-stroked-button] {
-  margin: 10px;
-}
+describe('TransferListComponent', () => {
+  let component: TransferListComponent;
+  let fixture: ComponentFixture<TransferListComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [ TransferListComponent ]
+    })
+    .compileComponents();
+  });
+
+  beforeEach(() => {
+    fixture = TestBed.createComponent(TransferListComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});

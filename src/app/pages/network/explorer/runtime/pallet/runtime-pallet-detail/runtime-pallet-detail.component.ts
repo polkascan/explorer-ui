@@ -227,13 +227,13 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {
-        this.fetchEventsStatus.next('error');
+        this.fetchConstantsStatus.next('error');
         return of([]);
       })
     )
 
     this.errorsMessages = paramsAndRuntimeObservable.pipe(
-      tap(() => this.fetchConstantsStatus.next('loading')),
+      tap(() => this.fetchErrorMessagesStatus.next('loading')),
       filter(([p, r]) => !!r),
       switchMap(([[specName, specVersion, pallet], runtime]) => {
         const subject: Subject<pst.RuntimeErrorMessage[]> = new Subject();
@@ -242,7 +242,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
             (errors) => {
               const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet === pallet);
               subject.next(palletErrors);
-              this.fetchConstantsStatus.next(null);
+              this.fetchErrorMessagesStatus.next(null);
               },
             (e) => {
               subject.error(e);
@@ -252,7 +252,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {
-        this.fetchEventsStatus.next('error');
+        this.fetchErrorMessagesStatus.next('error');
         return of([]);
       })
     )

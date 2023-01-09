@@ -1,5 +1,13 @@
 <h1>Blocks</h1>
 
+<div class="centered-button-bar" *ngIf="(pageLiveObservable | async) === false">
+  <button [disabled]="loadingObservable | async" mat-stroked-button
+          aria-label="Show latest" (click)="gotoLatestItems()">
+    Show latest
+    <mat-icon>change_circle</mat-icon>
+  </button>
+</div>
+
 <ng-container *ngIf="(blocks | async) as dataSource">
   <table mat-table [dataSource]="dataSource">
 
@@ -68,11 +76,28 @@
     <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
 
   </table>
+
+  <div *ngIf="(loadingObservable | async) === false && dataSource.length === 0">
+    <ng-container [ngSwitch]="pageLiveObservable | async">
+      <ng-container *ngSwitchCase="true">
+        No items. Waiting for new blocks.
+      </ng-container>
+      <ng-container *ngSwitchDefault>
+        No items found.
+      </ng-container>
+    </ng-container>
+  </div>
+
 </ng-container>
 
 <div *ngIf="loadingObservable | async">
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>
 </div>
 
-<button mat-stroked-button aria-label="Previous" [disabled]="!!((loadingObservable | async) || customUntilBlockNumber === null)" (click)="getPrevPage()">Previous</button>
-<button mat-stroked-button aria-label="Next" [disabled]="!!((loadingObservable | async) || (customUntilBlockNumber && customUntilBlockNumber < listSize))" (click)="getNextPage()">Next</button>
+<div>
+  <ng-container *ngIf="(hasNextPageObservable | async)">
+    <button [disabled]="(loadingObservable | async)" mat-stroked-button aria-label="Next" (click)="loadMoreItems()">
+      Show more <mat-icon>expand_more</mat-icon>
+    </button>
+  </ng-container>
+</div>

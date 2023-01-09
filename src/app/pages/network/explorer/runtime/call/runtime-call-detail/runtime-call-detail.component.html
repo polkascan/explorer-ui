@@ -35,6 +35,13 @@
         </td>
       </ng-container>
 
+      <ng-container matColumnDef="typeComposition">
+        <th mat-header-cell *matHeaderCellDef>Type Composition</th>
+        <td mat-cell *matCellDef="let arg">
+          <pre>{{arg.parsedComposition | json}}</pre>
+        </td>
+      </ng-container>
+
       <tr mat-header-row *matHeaderRowDef="visibleColumns; sticky: true"></tr>
       <tr mat-row *matRowDef="let myRowData; columns: visibleColumns"></tr>
 

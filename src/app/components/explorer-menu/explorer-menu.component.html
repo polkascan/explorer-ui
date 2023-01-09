@@ -5,17 +5,11 @@
   <button mat-button [matMenuTriggerFor]="menuChain">Chain <i class="fas fa-chevron-down"></i></button>
   <mat-menu #menuChain="matMenu">
     <button mat-menu-item routerLink="block">Blocks</button>
-    <button mat-menu-item routerLink="transaction">Transactions</button>
-    <button mat-menu-item routerLink="inherent">Inherents</button>
     <button mat-menu-item routerLink="extrinsic">Extrinsics</button>
+    <button mat-menu-item routerLink="transfer">Transfers</button>
     <button mat-menu-item routerLink="event">Events</button>
     <button mat-menu-item routerLink="log">Logs</button>
   </mat-menu>
-
-<!--  <button mat-button [matMenuTriggerFor]="menuAccounts">Accounts <i class="fas fa-chevron-down"></i></button>-->
-<!--  <mat-menu #menuAccounts="matMenu">-->
-<!--    <button mat-menu-item routerLink="balances/transfer">Transfers</button>-->
-<!--  </mat-menu>-->
 
   <button mat-button [matMenuTriggerFor]="menuRuntime">Runtime <i class="fas fa-chevron-down"></i></button>
   <mat-menu #menuRuntime="matMenu">

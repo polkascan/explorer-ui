@@ -16,28 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { TransferListComponent } from './transfer-list/transfer-list.component';
 
-import { BalancesTransferListComponent } from './balances-transfer-list.component';
+const routes: Routes = [
+  {
+    path: '',
+    component: TransferListComponent
+  }
+];
 
-describe('BalancesTransferListComponent', () => {
-  let component: BalancesTransferListComponent;
-  let fixture: ComponentFixture<BalancesTransferListComponent>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      declarations: [ BalancesTransferListComponent ]
-    })
-    .compileComponents();
-  });
-
-  beforeEach(() => {
-    fixture = TestBed.createComponent(BalancesTransferListComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-});
+@NgModule({
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule]
+})
+export class TransferRoutingModule {
+}

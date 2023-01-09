@@ -34,6 +34,7 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
   runtime: string;
   pallet: string;
   constant: Observable<pst.RuntimeConstant | null>;
+  parsedComposition = new BehaviorSubject<any>(null);
   fetchConstantStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
   private destroyer: Subject<undefined> = new Subject();
@@ -84,6 +85,9 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
               )[0];
               if (palletConstant) {
                 subject.next(palletConstant);
+                if (palletConstant.scaleTypeComposition) {
+                  this.parsedComposition.next(JSON.parse(palletConstant.scaleTypeComposition));
+                }
                 this.fetchConstantStatus.next(null)
               } else {
                 subject.error('Runtime constant not found.')

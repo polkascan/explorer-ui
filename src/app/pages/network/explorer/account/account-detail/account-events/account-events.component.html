@@ -1,0 +1,119 @@
+<ng-container *ngIf="(networkProperties | async) as props">
+
+<mat-toolbar *ngIf="address">
+  <button mat-stroked-button [routerLink]="routerLink | async" [queryParams]="queryParams | async">
+    Show all
+  </button>
+</mat-toolbar>
+
+<ng-container *ngIf="((events | async) || []) as dataSource">
+  <table mat-table [dataSource]="dataSource" [trackBy]="eventTrackBy">
+
+    <ng-container matColumnDef="icon">
+      <th mat-header-cell *matHeaderCellDef class="mat-cell--icon-cell"></th>
+      <td mat-cell *matCellDef>
+        <i class="fas fa-calendar-check"></i>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="eventID">
+      <th mat-header-cell *matHeaderCellDef>Event ID</th>
+      <td mat-cell *matCellDef="let event">
+        <a [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx">{{event.blockNumber + '-' + event.eventIdx}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="age">
+      <th mat-header-cell *matHeaderCellDef>Time</th>
+      <td mat-cell *matCellDef="let event">
+        <time-ago [value]="event.blockDatetime"></time-ago>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="referencedTransaction">
+      <th mat-header-cell *matHeaderCellDef>Extrinsic</th>
+      <td mat-cell *matCellDef="let event">
+        <a *ngIf="event.extrinsicIdx !== null" [routerLink]="'../../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber + '-' + event.extrinsicIdx}}</a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="pallet">
+      <th mat-header-cell *matHeaderCellDef>Pallet</th>
+      <td mat-cell *matCellDef="let event">
+        {{event.pallet}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="event">
+      <th mat-header-cell *matHeaderCellDef>Event Name</th>
+      <td mat-cell *matCellDef="let event">
+        {{event.eventName}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="attribute">
+      <th mat-header-cell *matHeaderCellDef>Attribute With Account</th>
+      <td mat-cell *matCellDef="let event">
+        {{event.attributeName}}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="direction">
+      <th mat-header-cell *matHeaderCellDef>Direction</th>
+      <td mat-cell *matCellDef="let event">
+        <ng-container *ngIf="event.attributeName === 'from'">
+          Send To
+        </ng-container>
+        <ng-container *ngIf="event.attributeName === 'to'">
+          Receive From
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="address">
+      <th mat-header-cell *matHeaderCellDef>Address</th>
+      <td mat-cell *matCellDef="let event">
+        <ng-container *ngIf="getAddressFromEvent(event) as otherAddress">
+          <account-id [address]="otherAddress" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="amount">
+      <th mat-header-cell *matHeaderCellDef>Amount</th>
+      <td mat-cell *matCellDef="let event">
+        <ng-container *ngIf="event.attributeName === 'from'">-</ng-container>
+        <ng-container *ngFor="let nameAndAmount of getAmountsFromAttributes(event.attributes)">
+          <ng-container *ngIf="nameAndAmount[0] !== 'amount'">{{nameAndAmount[0]}}: </ng-container>
+          <balance [value]="nameAndAmount[1]" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
+        </ng-container>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="details">
+      <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
+      <td mat-cell *matCellDef="let event">
+        <a [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx"><span class="material-icons">chevron_right</span></a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="detailsExtrinsic">
+      <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
+      <td mat-cell *matCellDef="let event">
+        <a [routerLink]="'../../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="columns; sticky: true"></tr>
+    <tr mat-row *matRowDef="let myRowData; columns: columns"></tr>
+
+  </table>
+
+  <p *ngIf="(loading | async) === true">Loading items...</p>
+
+  <p *ngIf="dataSource.length === 0 && (loading | async) === false">
+    No items found.
+  </p>
+
+  </ng-container>
+</ng-container>

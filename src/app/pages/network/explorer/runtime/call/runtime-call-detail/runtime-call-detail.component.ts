@@ -39,7 +39,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
   fetchCallStatus: BehaviorSubject<any> = new BehaviorSubject(null);
   fetchCallAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-  visibleColumns = ['icon', 'name', 'type'];
+  visibleColumns = ['icon', 'name', 'type', 'typeComposition'];
 
   private destroyer: Subject<undefined> = new Subject();
 
@@ -113,12 +113,18 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
     this.callArguments = runtimeObservable.pipe(
       tap(() => this.fetchCallAttributesStatus.next('loading')),
       switchMap(([runtime, pallet, callName]) => {
-        const subject: Subject<pst.RuntimeCallArgument[]> = new Subject();
+        const subject: Subject<(pst.RuntimeCallArgument & {parsedComposition?: any})[]> = new Subject();
         if (runtime) {
           this.pa.run().polkascan.state.getRuntimeCallArguments(runtime.specName, runtime.specVersion, pallet, callName).then(
             (response) => {
               if (Array.isArray(response.objects)) {
-                subject.next(response.objects);
+                const objects: (pst.RuntimeCallArgument & {parsedComposition?: any})[] = [...response.objects];
+                for (let obj of objects) {
+                  if (obj.scaleTypeComposition) {
+                    obj.parsedComposition = JSON.parse(obj.scaleTypeComposition);
+                  }
+                }
+                subject.next(objects);
                 this.fetchCallAttributesStatus.next(null);
               } else {
                 subject.error('Invalid response.')
