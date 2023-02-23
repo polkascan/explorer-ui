@@ -21,7 +21,15 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import {
-  catchError, distinctUntilChanged, filter, first, map, shareReplay, startWith, switchMap, takeUntil, tap
+  catchError,
+  distinctUntilChanged,
+  filter,
+  first,
+  map,
+  shareReplay,
+  startWith,
+  switchMap,
+  takeUntil
 } from 'rxjs/operators';
 import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
 import {
@@ -36,7 +44,7 @@ import { AccountId, AccountIndex } from '@polkadot/types/interfaces';
 import { Codec } from '@polkadot/types/types';
 import { decodeAddress, validateAddress } from '@polkadot/util-crypto';
 import { AccountInfo } from '@polkadot/types/interfaces/system/types';
-import { asObservable } from '../../../../../../common/polkadapt-rxjs';
+import { temporaryAsObservableFn } from '../../../../../../common/polkadapt-rxjs';
 import { TooltipsService } from '../../../../../services/tooltips.service';
 
 
@@ -157,7 +165,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       switchMap((id: string) => {
         const n = parseInt(id, 10);
         if (id === n.toString() && Number.isInteger(n)) {
-          return asObservable(this.pa.run().query.indices.accounts, n).pipe(
+          return temporaryAsObservableFn(this.pa.availableAdapters[this.ns.currentNetwork.value].substrateRpc.apiPromise, 'query.indices.accounts', n).pipe(
             takeUntil(this.destroyer),
             map((indices) => {
               if (indices && indices.isSome) {
@@ -221,13 +229,15 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       }
     });
 
+    const apiPromise = this.pa.availableAdapters[this.ns.currentNetwork.value].substrateRpc.apiPromise;
+
     this.account = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.system.account, id).pipe(startWith(undefined), takeUntil(this.destroyer))),
+      switchMap((id) => temporaryAsObservableFn(apiPromise,'query.system.account', id).pipe(startWith(undefined), takeUntil(this.destroyer))),
       map((account) => account ? account : undefined)
     );
 
     const idAndIndexObservable = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.accounts.idAndIndex, id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) => temporaryAsObservableFn(apiPromise, 'derive.accounts.idAndIndex', id).pipe(takeUntil(this.destroyer)))
     );
 
     this.accountId = idAndIndexObservable.pipe(
@@ -244,36 +254,36 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
     this.indices = this.accountIndex.pipe(
       switchMap((accountIndex) => accountIndex
-        ? asObservable(this.pa.run().query.indices.accounts, accountIndex.toNumber()).pipe(takeUntil(this.destroyer))
+        ? temporaryAsObservableFn(apiPromise, 'query.indices.accounts', accountIndex.toNumber()).pipe(takeUntil(this.destroyer))
         : of(undefined)),
     )
 
     this.superOf = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().query.identity.superOf, id).pipe(takeUntil(this.destroyer)) : of(null))
+      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'query.identity.superOf', id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.identity = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().query.identity.identityOf, id).pipe(takeUntil(this.destroyer)): of(null))
+      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'query.identity.identityOf', id).pipe(takeUntil(this.destroyer)): of(null))
     );
 
     this.subsOf = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().query.identity.subsOf, id).pipe(takeUntil(this.destroyer)) : of(null))
+      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'query.identity.subsOf', id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.derivedAccountInfo = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().derive.accounts.info, id).pipe(takeUntil(this.destroyer)) : of(null))
+      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'derive.accounts.info', id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.derivedAccountFlags = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().derive.accounts.flags, id).pipe(takeUntil(this.destroyer)) : of(null))
+      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'derive.accounts.flags', id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.derivedBalancesAll = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().derive.balances.all, id).pipe(takeUntil(this.destroyer)) : of(null))
+      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'derive.balances.all', id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.stakingInfo = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().derive.staking.account, id).pipe(takeUntil(this.destroyer)) : of(null))
+      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'derive.staking.account', id).pipe(takeUntil(this.destroyer)) : of(null))
     );
 
     this.accountBalances = combineLatest(
@@ -308,20 +318,20 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.parent = this.superOf.pipe(
       switchMap((val: any) => {
         return val && val.value && val.value[0]
-          ? asObservable(this.pa.run().query.system.account, val.value[0]).pipe(takeUntil(this.destroyer))
+          ? temporaryAsObservableFn(apiPromise, 'query.system.account', val.value[0]).pipe(takeUntil(this.destroyer))
           : of(undefined)
       })
     )
 
     this.parentIdentity = this.superOf.pipe(
       switchMap((val: any) => val && val.value && val.value[0]
-        ? asObservable(this.pa.run().query.identity.identityOf, val.value[0]).pipe(takeUntil(this.destroyer))
+        ? temporaryAsObservableFn(apiPromise, 'query.identity.identityOf', val.value[0]).pipe(takeUntil(this.destroyer))
         : of(undefined)),
     )
 
     this.parentSubsOf = this.superOf.pipe(
       switchMap((val: any) => val && val.value && val.value[0]
-        ? asObservable(this.pa.run().query.identity.subsOf, val.value[0]).pipe(takeUntil(this.destroyer))
+        ? temporaryAsObservableFn(apiPromise, 'query.identity.subsOf', val.value[0]).pipe(takeUntil(this.destroyer))
         : of(undefined))
     )
 
@@ -336,7 +346,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       takeUntil(this.destroyer),
       switchMap(([subsOf, parentSubsOf]) => {
         const subs = subsOf && subsOf.length ? subsOf : parentSubsOf && parentSubsOf.length ? parentSubsOf : [];
-        const observables: Observable<any>[] = subs.map((sub: any) => asObservable(this.pa.run().query.identity.superOf, sub).pipe(takeUntil(this.destroyer)))
+        const observables: Observable<any>[] = subs.map((sub: any) => temporaryAsObservableFn(apiPromise, 'query.identity.superOf', sub).pipe(takeUntil(this.destroyer)))
 
         if (observables.length > 0) {
           return combineLatest(observables);
@@ -471,7 +481,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
   fetchTaggedAccounts(accountIdHex: string): void {
     this.pa.run().polkascan.state.getTaggedAccount(accountIdHex).then(
-      (account) => this.polkascanAccountInfo.next(account)
+      (account: pst.TaggedAccount) => this.polkascanAccountInfo.next(account)
     );
   }
 

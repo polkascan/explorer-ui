@@ -94,7 +94,7 @@ export class NetworkService {
       return;
     }
 
-    const runOnRPC = {chain: network, adapters: ['substrate-rpc']};
+    const apiPromise = await this.pa.availableAdapters[network].substrateRpc.apiPromise;
 
     // Only the last of concurring calls to this function will continue on the code below.
     if (network) {
@@ -115,23 +115,23 @@ export class NetworkService {
       let properties: ChainProperties | undefined;
 
       try {
-        chainSS58 = await this.pa.run(runOnRPC).registry.chainSS58;
-        chainDecimals = await this.pa.run(runOnRPC).registry.chainDecimals;
-        chainTokens = await this.pa.run(runOnRPC).registry.chainTokens;
+        chainSS58 = await apiPromise.registry.chainSS58;
+        chainDecimals = await apiPromise.registry.chainDecimals;
+        chainTokens = await apiPromise.registry.chainTokens;
       } catch (e) {
         console.error(e);
       }
 
       try {
-        systemName = (await this.pa.run(runOnRPC).rpc.system.name())?.toString();
-        specName = await this.pa.run(runOnRPC).runtimeVersion.specName?.toString();
-        systemVersion = (await this.pa.run(runOnRPC).rpc.system.version())?.toString();
+        systemName = (await apiPromise.rpc.system.name())?.toString();
+        specName = await apiPromise.runtimeVersion.specName?.toString();
+        systemVersion = (await apiPromise.rpc.system.version())?.toString();
       } catch (e) {
         console.error(e);
       }
 
       try {
-        properties = await this.pa.run(runOnRPC).rpc.system.properties();
+        properties = await apiPromise.rpc.system.properties();
         if (properties) {
           chainSS58 = chainSS58 ?? ((properties.ss58Format || (properties as any).ss58Prefix).isSome
             ? (properties.ss58Format || (properties as any).ss58Prefix).toJSON() as number
@@ -168,7 +168,7 @@ export class NetworkService {
 
     // Check if blocks are coming in at the expected block time. If not, trigger reload connection.
     try {
-      const expectedBlockTime = await this.pa.run(runOnRPC).consts.babe.expectedBlockTime;
+      const expectedBlockTime = await apiPromise.consts.babe.expectedBlockTime;
       const blockTime: number = (expectedBlockTime as any).toNumber();
       if (Number.isInteger(blockTime)) {
         this.blockHarvester.headNumber.pipe(

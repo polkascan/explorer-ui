@@ -36,8 +36,8 @@ export type BlockSubject = BehaviorSubject<Block>;
 type BlockCache = {[nr: string]: BlockSubject};
 
 export class BlockHarvester {
-  private unsubscribeNewHeads: (() => void) | null;
-  private unsubscribeNewBlocks: (() => void) | null;
+  private unsubscribeNewBlock: (() => void) | null;
+  private unsubscribeNewFinalizedBlocks: (() => void) | null;
   private readonly cache: BlockCache = {};
   headNumber = new BehaviorSubject<number>(0);
   finalizedNumber = new BehaviorSubject<number>(0);
@@ -87,32 +87,28 @@ export class BlockHarvester {
   }
 
   private async subscribeNewBlocks(): Promise<void> {
-    if (!this.unsubscribeNewHeads) {
+    if (!this.unsubscribeNewBlock) {
       // Subscribe to new blocks *without finality*.
-      this.unsubscribeNewHeads = await this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.subscribeNewHeads(
-        (header: Header) => this.newHeadHandler(header)
+      this.unsubscribeNewBlock = await this.polkadapt.run({chain: this.network}).subscribeNewBlock(
+        (block: any) => this.newBlockHandler(block)  // TODO, fix any when correct types are available
       );
     }
 
-    if (!this.unsubscribeNewBlocks) {
+    if (!this.unsubscribeNewFinalizedBlocks) {
       // Subscribe to new finalized blocks from Polkascan.
-      this.unsubscribeNewBlocks = await this.polkadapt.run(this.network)
+      this.unsubscribeNewFinalizedBlocks = await this.polkadapt.run(this.network)
         .polkascan.chain.subscribeNewBlock((block: pst.Block) => this.finalizedBlockHandler(block));
     }
   }
 
-  private newHeadHandler(header: Header): void {
-    const newNumber = header.number.toNumber();
+  private newBlockHandler(block: pst.Block): void {
+    const newNumber = block.number;
     // Only update the head number if the new number is greater.
     if (newNumber > this.headNumber.value) {
       this.headNumber.next(newNumber);
       // Preload block data.
-      const block: Block = Object.assign({}, this.cache[newNumber].value);
-      block.hash = header.hash.toString();
-      block.parentHash = header.parentHash.toString();
-      block.extrinsicsRoot = header.extrinsicsRoot.toString();
-      block.stateRoot = header.stateRoot.toString();
-      this.cache[newNumber].next(block);
+      const blockMerged: Block = Object.assign({}, this.cache[newNumber].value, block);
+      this.cache[newNumber].next(blockMerged);
       this.loadBlock(newNumber);
     }
   }
@@ -188,30 +184,7 @@ export class BlockHarvester {
         block.status = 'loaded';
         cached.next(block);
       } else {
-        // Load data from substrate rpc.
-        const runOnRpc = {chain: this.network, adapters: ['substrate-rpc']};
-        if (!block.hash) {
-          block.hash = (await this.polkadapt.run(runOnRpc).rpc.chain.getBlockHash(block.number)).toString();
-        }
-        let signedBlock, allEvents, timestamp;
-        try {
-          [signedBlock, allEvents, timestamp] = await Promise.all([
-            this.polkadapt.run(runOnRpc).rpc.chain.getBlock(block.hash),
-            this.polkadapt.run(runOnRpc).query.system.events.at(block.hash),
-            this.polkadapt.run(runOnRpc).query.timestamp.now.at(block.hash)
-          ]);
-        } catch (e) {
-          block.status = oldStatus;
-          throw new Error('Error loading block from SubstrateRPC, will try again when possible and if necessary.');
-        }
-        // If data is already loaded into this block, ignore data from rpc node.
         if (cached.value.status !== 'loaded') {
-          block.parentHash = signedBlock.block.header.parentHash.toString();
-          block.extrinsicsRoot = signedBlock.block.header.extrinsicsRoot.toString();
-          block.stateRoot = signedBlock.block.header.stateRoot.toString();
-          block.datetime = new Date(parseInt(timestamp.toString(), 10)).toISOString();
-          block.extrinsics = new Array(signedBlock.block.extrinsics.length);
-          block.events = new Array((allEvents as any).length);  // temporary 'as any' fix until polkadot-js types are fixed.
           block.status = 'loaded';
           cached.next(block);
           // If this block can be finalized already, do it now.
@@ -227,13 +200,13 @@ export class BlockHarvester {
   }
 
   private unsubscribeHeads(): void {
-    if (this.unsubscribeNewHeads) {
-      this.unsubscribeNewHeads();
-      this.unsubscribeNewHeads = null;
+    if (this.unsubscribeNewBlock) {
+      this.unsubscribeNewBlock();
+      this.unsubscribeNewBlock = null;
     }
-    if (this.unsubscribeNewBlocks) {
-      this.unsubscribeNewBlocks();
-      this.unsubscribeNewBlocks = null;
+    if (this.unsubscribeNewFinalizedBlocks) {
+      this.unsubscribeNewFinalizedBlocks();
+      this.unsubscribeNewFinalizedBlocks = null;
     }
   }
 

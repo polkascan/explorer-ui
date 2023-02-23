@@ -39,6 +39,7 @@ import * as Highcharts from 'highcharts';
 import { VariablesService } from '../../../../../services/variables.service';
 import { PricingService } from '../../../../../services/pricing.service';
 import { Codec } from '@polkadot/types/types';
+import { ApiPromise } from '@polkadot/api';
 
 
 type HistoricalBalance = {
@@ -111,10 +112,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     super(ns);
 
     // Fetch the block hash for block 1.
-    this.pa.run({
-      chain: this.network,
-      adapters: ['substrate-rpc']
-    }).rpc.chain.getBlockHash(1).then((hash) => this.blockOne.next(hash));
+    this.pa.availableAdapters[this.network].substrateRpc.apiPromise.then((api) => {
+      api.rpc.chain.getBlockHash(1).then((hash) => this.blockOne.next(hash))
+    }, () => {})
 
     // Load more items automatically.
     this.itemsObservable.pipe(skip(1)).subscribe((items) => {
@@ -125,10 +125,11 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     });
 
     // Start observables for data retrieval and conversion for table and charts.
-    this.createItemAtBlockOneObservable();
-    this.createBalancesObservable();
-    this.createChartDataObservable();
-
+    this.pa.availableAdapters[this.network].substrateRpc.apiPromise.then((api) => {
+      this.createItemAtBlockOneObservable(api);
+      this.createBalancesObservable(api);
+      this.createChartDataObservable(api);
+    })
   }
 
   ngOnInit(): void {
@@ -208,7 +209,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   }
 
 
-  createItemAtBlockOneObservable(): void {
+  createItemAtBlockOneObservable(api: ApiPromise): void {
     const runParams = {
       chain: this.network,
       adapters: ['substrate-rpc']
@@ -233,7 +234,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
       )),
       switchMap(([atListStart, hash]) => {
         if (atListStart && this.accountId) {  // The items list is at its end. Check if at genesis there was an AccountInfo.
-          const timestampObservable = from(this.pa.run(runParams).query.timestamp.now.at(hash)).pipe(
+          const timestampObservable = from(api.query.timestamp.now.at(hash)).pipe(
             map((timestamp) => {
               if (timestamp.isEmpty === false) {
                 return timestamp.toJSON() as EpochTimeStamp;
@@ -242,7 +243,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
             })
           );
 
-          return (from(this.pa.run(runParams).query.system.account.at(hash, this.accountId)) as Observable<AccountInfo>).pipe(
+          return (from(api.query.system.account.at(hash, this.accountId)) as Observable<AccountInfo>).pipe(
             combineLatestWith(timestampObservable),
             map<[AccountInfo, number | null], BalancesItem | null>(([accountInfo, timestamp]) => {  // Check if the account exists.
               if (accountInfo && accountInfo.data) {
@@ -268,7 +269,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   }
 
 
-  createBalancesObservable(): void {
+  createBalancesObservable(api: ApiPromise): void {
     this.balancesObservable = this.itemsObservable.pipe(
       takeUntil(this.destroyer),
       tap<pst.AccountEvent[]>(() => this.loading++),
@@ -300,7 +301,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   }
 
 
-  createChartDataObservable(): void {
+  createChartDataObservable(api: ApiPromise): void {
     const runParams = {
       chain: this.network,
       adapters: ['substrate-rpc']
@@ -310,16 +311,16 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
       takeUntil(this.destroyer),
       tap<BalancesItem[]>(() => this.chartLoadingObservable.next(true)),
       combineLatestWith( // Check if the account has a balance at the latest block height.
-        from(this.pa.run(runParams).rpc.chain.getFinalizedHead()).pipe(
+        from(api.rpc.chain.getFinalizedHead()).pipe(
           switchMap((hash) =>
             from(
-              this.pa.run(runParams).query.system.account.at(hash, this.accountId) as Promise<AccountInfo>)
+              api.query.system.account.at(hash, this.accountId) as Promise<AccountInfo>)
               .pipe(
                 combineLatestWith(
-                  from(this.pa.run(runParams).rpc.chain.getHeader(hash)).pipe(
+                  from(api.rpc.chain.getHeader(hash)).pipe(
                     map<Header, number>((header) => header.number.toJSON() as number)
                   ),
-                  from(this.pa.run(runParams).query.timestamp.now.at(hash)).pipe(
+                  from(api.query.timestamp.now.at(hash)).pipe(
                     map<Codec, number>((timestamp) => timestamp.toJSON() as EpochTimeStamp)
                   )
                 )
@@ -578,9 +579,10 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     let balances: HistoricalBalance = {};
 
     // Fetch the blockHash for the given block number. And the accountInfo at the time of this blockHash.
+    const api = await this.pa.availableAdapters[this.network].substrateRpc.apiPromise;
     let blockHash: BlockHash;
     try {
-      blockHash = await this.pa.run(runParams).rpc.chain.getBlockHash(blockNumber);
+      blockHash = await api.rpc.chain.getBlockHash(blockNumber);
     } catch (e) {
       this.loading--;
       throw (`[HistoricalBalance] Could not fetch block hash for block ${blockNumber}. ${e}`);
@@ -588,7 +590,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
     let systemAccount: AccountInfo | null = null;
     try {
-      systemAccount = await this.pa.run(runParams).query.system.account.at(blockHash, this.accountId);
+      systemAccount = await api.query.system.account.at(blockHash, this.accountId);
       if (systemAccount && systemAccount.data) {
         balances.free = systemAccount.data.free;
         balances.reserved = systemAccount.data.reserved;
@@ -608,10 +610,10 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
     // Fetch accountInfo, staking information and session information at blockHash.
     const [accountData, locks, freeBalance, reservedBalance] = (await Promise.allSettled([
-      this.pa.run(runParams).query.balances.account.at(blockHash, this.accountId),
-      this.pa.run(runParams).query.balances.locks.at(blockHash, this.accountId),
-      this.pa.run(runParams).query.balances.freeBalance.at(blockHash, this.accountId),
-      this.pa.run(runParams).query.balances.reservedBalance.at(blockHash, this.accountId)
+      api.query.balances.account.at(blockHash, this.accountId),
+      api.query.balances.locks.at(blockHash, this.accountId),
+      api.query.balances.freeBalance.at(blockHash, this.accountId),
+      api.query.balances.reservedBalance.at(blockHash, this.accountId)
     ])).map((p) => p.status === 'fulfilled' ? p.value : null) as
       [AccountData | null, BalanceLock[] | null, Balance | null, Balance | null];
 

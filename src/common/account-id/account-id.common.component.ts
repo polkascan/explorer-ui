@@ -34,7 +34,7 @@ import { isHex, isU8a } from '@polkadot/util';
 import { ActivatedRoute } from '@angular/router';
 import { TooltipsService } from '../../app/services/tooltips.service';
 import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
-import { asObservable } from '../polkadapt-rxjs';
+import { asObservable, temporaryAsObservableFn } from '../polkadapt-rxjs';
 import { PolkadaptService } from '../../app/services/polkadapt.service';
 import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
 import { DeriveAccountInfo } from '@polkadot/api-derive/types';
@@ -180,7 +180,8 @@ export class AccountIdCommonComponent implements OnInit, OnChanges, OnDestroy {
         if (!address) {
           return of(null);
         }
-        return asObservable(this.pa.run().derive.accounts.info, address).pipe(takeUntil(this.destroyer));
+        const apiPromise = this.pa.availableAdapters[network as string].substrateRpc.apiPromise;
+        return temporaryAsObservableFn(apiPromise, 'derive.accounts.info', address).pipe(takeUntil(this.destroyer));
       })
     );
 

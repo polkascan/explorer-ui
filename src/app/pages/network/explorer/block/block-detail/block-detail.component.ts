@@ -24,7 +24,7 @@ import { Block } from '../../../../../services/block/block.harvester';
 import { catchError, filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { types as pst } from '@polkadapt/polkascan-explorer';
-import { asObservable } from '../../../../../../common/polkadapt-rxjs';
+import { asObservable, temporaryAsObservableFn } from '../../../../../../common/polkadapt-rxjs';
 import { Header } from '@polkadot/types/interfaces';
 
 @Component({
@@ -69,7 +69,8 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
           // Id is a blockNumber.
           return of(id);
         } else {
-          return asObservable(this.pa.run().rpc.chain.getHeader, params['idOrHash']).pipe(
+          const apiPromise = this.pa.availableAdapters[this.ns.currentNetwork.value].substrateRpc.apiPromise;
+          return temporaryAsObservableFn(apiPromise, 'rpc.chain.getHeader', params['idOrHash']).pipe(
             take(1),
             map((header: Header) => header.number.toJSON() as number),
             catchError((err) => {
