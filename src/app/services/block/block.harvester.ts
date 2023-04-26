@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { BehaviorSubject, combineLatest, defer } from 'rxjs';
+import { BehaviorSubject, combineLatest, defer, Subscription } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt } from '@polkadapt/core';
 import { Header } from '@polkadot/types/interfaces';
@@ -36,8 +36,8 @@ export type BlockSubject = BehaviorSubject<Block>;
 type BlockCache = {[nr: string]: BlockSubject};
 
 export class BlockHarvester {
-  private unsubscribeNewBlock: (() => void) | null;
-  private unsubscribeNewFinalizedBlocks: (() => void) | null;
+  private newBlockSubscription: Subscription | null;
+  private newFinalizedBlocksSubscription: Subscription | null;
   private readonly cache: BlockCache = {};
   headNumber = new BehaviorSubject<number>(0);
   finalizedNumber = new BehaviorSubject<number>(0);
@@ -87,18 +87,18 @@ export class BlockHarvester {
   }
 
   private async subscribeNewBlocks(): Promise<void> {
-    if (!this.unsubscribeNewBlock) {
+    if (!this.newBlockSubscription) {
       // Subscribe to new blocks *without finality*.
-      this.unsubscribeNewBlock = await this.polkadapt.run({chain: this.network}).subscribeNewBlock(
+      this.newBlockSubscription = this.polkadapt.run(this.network).subscribeNewBlock().subscribe(
         (block: any) => this.newBlockHandler(block)  // TODO, fix any when correct types are available
       );
     }
 
-    if (!this.unsubscribeNewFinalizedBlocks) {
-      // Subscribe to new finalized blocks from Polkascan.
-      this.unsubscribeNewFinalizedBlocks = await this.polkadapt.run(this.network)
-        .polkascan.chain.subscribeNewBlock((block: pst.Block) => this.finalizedBlockHandler(block));
-    }
+    // if (!this.newFinalizedBlocksSubscription) {   // TODO FIX ME OR REMOVE ME!
+    //   // Subscribe to new finalized blocks from Polkascan.
+    //   this.newFinalizedBlocksSubscription = this.polkadapt.run(this.network)
+    //     .subscribeNewBlock().subscribe((block: pst.Block) => this.finalizedBlockHandler(block));
+    // }
   }
 
   private newBlockHandler(block: pst.Block): void {
@@ -171,7 +171,7 @@ export class BlockHarvester {
         // Load finalized data from Polkascan.
         let loaded;
         try {
-          loaded = await this.polkadapt.run(this.network).polkascan.chain.getBlock(block.number);
+          // loaded = this.polkadapt.run(this.network).getBlock(block.number);    // TODO FIX ME!!!!
         }
         catch (e) {
           block.status = oldStatus;
@@ -200,13 +200,13 @@ export class BlockHarvester {
   }
 
   private unsubscribeHeads(): void {
-    if (this.unsubscribeNewBlock) {
-      this.unsubscribeNewBlock();
-      this.unsubscribeNewBlock = null;
+    if (this.newBlockSubscription) {
+      this.newBlockSubscription.unsubscribe();
+      this.newBlockSubscription = null;
     }
-    if (this.unsubscribeNewFinalizedBlocks) {
-      this.unsubscribeNewFinalizedBlocks();
-      this.unsubscribeNewFinalizedBlocks = null;
+    if (this.newFinalizedBlocksSubscription) {
+      this.newFinalizedBlocksSubscription.unsubscribe();
+      this.newFinalizedBlocksSubscription = null;
     }
   }
 

@@ -17,7 +17,7 @@
  */
 
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, skip, take } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, skip, take } from 'rxjs';
 import { PolkadaptService } from './polkadapt.service';
 import { BlockHarvester } from './block/block.harvester';
 import { BlockService } from './block/block.service';
@@ -94,7 +94,7 @@ export class NetworkService {
       return;
     }
 
-    const apiPromise = await this.pa.availableAdapters[network].substrateRpc.apiPromise;
+    const apiRx = await this.pa.availableAdapters[network].substrateRpc.apiPromise;
 
     // Only the last of concurring calls to this function will continue on the code below.
     if (network) {
@@ -115,23 +115,25 @@ export class NetworkService {
       let properties: ChainProperties | undefined;
 
       try {
-        chainSS58 = await apiPromise.registry.chainSS58;
-        chainDecimals = await apiPromise.registry.chainDecimals;
-        chainTokens = await apiPromise.registry.chainTokens;
+        chainSS58 = await apiRx.registry.chainSS58;
+        chainDecimals = await apiRx.registry.chainDecimals;
+        chainTokens = await apiRx.registry.chainTokens;
       } catch (e) {
         console.error(e);
       }
 
       try {
-        systemName = (await apiPromise.rpc.system.name())?.toString();
-        specName = await apiPromise.runtimeVersion.specName?.toString();
-        systemVersion = (await apiPromise.rpc.system.version())?.toString();
+        systemName = (await apiRx.rpc.system.name())?.toString();
+        specName = await apiRx.runtimeVersion.specName?.toString();
+        systemVersion = (await apiRx.rpc.system.version())?.toString();
       } catch (e) {
         console.error(e);
       }
 
+      console.log('jksdflksdfhjkshdkjfhsdfkj')
+
       try {
-        properties = await apiPromise.rpc.system.properties();
+        properties = await firstValueFrom(apiRx.rpc.system.properties());
         if (properties) {
           chainSS58 = chainSS58 ?? ((properties.ss58Format || (properties as any).ss58Prefix).isSome
             ? (properties.ss58Format || (properties as any).ss58Prefix).toJSON() as number
@@ -168,7 +170,7 @@ export class NetworkService {
 
     // Check if blocks are coming in at the expected block time. If not, trigger reload connection.
     try {
-      const expectedBlockTime = await apiPromise.consts.babe.expectedBlockTime;
+      const expectedBlockTime = await apiRx.consts.babe.expectedBlockTime;
       const blockTime: number = (expectedBlockTime as any).toNumber();
       if (Number.isInteger(blockTime)) {
         this.blockHarvester.headNumber.pipe(

@@ -113,7 +113,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
     // Fetch the block hash for block 1.
     this.pa.availableAdapters[this.network].substrateRpc.apiPromise.then((api) => {
-      api.rpc.chain.getBlockHash(1).then((hash) => this.blockOne.next(hash))
+      api.rpc.chain.getBlockHash(1).subscribe((hash) => this.blockOne.next(hash))
     }, () => {})
 
     // Load more items automatically.
@@ -126,9 +126,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
     // Start observables for data retrieval and conversion for table and charts.
     this.pa.availableAdapters[this.network].substrateRpc.apiPromise.then((api) => {
-      this.createItemAtBlockOneObservable(api);
-      this.createBalancesObservable(api);
-      this.createChartDataObservable(api);
+      // this.createItemAtBlockOneObservable(api);   // TODO turn on
+      // this.createBalancesObservable(api);         // TODO turn on
+      // this.createChartDataObservable(api);        // TODO turn on
     })
   }
 
@@ -567,87 +567,87 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   }
 
 
-  async getBalanceAtBlock(blockNumber: number): Promise<void> {
-    this.loading++;
-
-    const observable = this.balancesPerBlock.get(blockNumber)!;
-    const runParams = {
-      chain: this.network,
-      adapters: ['substrate-rpc']
-    };
-
-    let balances: HistoricalBalance = {};
-
-    // Fetch the blockHash for the given block number. And the accountInfo at the time of this blockHash.
-    const api = await this.pa.availableAdapters[this.network].substrateRpc.apiPromise;
-    let blockHash: BlockHash;
-    try {
-      blockHash = await api.rpc.chain.getBlockHash(blockNumber);
-    } catch (e) {
-      this.loading--;
-      throw (`[HistoricalBalance] Could not fetch block hash for block ${blockNumber}. ${e}`);
-    }
-
-    let systemAccount: AccountInfo | null = null;
-    try {
-      systemAccount = await api.query.system.account.at(blockHash, this.accountId);
-      if (systemAccount && systemAccount.data) {
-        balances.free = systemAccount.data.free;
-        balances.reserved = systemAccount.data.reserved;
-        balances.total = systemAccount.data.free.add(systemAccount.data.reserved);
-        balances.transferable = systemAccount.data.free.sub(systemAccount.data.feeFrozen);
-        balances.locked = systemAccount.data.feeFrozen;
-
-        this.loading--;
-        observable.next(balances);
-        return;
-      }
-    } catch (e) {
-      // Ignore.
-    }
-
-    // FALLBACK if system account did not work or does not exist.
-
-    // Fetch accountInfo, staking information and session information at blockHash.
-    const [accountData, locks, freeBalance, reservedBalance] = (await Promise.allSettled([
-      api.query.balances.account.at(blockHash, this.accountId),
-      api.query.balances.locks.at(blockHash, this.accountId),
-      api.query.balances.freeBalance.at(blockHash, this.accountId),
-      api.query.balances.reservedBalance.at(blockHash, this.accountId)
-    ])).map((p) => p.status === 'fulfilled' ? p.value : null) as
-      [AccountData | null, BalanceLock[] | null, Balance | null, Balance | null];
-
-    if (accountData) {
-      // Possible accountData will be a generated object with all zero balances.
-      balances.free = accountData.free;
-      balances.reserved = accountData.reserved;
-      balances.total = accountData.free.add(accountData.reserved);
-      balances.transferable = accountData.free.sub(accountData.feeFrozen);
-      balances.locked = accountData.feeFrozen;
-
-    } else {
-      // Check if freeBalance or reservedBalance exist if balances.account was not available.
-      if (freeBalance) {
-        balances.free = freeBalance;
-      }
-      if (reservedBalance) {
-        balances.reserved = reservedBalance;
-      }
-      if (freeBalance && reservedBalance) {
-        balances.total = freeBalance.add(reservedBalance);
-      }
-      if (locks && locks.length) {
-        locks.sort((a, b) => b.amount.sub(a.amount).isNeg() ? -1 : 1);
-        balances.locked = locks[0].amount;
-
-        if (freeBalance) {
-          balances.transferable = freeBalance.sub(locks[0].amount);
-        }
-      }
-    }
-
-    this.loading--;
-    observable.next(balances);
+  async getBalanceAtBlock(blockNumber: number): Promise<void> {   // TODO FIX ME!
+    // this.loading++;
+    //
+    // const observable = this.balancesPerBlock.get(blockNumber)!;
+    // const runParams = {
+    //   chain: this.network,
+    //   adapters: ['substrate-rpc']
+    // };
+    //
+    // let balances: HistoricalBalance = {};
+    //
+    // // Fetch the blockHash for the given block number. And the accountInfo at the time of this blockHash.
+    // const api = await this.pa.availableAdapters[this.network].substrateRpc.apiPromise;
+    // let blockHash: BlockHash;
+    // try {
+    //   blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+    // } catch (e) {
+    //   this.loading--;
+    //   throw (`[HistoricalBalance] Could not fetch block hash for block ${blockNumber}. ${e}`);
+    // }
+    //
+    // let systemAccount: AccountInfo | null = null;
+    // try {
+    //   systemAccount = await api.query.system.account.at(blockHash, this.accountId);
+    //   if (systemAccount && systemAccount.data) {
+    //     balances.free = systemAccount.data.free;
+    //     balances.reserved = systemAccount.data.reserved;
+    //     balances.total = systemAccount.data.free.add(systemAccount.data.reserved);
+    //     balances.transferable = systemAccount.data.free.sub(systemAccount.data.feeFrozen);
+    //     balances.locked = systemAccount.data.feeFrozen;
+    //
+    //     this.loading--;
+    //     observable.next(balances);
+    //     return;
+    //   }
+    // } catch (e) {
+    //   // Ignore.
+    // }
+    //
+    // // FALLBACK if system account did not work or does not exist.
+    //
+    // // Fetch accountInfo, staking information and session information at blockHash.
+    // const [accountData, locks, freeBalance, reservedBalance] = (await Promise.allSettled([
+    //   api.query.balances.account.at(blockHash, this.accountId),
+    //   api.query.balances.locks.at(blockHash, this.accountId),
+    //   api.query.balances.freeBalance.at(blockHash, this.accountId),
+    //   api.query.balances.reservedBalance.at(blockHash, this.accountId)
+    // ])).map((p) => p.status === 'fulfilled' ? p.value : null) as
+    //   [AccountData | null, BalanceLock[] | null, Balance | null, Balance | null];
+    //
+    // if (accountData) {
+    //   // Possible accountData will be a generated object with all zero balances.
+    //   balances.free = accountData.free;
+    //   balances.reserved = accountData.reserved;
+    //   balances.total = accountData.free.add(accountData.reserved);
+    //   balances.transferable = accountData.free.sub(accountData.feeFrozen);
+    //   balances.locked = accountData.feeFrozen;
+    //
+    // } else {
+    //   // Check if freeBalance or reservedBalance exist if balances.account was not available.
+    //   if (freeBalance) {
+    //     balances.free = freeBalance;
+    //   }
+    //   if (reservedBalance) {
+    //     balances.reserved = reservedBalance;
+    //   }
+    //   if (freeBalance && reservedBalance) {
+    //     balances.total = freeBalance.add(reservedBalance);
+    //   }
+    //   if (locks && locks.length) {
+    //     locks.sort((a, b) => b.amount.sub(a.amount).isNeg() ? -1 : 1);
+    //     balances.locked = locks[0].amount;
+    //
+    //     if (freeBalance) {
+    //       balances.transferable = freeBalance.sub(locks[0].amount);
+    //     }
+    //   }
+    // }
+    //
+    // this.loading--;
+    // observable.next(balances);
   }
 
   convertBNforChart(val: BN | number | undefined | null): string | null {
