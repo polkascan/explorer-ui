@@ -18,7 +18,7 @@
 
 import { Injectable } from '@angular/core';
 import { PolkadaptService } from './polkadapt.service';
-import { BehaviorSubject, ReplaySubject, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, ReplaySubject, Subject } from 'rxjs';
 import { VariablesService } from './variables.service';
 
 
@@ -101,11 +101,12 @@ export class PricingService {
     try {
       const adapterAvailable = await this.pa.availableAdapters[this.network as string].coingeckoApi.isReady;
       if (adapterAvailable) {
-        const price = await this.pa.run(this.network as string).prices.getPrice(this.currency as string);
-
-        if (this.interval === interval) { // Check if interval has not been destroyed.
-          this.price.next(price as number);
-        }
+        const price = this.pa.run({chain: this.network as string, observableResults: false}).prices.getPrice(this.currency as string) as unknown as Observable<number>;
+        price.subscribe((price) => {
+          if (this.interval === interval) { // Check if interval has not been destroyed.
+            this.price.next(price as number);
+          }
+        })
       }
     } catch (e) {
       this.price.next(null);

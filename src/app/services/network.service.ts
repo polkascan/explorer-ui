@@ -130,8 +130,6 @@ export class NetworkService {
         console.error(e);
       }
 
-      console.log('jksdflksdfhjkshdkjfhsdfkj')
-
       try {
         properties = await firstValueFrom(apiRx.rpc.system.properties());
         if (properties) {

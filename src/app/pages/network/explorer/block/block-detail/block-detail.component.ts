@@ -26,6 +26,7 @@ import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { types as pst } from '@polkadapt/polkascan-explorer';
 import { asObservable, temporaryAsObservableFn } from '../../../../../../common/polkadapt-rxjs';
 import { Header } from '@polkadot/types/interfaces';
+import { ListResponse } from '@polkadapt/polkascan-explorer/lib/polkascan-explorer.types';
 
 @Component({
   selector: 'app-block-detail',
@@ -63,37 +64,38 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
       tap(() => {
         this.invalidHash.next(false);
       }),
-      switchMap<Params, Observable<number>>(((params) => {
-        const id = parseInt(params['idOrHash'], 10);
-        if (String(id) === params['idOrHash']) {
-          // Id is a blockNumber.
-          return of(id);
-        } else {
-          const apiPromise = this.pa.availableAdapters[this.ns.currentNetwork.value].substrateRpc.apiPromise;
-          return temporaryAsObservableFn(apiPromise, 'rpc.chain.getHeader', params['idOrHash']).pipe(
-            take(1),
-            map((header: Header) => header.number.toJSON() as number),
-            catchError((err) => {
-              this.invalidHash.next(true);
-              throw new Error(`Block detail could not be fetched. The header maybe invalid or does not exist. ${err}`);
-            })
-          );
-        }
+      switchMap<Params, Observable<pst.Block>>(((params) => {
+        const idOrHash = params['idOrHash'];
+        const number = parseInt(idOrHash, 10);
+        return this.pa.run({
+          adapters: ['substrate-rpc'],
+          observableResults: false
+        }).getBlock(`${number}` === idOrHash ? number : idOrHash);
       })),
-      switchMap((blockNr) => combineLatest(
+      catchError((err) => {
+        this.invalidHash.next(true);
+        throw new Error(`Block detail could not be fetched. The header maybe invalid or does not exist. ${err}`);
+      }),
+      switchMap((block) => combineLatest(
         // Update block when block data changes.
-        this.ns.blockHarvester.blocks[blockNr].pipe(
+        this.ns.blockHarvester.blocks[block.number].pipe(
           tap(block => {
+            console.log(block);
             this.block.next(block);
             if (block.finalized) {
-              this.pa.run().polkascan.chain.getExtrinsics({blockNumber: blockNr}, 100)
-                .then((result: pst.ListResponse<pst.Extrinsic>) => {
-                  this.extrinsics.next(result.objects);
-                });
-              this.pa.run().polkascan.chain.getEvents({blockNumber: blockNr}, 100)
-                .then((result: pst.ListResponse<pst.Event>) => {
-                  this.events.next(result.objects);
-                });
+
+              (this.pa.run({observableResults: false}).polkascan.chain.getExtrinsics({
+                blockNumber: block.number
+              }, 100) as unknown as Observable<ListResponse<pst.Extrinsic>>).pipe(
+                take(1),
+                map((r) => r.objects)
+              ).subscribe(this.extrinsics);
+
+              (this.pa.run({observableResults: false}).polkascan.chain.getEvents({
+                blockNumber: block.number}, 100) as unknown as Observable<ListResponse<pst.Event>>).pipe(
+                take(1),
+                map((r) => r.objects)
+              ).subscribe(this.events);
             }
           })
         ),

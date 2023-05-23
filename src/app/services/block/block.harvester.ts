@@ -16,11 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { BehaviorSubject, combineLatest, defer, Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, defer, Observable, Subscription } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
-import { Polkadapt } from '@polkadapt/core';
-import { Header } from '@polkadot/types/interfaces';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { Polkadapt, types } from '@polkadapt/core';
 import { filter, finalize, first } from 'rxjs/operators';
 
 export type Block = Partial<pst.Block> & {
@@ -45,6 +43,7 @@ export class BlockHarvester {
   blocks: BlockCache;
   observedBlocks: {[nr: string]: number} = {};
   paused = false;
+  untilBlocksObservable: Observable<types.Block[]>;
 
   constructor(public polkadapt: Polkadapt<AugmentedApi>, public network: string) {
     // Create a block cache where data is lazy loaded when you get an item.
@@ -89,19 +88,18 @@ export class BlockHarvester {
   private async subscribeNewBlocks(): Promise<void> {
     if (!this.newBlockSubscription) {
       // Subscribe to new blocks *without finality*.
-      this.newBlockSubscription = this.polkadapt.run(this.network).subscribeNewBlock().subscribe(
-        (block: any) => this.newBlockHandler(block)  // TODO, fix any when correct types are available
+      this.newBlockSubscription = this.polkadapt.run({chain: this.network, observableResults: false}).subscribeNewBlock().subscribe(
+        (block: types.Block) => {
+          this.newBlockHandler(block);
+          if (block.complete) {
+            this.finalizedBlockHandler(block);
+          }
+        }
       );
     }
-
-    // if (!this.newFinalizedBlocksSubscription) {   // TODO FIX ME OR REMOVE ME!
-    //   // Subscribe to new finalized blocks from Polkascan.
-    //   this.newFinalizedBlocksSubscription = this.polkadapt.run(this.network)
-    //     .subscribeNewBlock().subscribe((block: pst.Block) => this.finalizedBlockHandler(block));
-    // }
   }
 
-  private newBlockHandler(block: pst.Block): void {
+  private newBlockHandler(block: types.Block): void {
     const newNumber = block.number;
     // Only update the head number if the new number is greater.
     if (newNumber > this.headNumber.value) {
@@ -113,7 +111,7 @@ export class BlockHarvester {
     }
   }
 
-  private finalizedBlockHandler(block: pst.Block): void {
+  private finalizedBlockHandler(block: types.Block): void {
     if (!block || !block.number) {
       return;
     }
@@ -171,7 +169,7 @@ export class BlockHarvester {
         // Load finalized data from Polkascan.
         let loaded;
         try {
-          // loaded = this.polkadapt.run(this.network).getBlock(block.number);    // TODO FIX ME!!!!
+          loaded = this.polkadapt.run({chain: this.network, observableResults: false}).getBlock(block.number);
         }
         catch (e) {
           block.status = oldStatus;
@@ -236,27 +234,26 @@ export class BlockHarvester {
 
     if (loadBlocks) {
       // Then, await the result from Polkascan and update our cached block data.
-      const data: pst.ListResponse<pst.Block> =
-        await this.polkadapt.run(this.network).polkascan.chain.getBlocksUntil(untilNumber, pageSize, undefined, untilNumber);
-
-      if (data.objects) {
-        for (const obj of data.objects) {
-          const blockNr: number = obj.number;
-          const cached: BehaviorSubject<Block> = this.cache[blockNr];
-          if (!cached.value.finalized || cached.value.status !== 'loaded') {
-            const block: Block = Object.assign({}, cached.value, obj, {
-              status: 'loaded',
-              finalized: true,
-              extrinsics: new Array(obj.countExtrinsics),
-              events: new Array(obj.countEvents)
-            });
-            cached.next(block);
-          }
-          if (blockNr > this.loadedNumber.value) {
-            this.loadedNumber.next(blockNr);
+      this.polkadapt.run({chain: this.network, observableResults: false}).getBlocksUntil(untilNumber, pageSize).subscribe((blocks: types.Block[]) => {
+        if (blocks) {
+          for (const obj of blocks) {
+            const blockNr: number = obj.number;
+            const cached: BehaviorSubject<Block> = this.cache[blockNr];
+            if (!cached.value.finalized || cached.value.status !== 'loaded') {
+              const block: Block = Object.assign({}, cached.value, obj, {
+                status: 'loaded',
+                finalized: true,
+                extrinsics: new Array(obj.countExtrinsics),
+                events: new Array(obj.countEvents)
+              });
+              cached.next(block);
+            }
+            if (blockNr > this.loadedNumber.value) {
+              this.loadedNumber.next(blockNr);
+            }
           }
         }
-      }
+      });
     }
   }
 
