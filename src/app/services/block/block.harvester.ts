@@ -21,12 +21,12 @@ import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt, types } from '@polkadapt/core';
 import { filter, finalize, first } from 'rxjs/operators';
 
-export type Block = Partial<pst.Block> & {
+export type Block = Partial<types.Block> & {
   status: 'new' | 'loading' | 'loaded',
   number: number,
   finalized: boolean,
-  extrinsics: (pst.Extrinsic | undefined)[],
-  events: (pst.Event | undefined)[]
+  extrinsics: (types.Extrinsic | undefined)[],
+  events: (types.Event | undefined)[]
 };
 
 export type BlockSubject = BehaviorSubject<Block>;
