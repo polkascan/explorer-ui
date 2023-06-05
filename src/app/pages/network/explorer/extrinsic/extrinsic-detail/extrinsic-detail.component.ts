@@ -22,7 +22,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { catchError, filter, first, map, shareReplay, switchMap, takeUntil } from 'rxjs/operators';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 
 
 @Component({
@@ -69,19 +69,22 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchExtrinsicStatus.next('loading')),
       switchMap(([blockNr, extrinsicIdx]) => {
         const subject = new Subject<pst.Extrinsic>();
-        this.pa.run().polkascan.chain.getExtrinsic(blockNr, extrinsicIdx).then(
-          (inherent) => {
+        this.pa.run().getExtrinsic(blockNr, extrinsicIdx).pipe(
+          takeUntil(this.destroyer)
+        ).subscribe({
+          next: (inherent) => {
             if (inherent) {
               subject.next(inherent);
               this.fetchExtrinsicStatus.next(null);
             } else {
               subject.error('Extrinsic not found.');
             }
-          },
-          (e) => {
+          }
+          ,
+          error: (e) => {
             subject.error(e);
           }
-        );
+        });
         return subject.pipe(takeUntil(this.destroyer))
       }),
       catchError((e) => {
@@ -94,19 +97,22 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchEventsStatus.next('loading')),
       switchMap(([blockNr, extrinsicIdx]) => {
         const subject = new Subject<pst.Event[]>();
-        this.pa.run().polkascan.chain.getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100).then(
-          (response) => {
-            if (Array.isArray(response.objects)) {
-              subject.next(response.objects);
+        this.pa.run().getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100).pipe(
+          takeUntil(this.destroyer)
+        ).subscribe({
+          next: (items) => {
+            if (Array.isArray(items)) {
+              subject.next(items);
               this.fetchEventsStatus.next(null)
             } else {
               subject.error('Invalid response.')
             }
-          },
-          (e) => {
+          }
+          ,
+          error: (e) => {
             subject.error(e)
           }
-        );
+        });
         return subject.pipe(shareReplay(1), takeUntil(this.destroyer));
       }),
       catchError((e) => {

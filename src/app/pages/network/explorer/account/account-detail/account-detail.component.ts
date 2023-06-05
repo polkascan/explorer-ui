@@ -29,9 +29,9 @@ import {
   shareReplay,
   startWith,
   switchMap,
-  takeUntil
+  takeUntil, tap
 } from 'rxjs/operators';
-import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
+import { BehaviorSubject, combineLatest, from, Observable, of, Subject } from 'rxjs';
 import {
   DeriveAccountFlags,
   DeriveAccountInfo,
@@ -39,12 +39,11 @@ import {
   DeriveStakingAccount
 } from '@polkadot/api-derive/types';
 import { BN, BN_ZERO, u8aToHex, u8aToString } from '@polkadot/util';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { AccountId, AccountIndex } from '@polkadot/types/interfaces';
 import { Codec } from '@polkadot/types/types';
 import { decodeAddress, validateAddress } from '@polkadot/util-crypto';
 import { AccountInfo } from '@polkadot/types/interfaces/system/types';
-import { temporaryAsObservableFn } from '../../../../../../common/polkadapt-rxjs';
 import { TooltipsService } from '../../../../../services/tooltips.service';
 
 
@@ -127,13 +126,13 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   signedExtrinsicsLoading = new BehaviorSubject<boolean>(false);
 
   fetchAccountInfoStatus = new BehaviorSubject<any>(null);
-  polkascanAccountInfo = new BehaviorSubject<pst.TaggedAccount| null>(null);
+  polkascanAccountInfo = new BehaviorSubject<pst.TaggedAccount | null>(null);
 
   balanceTransferColumns = ['icon', 'block', 'from', 'to', 'value', 'details']
   signedExtrinsicsColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'details'];
 
   listsSize = 50;
-  loadedTabs: {[index: number]: boolean} = {0: true};
+  loadedTabs: { [index: number]: boolean } = {0: true};
 
   private unsubscribeFns: Map<string, (() => void)> = new Map();
   private destroyer: Subject<undefined> = new Subject();
@@ -165,18 +164,22 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       switchMap((id: string) => {
         const n = parseInt(id, 10);
         if (id === n.toString() && Number.isInteger(n)) {
-          return temporaryAsObservableFn(this.pa.availableAdapters[this.ns.currentNetwork.value].substrateRpc.apiPromise, 'query.indices.accounts', n).pipe(
-            takeUntil(this.destroyer),
-            map((indices) => {
-              if (indices && indices.isSome) {
-                indices = indices.toJSON();
-                if (indices && indices[0]) {
-                  return indices[0] as string; // This is the ss58.
+          return from(this.pa.availableAdapters[this.ns.currentNetwork.value].substrateRpc.apiPromise)
+            .pipe(
+              takeUntil(this.destroyer),
+              switchMap((api) => api.query.indices.value(n).pipe(
+                takeUntil(this.destroyer)
+              )),
+              map((indices: any) => {  // TODO FIX TYPING
+                if (indices && indices.isSome) {
+                  indices = indices.toJSON();
+                  if (indices && indices[0]) {
+                    return indices[0] as string; // This is the ss58.
+                  }
                 }
-              }
-              return null;
-            })
-          )
+                return null;
+              })
+            )
         } else {
           return of(id);
         }
@@ -232,12 +235,21 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     const apiPromise = this.pa.availableAdapters[this.ns.currentNetwork.value].substrateRpc.apiPromise;
 
     this.account = idObservable.pipe(
-      switchMap((id) => temporaryAsObservableFn(apiPromise,'query.system.account', id).pipe(startWith(undefined), takeUntil(this.destroyer))),
-      map((account) => account ? account : undefined)
-    );
+      switchMap((id) =>
+        from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.query.system.account(id).pipe(takeUntil(this.destroyer))),
+          startWith(undefined),
+          map((account) => account ? account : undefined)
+        ))
+    ) as Observable<AccountInfo>;
 
     const idAndIndexObservable = idObservable.pipe(
-      switchMap((id) => temporaryAsObservableFn(apiPromise, 'derive.accounts.idAndIndex', id).pipe(takeUntil(this.destroyer)))
+      switchMap((id) =>
+        from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.derive.accounts.idAndIndex(id).pipe(takeUntil(this.destroyer))),
+        ))
     );
 
     this.accountId = idAndIndexObservable.pipe(
@@ -254,37 +266,75 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
     this.indices = this.accountIndex.pipe(
       switchMap((accountIndex) => accountIndex
-        ? temporaryAsObservableFn(apiPromise, 'query.indices.accounts', accountIndex.toNumber()).pipe(takeUntil(this.destroyer))
+        ? from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.query.indices.accounts(accountIndex.toNumber()).pipe(takeUntil(this.destroyer))),
+        )
         : of(undefined)),
-    )
+    ) as Observable<any>
 
     this.superOf = idObservable.pipe(
-      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'query.identity.superOf', id).pipe(takeUntil(this.destroyer)) : of(null))
-    );
+      switchMap((id) => id
+        ? from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.query.identity.superOf(id).pipe(takeUntil(this.destroyer)))
+        )
+        : of(null))
+    ) as Observable<Codec | undefined>;
 
     this.identity = idObservable.pipe(
-      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'query.identity.identityOf', id).pipe(takeUntil(this.destroyer)): of(null))
+      switchMap((id) => id
+        ? from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.query.identity.identityOf(id).pipe(takeUntil(this.destroyer)))
+        )
+        : of(null))
     );
 
     this.subsOf = idObservable.pipe(
-      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'query.identity.subsOf', id).pipe(takeUntil(this.destroyer)) : of(null))
+      switchMap((id) => id
+        ? from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.query.identity.subsOf(id).pipe(takeUntil(this.destroyer)))
+        )
+        : of(null))
     );
 
     this.derivedAccountInfo = idObservable.pipe(
-      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'derive.accounts.info', id).pipe(takeUntil(this.destroyer)) : of(null))
-    );
+      switchMap((id) => id
+        ? from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.derive.accounts.info(id).pipe(takeUntil(this.destroyer)))
+        )
+        : of(null))
+    ) as Observable<DeriveAccountInfo>;
 
     this.derivedAccountFlags = idObservable.pipe(
-      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'derive.accounts.flags', id).pipe(takeUntil(this.destroyer)) : of(null))
-    );
+      switchMap((id) => id
+        ? from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.derive.accounts.flags(id).pipe(takeUntil(this.destroyer)))
+        )
+        : of(null))
+    ) as Observable<DeriveAccountFlags>;
 
     this.derivedBalancesAll = idObservable.pipe(
-      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'derive.balances.all', id).pipe(takeUntil(this.destroyer)) : of(null))
-    );
+      switchMap((id) => id
+        ? from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.derive.balances.all(id).pipe(takeUntil(this.destroyer)))
+        )
+        : of(null))
+    ) as Observable<DeriveBalancesAll>;
 
     this.stakingInfo = idObservable.pipe(
-      switchMap((id) => id ? temporaryAsObservableFn(apiPromise, 'derive.staking.account', id).pipe(takeUntil(this.destroyer)) : of(null))
-    );
+      switchMap((id) => id
+        ? from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.derive.staking.account(id).pipe(takeUntil(this.destroyer)))
+        )
+        : of(null))
+    ) as Observable<DeriveStakingAccount>;
 
     this.accountBalances = combineLatest(
       this.derivedBalancesAll.pipe(
@@ -318,20 +368,29 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.parent = this.superOf.pipe(
       switchMap((val: any) => {
         return val && val.value && val.value[0]
-          ? temporaryAsObservableFn(apiPromise, 'query.system.account', val.value[0]).pipe(takeUntil(this.destroyer))
+          ? from(apiPromise).pipe(
+            takeUntil(this.destroyer),
+            switchMap((api) => api.query.system.account(val.value[0]).pipe(takeUntil(this.destroyer)))
+          )
           : of(undefined)
       })
     )
 
     this.parentIdentity = this.superOf.pipe(
       switchMap((val: any) => val && val.value && val.value[0]
-        ? temporaryAsObservableFn(apiPromise, 'query.identity.identityOf', val.value[0]).pipe(takeUntil(this.destroyer))
+        ? from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.query.identity.identityOf(val.value[0]).pipe(takeUntil(this.destroyer)))
+        )
         : of(undefined)),
     )
 
     this.parentSubsOf = this.superOf.pipe(
       switchMap((val: any) => val && val.value && val.value[0]
-        ? temporaryAsObservableFn(apiPromise, 'query.identity.subsOf', val.value[0]).pipe(takeUntil(this.destroyer))
+        ? from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.query.identity.subsOf(val.value[0]).pipe(takeUntil(this.destroyer)))
+        )
         : of(undefined))
     )
 
@@ -346,7 +405,11 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       takeUntil(this.destroyer),
       switchMap(([subsOf, parentSubsOf]) => {
         const subs = subsOf && subsOf.length ? subsOf : parentSubsOf && parentSubsOf.length ? parentSubsOf : [];
-        const observables: Observable<any>[] = subs.map((sub: any) => temporaryAsObservableFn(apiPromise, 'query.identity.superOf', sub).pipe(takeUntil(this.destroyer)))
+        const observables: Observable<any>[] = subs.map((sub: any) =>
+          from(apiPromise).pipe(
+            takeUntil(this.destroyer),
+            switchMap((api) => api.query.identity.superOf(sub).pipe(takeUntil(this.destroyer)))
+          ))
 
         if (observables.length > 0) {
           return combineLatest(observables);
@@ -412,59 +475,47 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   async fetchAndSubscribeExtrinsics(idHex: string): Promise<void> {
     let extrinsics: pst.Extrinsic[] = [];
     const listSize = this.listsSize || 50;
-    let pageNext: string | undefined = undefined
-    let blockLimitOffset: number | undefined = undefined;
-    let blockLimitCount: number | undefined = undefined;
 
     this.signedExtrinsicsLoading.next(true);
 
-    while (extrinsics.length < listSize) {
-      const response: pst.ListResponse<pst.Extrinsic> = await await this.pa.run().polkascan.chain.getExtrinsics(
-      {
-        signed: 1,
-        multiAddressAccountId: idHex
-      }, listSize, pageNext, blockLimitOffset);
-
-      pageNext = response.pageInfo ? response.pageInfo.pageNext || undefined : undefined;
-      blockLimitCount = response.pageInfo ? response.pageInfo.blockLimitCount || undefined : undefined;
-      blockLimitOffset = response.pageInfo ? response.pageInfo.blockLimitOffset || undefined : undefined;
-
-      if (response.objects && response.objects.length > 0) {
-        extrinsics = [...extrinsics, ...response.objects];
-      }
-
-      if (extrinsics.length > listSize) {
-        // List size has been reached. List is done, limit to listsize.
-        extrinsics.length = listSize;
-        break;
-      }
-
-      if (pageNext) {
-        // There is a next page, continue while loop.
-      } else if (blockLimitOffset && blockLimitCount) {
-        const nextBlockLimitOffset = Math.max(0, blockLimitOffset - blockLimitCount)
-        if (nextBlockLimitOffset <= 0) {
-          // Genesis has been reached. Stop the while loop.
-          break;
-        } else {
-          // No more pages left in current block offset, move to the next offset.
-          blockLimitOffset = nextBlockLimitOffset;
+    const subscription = this.pa.run().getExtrinsics({
+      signed: 1,
+      multiAddressAccountId: idHex
+    }, listSize).pipe(
+      tap({
+        subscribe: () => {
+          this.signedExtrinsicsLoading.next(true);
+        },
+        finalize: () => {
+          this.signedExtrinsicsLoading.next(false);
         }
-      } else {
-        // No more items to be expected.
-        break;
+      }),
+      takeUntil(this.destroyer)
+    ).subscribe({
+      next: (items) => {
+        extrinsics = [
+          ...extrinsics,
+          ...items.filter((extrinsic) => extrinsics.some((e) => e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx) === false)
+        ];
+
+        if (extrinsics.length > listSize) {
+          // List size has been reached. List is done, limit to listsize.
+          extrinsics.length = listSize;
+          subscription.unsubscribe();
+        }
+
+        this.signedExtrinsics.next(extrinsics);
       }
-    }
+    });
 
-    this.signedExtrinsicsLoading.next(false);
-    this.signedExtrinsics.next(extrinsics);
-
-    const signedExtrinsicsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewExtrinsic(
+    this.pa.run().subscribeNewExtrinsic(
       {
         signed: 1,
         multiAddressAccountId: idHex
-      },
-      (extrinsic: pst.Extrinsic) => {
+      }).pipe(
+      takeUntil(this.destroyer)
+    ).subscribe({
+      next: (extrinsic: pst.Extrinsic) => {
         const extrinsics = this.signedExtrinsics.value;
         if (extrinsics && extrinsics.some((e) => e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx) === false) {
           const merged = [extrinsic, ...extrinsics];
@@ -474,20 +525,17 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           merged.length = this.listsSize;
           this.signedExtrinsics.next([extrinsic].concat(extrinsics));
         }
-      });
-
-    this.unsubscribeFns.set('signedExtrinsicsUnsubscribeFn', signedExtrinsicsUnsubscribeFn);
+      }
+    });
   }
 
   fetchTaggedAccounts(accountIdHex: string): void {
-    this.pa.run().polkascan.state.getTaggedAccount(accountIdHex).then(
-      (account: pst.TaggedAccount) => this.polkascanAccountInfo.next(account)
-    );
+    this.pa.run().getTaggedAccount(accountIdHex).pipe(
+      takeUntil(this.destroyer)
+    ).subscribe((account: pst.TaggedAccount) => this.polkascanAccountInfo);
   }
 
   ngOnDestroy(): void {
-    this.unsubscribeFns.forEach((unsub) => unsub());
-    this.unsubscribeFns.clear();
     this.destroyer.next(undefined);
     this.destroyer.complete();
   }

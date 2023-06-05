@@ -19,8 +19,9 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-log-list',
@@ -30,6 +31,7 @@ import { PaginatedListComponentBase } from '../../../../../../common/list-base/p
 })
 export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
   listSize = 100;
+  blockNumberIdentifier = 'blockNumber'
   visibleColumns = ['icon', 'logID', 'age', 'block', 'type', 'details'];
 
   constructor(private ns: NetworkService,
@@ -38,19 +40,14 @@ export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
   }
 
 
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Log>> {
-    return this.pa.run(this.network).polkascan.chain.getLogs(
-      this.listSize,
-      pageKey,
-      blockLimitOffset
-    );
+  createGetItemsRequest(untilBlockNumber?: number): Observable<Observable<pst.Log>[]> {
+    const filters = untilBlockNumber ? { blockRangeEnd: untilBlockNumber } : undefined;
+    return this.pa.run(this.network).getLogs(filters, this.listSize) as any;  // TODO FIX ME!!
   }
 
 
-  createNewItemSubscription(handleItemFn: (item: pst.Log) => void): Promise<() => void> {
-    return this.pa.run(this.network).polkascan.chain.subscribeNewLog(
-      handleItemFn
-    );
+  createNewItemSubscription(): Observable<Observable<pst.Log>> {
+    return this.pa.run(this.network).subscribeNewLog() as any;  // TODO FIX ME!!
   }
 
 

@@ -18,7 +18,7 @@
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
@@ -115,10 +115,12 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
       switchMap(([runtime, pallet, callName]) => {
         const subject: Subject<(pst.RuntimeCallArgument & {parsedComposition?: any})[]> = new Subject();
         if (runtime) {
-          this.pa.run().polkascan.state.getRuntimeCallArguments(runtime.specName, runtime.specVersion, pallet, callName).then(
-            (response) => {
-              if (Array.isArray(response.objects)) {
-                const objects: (pst.RuntimeCallArgument & {parsedComposition?: any})[] = [...response.objects];
+          this.pa.run().getRuntimeCallArguments(runtime.specName, runtime.specVersion, pallet, callName).pipe(
+            takeUntil(this.destroyer)
+          ).subscribe({
+            next: (items) => {
+              if (Array.isArray(items)) {
+                const objects: (pst.RuntimeCallArgument & { parsedComposition?: any })[] = [...items];
                 for (let obj of objects) {
                   if (obj.scaleTypeComposition) {
                     obj.parsedComposition = JSON.parse(obj.scaleTypeComposition);
@@ -130,9 +132,10 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
                 subject.error('Invalid response.')
               }
             },
-            (e) => {
+            error: (e) => {
               subject.error(e);
-            });
+            }
+          });
         }
         return subject.pipe(takeUntil(this.destroyer));
       }),

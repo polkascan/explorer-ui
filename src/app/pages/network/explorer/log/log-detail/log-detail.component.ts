@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
@@ -62,8 +62,10 @@ export class LogDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchLogStatus.next('loading')),
       switchMap(([blockNr, logIdx]) => {
         const subject = new Subject<pst.Log>();
-        this.pa.run().polkascan.chain.getLog(blockNr, logIdx).then(
-          (log) => {
+        this.pa.run().getLog(blockNr, logIdx).pipe(
+          takeUntil(this.destroyer)
+        ).subscribe({
+          next: (log) => {
             if (log) {
               subject.next(log);
               this.fetchLogStatus.next(null);
@@ -71,10 +73,10 @@ export class LogDetailComponent implements OnInit, OnDestroy {
               subject.error('Log not found.')
             }
           },
-          (e) => {
+          error: (e) => {
             subject.error(e);
           }
-        );
+        });
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {

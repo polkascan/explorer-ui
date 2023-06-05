@@ -19,13 +19,11 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
-import { BehaviorSubject, combineLatest, Observable, of, Subject, take } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, Subject, take } from 'rxjs';
 import { Block } from '../../../../../services/block/block.harvester';
 import { catchError, filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { types as pst } from '@polkadapt/polkascan-explorer';
-import { asObservable, temporaryAsObservableFn } from '../../../../../../common/polkadapt-rxjs';
-import { Header } from '@polkadot/types/interfaces';
+import { types as pst } from '@polkadapt/core';
 import { ListResponse } from '@polkadapt/polkascan-explorer/lib/polkascan-explorer.types';
 
 @Component({
@@ -84,14 +82,14 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
             this.block.next(block);
             if (block.finalized) {
 
-              (this.pa.run({observableResults: false}).polkascan.chain.getExtrinsics({
+              (this.pa.run({observableResults: false}).getExtrinsics({
                 blockNumber: block.number
               }, 100) as unknown as Observable<ListResponse<pst.Extrinsic>>).pipe(
                 take(1),
                 map((r) => r.objects)
               ).subscribe(this.extrinsics);
 
-              (this.pa.run({observableResults: false}).polkascan.chain.getEvents({
+              (this.pa.run({observableResults: false}).getEvents({
                 blockNumber: block.number}, 100) as unknown as Observable<ListResponse<pst.Event>>).pipe(
                 take(1),
                 map((r) => r.objects)

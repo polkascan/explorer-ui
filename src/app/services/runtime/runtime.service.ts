@@ -18,8 +18,8 @@
 
 import { Injectable } from '@angular/core';
 import { PolkadaptService } from '../polkadapt.service';
-import { types as pst } from '@polkadapt/polkascan-explorer';
-import { BehaviorSubject } from 'rxjs';
+import { types as pst } from '@polkadapt/core';
+import { BehaviorSubject, take } from 'rxjs';
 import { filter, first, map } from 'rxjs/operators';
 
 type SpecVersion = number;
@@ -57,7 +57,7 @@ export class RuntimeService {
   constructor(private pa: PolkadaptService) {
   }
 
-  async initialize(network: string): Promise<void> {
+  initialize(network: string): void {
     if (!network) {
       throw new Error(`[RuntimeService] initialize: network was not provided.`);
     }
@@ -69,12 +69,13 @@ export class RuntimeService {
       this.latestRuntimes[network] = new BehaviorSubject<pst.Runtime | null>(null);
     }
 
-    const runtime = await this.pa.run().polkascan.state.getLatestRuntime();
-
-    // First cache the runtime, then broadcast it. This order is important.
-    this.cacheRuntime(network, runtime);
-    this.latestRuntimes[network].next(runtime);
-    // TODO what more to prefetch?
+    const runtime = this.pa.run({observableResults: false}).getLatestRuntime().pipe(
+      take(1)
+    ).subscribe((runtime: pst.Runtime) => {
+      // First cache the runtime, then broadcast it. This order is important.
+      this.cacheRuntime(network, runtime);
+      this.latestRuntimes[network].next(runtime);
+    });
   }
 
 
@@ -97,7 +98,7 @@ export class RuntimeService {
   getRuntime(network: string, specVersion?: number): BehaviorSubject<pst.Runtime | null> {
     if (!this.latestRuntimes[network]) {
       // We need the BehaviorSubject for the latest runtime, because it tells us which specName to use.
-      this.initialize(network).then();
+      this.initialize(network);
     }
 
     if (typeof specVersion !== 'number' || specVersion < 0) {
@@ -118,16 +119,16 @@ export class RuntimeService {
       cache.set(specVersion, {runtime: cachedRuntime});
 
       this.latestRuntimes[network]
-      .pipe(
-        filter(r => r !== null),
-        map((r: pst.Runtime | null): string => (r as pst.Runtime).specName),
-        first()
-      ).subscribe(async (specName) => {
+        .pipe(
+          filter(r => r !== null),
+          map((r: pst.Runtime | null): string => (r as pst.Runtime).specName),
+          first()
+        ).subscribe(async (specName) => {
         try {
-          const runtime = await this.pa.run().polkascan.state.getRuntime(specName, specVersion);
+          const runtime = await this.pa.run({observableResults: false}).getRuntime(specName, specVersion).toPromise();
           if (!cachedRuntime.value) {
             // Only update cache if it's still empty.
-            cachedRuntime.next(runtime);
+            cachedRuntime.next(runtime as pst.Runtime);
           }
         } catch (e) {
           cachedRuntime.error(e);
@@ -143,18 +144,25 @@ export class RuntimeService {
     const bs = new BehaviorSubject<pst.Runtime[]>([]);
 
     if (this.runtimes[network]) {
-      bs.next([...this.runtimes[network].values()]
-        .filter((r) => !!r.runtime.value)
-        .map((r) => r.runtime.value as pst.Runtime));
+      bs.next(
+        [...this.runtimes[network].values()]
+          .filter((r) => !!r.runtime.value)
+          .map((r) => r.runtime.value as pst.Runtime)
+      );
     }
 
-    this.pa.run().polkascan.state.getRuntimes(100000).then(
-      (response: pst.ListResponse<pst.Runtime>) => {
-        bs.next(response.objects);
+    this.pa.run({observableResults: false}).getRuntimes().pipe(
+      take(1)
+    ).subscribe({
+      next: (items) => {
+        if (items) {
+          bs.next(items);
+        }
       },
-      (errorResponse: any) => {
+      error: (errorResponse: any) => {
         console.error(errorResponse);
-      });
+      }
+    });
 
     return bs;
   }
@@ -174,9 +182,9 @@ export class RuntimeService {
     const cache = await this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimePallets')) {
-      const response = await this.pa.run().polkascan.state.getRuntimePallets(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimePallets = response.objects;
+      const items = await this.pa.run({observableResults: false}).getRuntimePallets(
+        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
+      cache.runtimePallets = items;
     }
 
     return cache.runtimePallets as pst.RuntimePallet[];
@@ -187,9 +195,9 @@ export class RuntimeService {
     const cache = await this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeEvents')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeEvents(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeEvents = response.objects;
+      const items = await this.pa.run({observableResults: false}).getRuntimeEvents(
+        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
+      cache.runtimeEvents = items;
     }
 
     return cache.runtimeEvents as pst.RuntimeEvent[];
@@ -200,9 +208,9 @@ export class RuntimeService {
     const cache = await this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeCalls')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeCalls(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeCalls = response.objects;
+      const items = await this.pa.run({observableResults: false}).getRuntimeCalls(
+        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
+      cache.runtimeCalls = items;
     }
 
     return cache.runtimeCalls as pst.RuntimeCall[];
@@ -213,9 +221,9 @@ export class RuntimeService {
     const cache = await this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeStorage')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeStorages(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeStorages = response.objects;
+      const items = await this.pa.run({observableResults: false}).getRuntimeStorages(
+        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
+      cache.runtimeStorages = items;
     }
 
     return cache.runtimeStorages as pst.RuntimeStorage[];
@@ -226,9 +234,9 @@ export class RuntimeService {
     const cache = await this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeConstant')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeConstants(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeConstants = response.objects;
+      const items = await this.pa.run({observableResults: false}).getRuntimeConstants(
+        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
+      cache.runtimeConstants = items;
     }
 
     return cache.runtimeConstants as pst.RuntimeConstant[];
@@ -239,9 +247,9 @@ export class RuntimeService {
     const cache = await this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeErrorMessages')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeErrorMessages(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeErrorMessages = response.objects;
+      const items = await this.pa.run({observableResults: false}).getRuntimeErrorMessages(
+        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
+      cache.runtimeErrorMessages = items;
     }
 
     return cache.runtimeErrorMessages as pst.RuntimeErrorMessage[];

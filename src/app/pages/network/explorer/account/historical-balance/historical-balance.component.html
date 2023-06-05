@@ -99,26 +99,9 @@
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
   </div>
 
-  <div>
-    <ng-container *ngIf="(hasNextPageObservable | async)">
-      <button [disabled]="(loadingObservable | async)" mat-stroked-button aria-label="Next"
-              (click)="loadMoreItems()">
-        <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
-          <ng-template #showMore>Show More</ng-template>
-          <ng-container *ngIf="searchInfo.endOfBlockRange; else showMore">
-            Increase search range
-          </ng-container>
-        </ng-container>
-        <mat-icon>expand_more</mat-icon>
-      </button>
-    </ng-container>
 
-    <ng-container class="list-block-range" *ngIf="(pageLiveObservable | async) === false">
-      <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
-        <span class="list-block-range" *ngIf="searchInfo.fromBlock">
-          Search range: Blocks {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}
-        </span>
-      </ng-container>
-    </ng-container>
-  </div>
+ <button [disabled]="(loadingObservable | async) === true" mat-stroked-button aria-label="Next" (click)="loadMoreItems()">
+    Show More
+ </button>
+
 </ng-container>

@@ -22,10 +22,10 @@ import { NetworkService } from '../../../../../services/network.service';
 import { debounceTime, distinctUntilChanged, filter, first, map, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { BehaviorSubject, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import {u8aToHex} from "@polkadot/util";
 import {decodeAddress} from "@polkadot/util-crypto";
 
@@ -38,6 +38,7 @@ import {decodeAddress} from "@polkadot/util-crypto";
 })
 export class EventListComponent extends PaginatedListComponentBase<pst.Event | pst.AccountEvent> implements OnInit, OnDestroy {
   listSize = 100;
+  blockNumberIdentifier = 'blockNumber'
   eventFilters = new Map();
   specVersions = new BehaviorSubject<number[]>([]);
   runtimesSubscription: Subscription | null = null;
@@ -123,7 +124,7 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
-        this.items = [];
+        this.listObservable.next([]);
         this.subscribeNewItem();
         this.getItems();
 
@@ -281,38 +282,37 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
   }
 
 
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Event | pst.AccountEvent>> {
+  createGetItemsRequest(untilBlockNumber?: number): Observable<Observable<(pst.Event | pst.AccountEvent)>[]> {
+    const filters = this.filters;
+    if (untilBlockNumber) {
+      filters.blockRangeEnd = untilBlockNumber;
+    }
+
     if (this.addressControl.value) {
-      return this.pa.run(this.network).polkascan.chain.getEventsByAccount(
+      return this.pa.run(this.network).getEventsByAccount(
         u8aToHex(decodeAddress(this.addressControl.value)),
-        this.filters,
-        this.listSize,
-        pageKey,
-        blockLimitOffset
-      );
+        filters,
+        this.listSize
+      ) as any;  // TODO FIX ME!!
     } else {
-      return this.pa.run(this.network).polkascan.chain.getEvents(
-        this.filters,
-        this.listSize,
-        pageKey,
-        blockLimitOffset
-      );
+      return this.pa.run(this.network).getEvents(
+        filters,
+        this.listSize
+      ) as any;  // TODO FIX ME!!
     }
   }
 
 
-  createNewItemSubscription(handleItemFn: (item: pst.Event | pst.AccountEvent) => void): Promise<() => void> {
+  createNewItemSubscription(): Observable<Observable<pst.Event | pst.AccountEvent>> {
     if (this.addressControl.value) {
-      return this.pa.run(this.network).polkascan.chain.subscribeNewEventByAccount(
+      return this.pa.run(this.network).subscribeNewEventByAccount(
         u8aToHex(decodeAddress(this.addressControl.value)),
-        this.filters,
-        handleItemFn
-      );
+        this.filters
+      ) as any;  // TODO FIX ME!!
     } else {
-      return this.pa.run(this.network).polkascan.chain.subscribeNewEvent(
-        this.filters,
-        handleItemFn
-      );
+      return this.pa.run(this.network).subscribeNewEvent(
+        this.filters
+      ) as any;  // TODO FIX ME!!
     }
   }
 

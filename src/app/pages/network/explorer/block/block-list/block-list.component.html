@@ -96,7 +96,7 @@
 
 <div>
   <ng-container *ngIf="(hasNextPageObservable | async)">
-    <button [disabled]="(loadingObservable | async)" mat-stroked-button aria-label="Next" (click)="loadMoreItems()">
+    <button [disabled]="(loadingObservable | async) === true" mat-stroked-button aria-label="Next" (click)="loadMoreItems()">
       Show more <mat-icon>expand_more</mat-icon>
     </button>
   </ng-container>

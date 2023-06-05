@@ -29,7 +29,7 @@ import {
   takeUntil
 } from 'rxjs/operators';
 import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 
 @Component({
@@ -73,8 +73,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchEventStatus.next('loading')),
       switchMap(([blockNr, eventIdx]) => {
         const subject = new BehaviorSubject<pst.Event | null>(null);
-        this.pa.run().polkascan.chain.getEvent(blockNr, eventIdx).then(
-          (event) => {
+        this.pa.run().getEvent(blockNr, eventIdx).pipe(
+          takeUntil(this.destroyer)
+        ).subscribe({
+          next: (event) => {
             if (event) {
               subject.next(event);
               this.fetchEventStatus.next(null);
@@ -82,10 +84,10 @@ export class EventDetailComponent implements OnInit, OnDestroy {
               subject.error('Event not found.');
             }
           },
-          (e) => {
+          error: (e) => {
             subject.error(e);
           }
-        );
+        });
         return subject.pipe(takeUntil(this.destroyer))
       }),
       catchError((e) => {
@@ -98,17 +100,20 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       switchMap((event) => {
         if (event && event.specName && event.specVersion && event.eventModule && event.eventName) {
           const subject: Subject<pst.RuntimeEventAttribute[]> = new Subject();
-          this.pa.run().polkascan.state.getRuntimeEventAttributes(event.specName, event.specVersion, event.eventModule, event.eventName).then(
-            (response) => {
-              if (Array.isArray(response.objects)) {
-                subject.next(response.objects);
+          this.pa.run().getRuntimeEventAttributes(event.specName, event.specVersion, event.eventModule, event.eventName).pipe(
+
+          ).subscribe({
+            next: (items) => {
+              if (Array.isArray(items)) {
+                subject.next(items);
               } else {
                 subject.error('Invalid response.')
               }
             },
-            (e) => {
+            error: (e) => {
               subject.error(e);
-            });
+            }
+          });
           return subject.pipe(takeUntil(this.destroyer));
         }
 

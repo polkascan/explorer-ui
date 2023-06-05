@@ -19,15 +19,15 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { combineLatestWith, distinctUntilChanged, filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
+import { distinctUntilChanged, filter, first, map, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { u8aToHex } from '@polkadot/util';
 import { decodeAddress } from '@polkadot/util-crypto';
-import { ActivatedRoute, ParamMap, Params, Router } from '@angular/router';
+import { ActivatedRoute, Params, Router } from '@angular/router';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
-import { BehaviorSubject, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 
 
 @Component({
@@ -38,6 +38,7 @@ import { BehaviorSubject, Subscription } from 'rxjs';
 })
 export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extrinsic> implements OnInit, OnDestroy {
   listSize = 100;
+  blockNumberIdentifier = 'blockNumber'
   extrinsicsFilters = new Map();
   specVersions = new BehaviorSubject<number[]>([]);
   runtimesSubscription: Subscription | null = null;
@@ -127,9 +128,7 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
-        this.items = [];
-        this.subscribeNewItem();
-        this.getItems();
+        this.gotoLatestItems();
 
         const queryParams: Params = {};
         if (values.multiAddressAccountId) {
@@ -276,21 +275,21 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
   }
 
 
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Extrinsic>> {
-    return this.pa.run(this.network).polkascan.chain.getExtrinsics(
-      this.filters,
-      this.listSize,
-      pageKey,
-      blockLimitOffset
-    );
+  createGetItemsRequest(untilBlockNumber?:number): Observable<Observable<pst.Extrinsic>[]> {
+    const filters = this.filters;
+    if (untilBlockNumber) {
+      filters.blockRangeEnd = untilBlockNumber;
+    }
+
+    return this.pa.run(this.network).getExtrinsics(
+      filters,
+      this.listSize
+    ) as any;  // TODO FIX ME!!
   }
 
 
-  createNewItemSubscription(handleItemFn: (item: pst.Extrinsic) => void): Promise<() => void> {
-    return this.pa.run(this.network).polkascan.chain.subscribeNewExtrinsic(
-      this.filters,
-      handleItemFn
-    );
+  createNewItemSubscription(): Observable<Observable<pst.Extrinsic>> {
+    return this.pa.run(this.network).subscribeNewExtrinsic(this.filters) as any;  // TODO FIX ME!!
   }
 
 

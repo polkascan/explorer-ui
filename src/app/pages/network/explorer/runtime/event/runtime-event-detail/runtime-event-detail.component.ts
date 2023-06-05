@@ -18,7 +18,7 @@
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
@@ -110,11 +110,13 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
     this.eventAttributes = runtimeObservable.pipe(
       tap(() => this.fetchEventAttributesStatus.next('loading')),
       switchMap(([runtime, pallet, eventName]) => {
-        const subject: Subject<(pst.RuntimeEventAttribute & {parsedComposition?: any})[]> = new Subject();
-        this.pa.run().polkascan.state.getRuntimeEventAttributes(runtime.specName, runtime.specVersion, pallet, eventName).then(
-          (response) => {
-            if (Array.isArray(response.objects)) {
-              const objects: (pst.RuntimeEventAttribute & {parsedComposition?: any})[] = [...response.objects];
+        const subject: Subject<(pst.RuntimeEventAttribute & { parsedComposition?: any })[]> = new Subject();
+        this.pa.run().getRuntimeEventAttributes(runtime.specName, runtime.specVersion, pallet, eventName).pipe(
+          takeUntil(this.destroyer)
+        ).subscribe(
+          (items) => {
+            if (Array.isArray(items)) {
+              const objects: (pst.RuntimeEventAttribute & { parsedComposition?: any })[] = [...items];
               for (let obj of objects) {
                 if (obj.scaleTypeComposition) {
                   obj.parsedComposition = JSON.parse(obj.scaleTypeComposition);

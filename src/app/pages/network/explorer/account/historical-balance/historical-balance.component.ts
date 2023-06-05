@@ -27,11 +27,21 @@ import {
 } from '@angular/core';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
-import { BehaviorSubject, combineLatest, from, Observable, of, ReplaySubject } from 'rxjs';
+import { BehaviorSubject, combineLatest, from, Observable, of, ReplaySubject, Subject, take } from 'rxjs';
 import { AccountId, Balance, BalanceLock, BlockHash, Header } from '@polkadot/types/interfaces';
-import { combineLatestWith, debounceTime, map, shareReplay, switchMap, takeUntil, tap, skip, filter } from 'rxjs/operators';
+import {
+  combineLatestWith,
+  debounceTime,
+  map,
+  shareReplay,
+  switchMap,
+  takeUntil,
+  tap,
+  skip,
+  filter
+} from 'rxjs/operators';
 import { AccountInfo } from '@polkadot/types/interfaces/system/types';
 import { AccountData } from '@polkadot/types/interfaces/balances/types';
 import { BN } from '@polkadot/util';
@@ -39,7 +49,7 @@ import * as Highcharts from 'highcharts';
 import { VariablesService } from '../../../../../services/variables.service';
 import { PricingService } from '../../../../../services/pricing.service';
 import { Codec } from '@polkadot/types/types';
-import { ApiPromise } from '@polkadot/api';
+import { ApiPromise, ApiRx } from '@polkadot/api';
 
 
 type HistoricalBalance = {
@@ -82,6 +92,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   accountIdObservable = new ReplaySubject<AccountId | null | undefined>(1);
 
   listSize = 200;
+  blockNumberIdentifier = 'blockNumber';
 
   balancesPerBlock = new Map<number, BehaviorSubject<HistoricalBalance>>();
   balancesObservable: Observable<BalancesItem[]>;
@@ -102,7 +113,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   chartLoadingObservable = new BehaviorSubject<boolean>(false);
 
   blockOne = new ReplaySubject<BlockHash>(1);
-  itemAtBlockOne: Observable<BalancesItem | null>;
+  itemAtBlockOne = new Subject<BalancesItem | null>();
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
@@ -114,10 +125,11 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     // Fetch the block hash for block 1.
     this.pa.availableAdapters[this.network].substrateRpc.apiPromise.then((api) => {
       api.rpc.chain.getBlockHash(1).subscribe((hash) => this.blockOne.next(hash))
-    }, () => {})
+    }, () => {
+    })
 
     // Load more items automatically.
-    this.itemsObservable.pipe(skip(1)).subscribe((items) => {
+    this.listObservable.pipe(skip(1)).subscribe((items) => {
       // Try to get at least the list size in items.
       if (items.length <= this.listSize) {
         this.loadMoreItems();
@@ -126,9 +138,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
     // Start observables for data retrieval and conversion for table and charts.
     this.pa.availableAdapters[this.network].substrateRpc.apiPromise.then((api) => {
-      // this.createItemAtBlockOneObservable(api);   // TODO turn on
-      // this.createBalancesObservable(api);         // TODO turn on
-      // this.createChartDataObservable(api);        // TODO turn on
+      this.createItemAtBlockOneObservable(api);
+      this.createBalancesObservable(api);
+      this.createChartDataObservable(api);
     })
   }
 
@@ -160,29 +172,26 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   }
 
 
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.AccountEvent>> {
+  createGetItemsRequest(untilBlockNumber?: number): Observable<Observable<pst.AccountEvent>[]> {
     if (this.accountId) {
-      return this.pa.run(this.network).polkascan.chain.getEventsByAccount(
+      return this.pa.run(this.network).getEventsByAccount(
         this.accountId.toHex(),
         this.filters,
-        this.listSize,
-        pageKey,
-        blockLimitOffset
-      );
+        this.listSize
+      ).pipe(takeUntil(this.destroyer)) as any;  // TODO FIX ME!!
     }
-    return Promise.reject();
+    return new Subject<pst.AccountEvent[]>().pipe(takeUntil(this.destroyer)) as any;  // TODO FIX ME!!
   }
 
 
-  createNewItemSubscription(handleItemFn: (item: pst.AccountEvent) => void): Promise<() => void> {
+  createNewItemSubscription(): Observable<Observable<(pst.AccountEvent)>> {
     if (this.accountId) {
-      return this.pa.run(this.network).polkascan.chain.subscribeNewEventByAccount(
+      return this.pa.run(this.network).subscribeNewEventByAccount(
         this.accountId?.toHex(),
-        this.filters,
-        handleItemFn
-      )
+        this.filters
+      ).pipe(takeUntil(this.destroyer)) as any;  // TODO FIX ME!!
     }
-    return Promise.reject();
+    return new Subject<pst.AccountEvent>().pipe(takeUntil(this.destroyer)) as any;  // TODO FIX ME!!
   }
 
 
@@ -209,68 +218,59 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   }
 
 
-  createItemAtBlockOneObservable(api: ApiPromise): void {
+  createItemAtBlockOneObservable(api: ApiRx): void {
     const runParams = {
       chain: this.network,
       adapters: ['substrate-rpc']
     };
 
     // Check if an account has balances at block 1.
-    this.itemAtBlockOne = this.itemsObservable.pipe(
-      takeUntil(this.destroyer),
-      map<pst.AccountEvent[], boolean>(() => { // Check that the items list is at its end.
-        if (this.pageNext) {
-          return false;
-        } else if (this.blockLimitOffset && this.blockLimitCount) {
-          const blockLimitOffset = Math.max(0, this.blockLimitOffset - this.blockLimitCount)
-          if (blockLimitOffset > 0) {
-            return false;
-          }
-        }
-        return true;
-      }),
-      combineLatestWith(this.blockOne.pipe(
-        takeUntil(this.destroyer),
-      )),
-      switchMap(([atListStart, hash]) => {
-        if (atListStart && this.accountId) {  // The items list is at its end. Check if at genesis there was an AccountInfo.
-          const timestampObservable = from(api.query.timestamp.now.at(hash)).pipe(
-            map((timestamp) => {
-              if (timestamp.isEmpty === false) {
-                return timestamp.toJSON() as EpochTimeStamp;
-              }
-              return null;
-            })
-          );
-
-          return (from(api.query.system.account.at(hash, this.accountId)) as Observable<AccountInfo>).pipe(
-            combineLatestWith(timestampObservable),
-            map<[AccountInfo, number | null], BalancesItem | null>(([accountInfo, timestamp]) => {  // Check if the account exists.
-              if (accountInfo && accountInfo.data) {
-                if (accountInfo.data.free.add(accountInfo.data.reserved).isZero() === false) {
-                  if (this.balancesPerBlock.has(1) === false) {
-                    this.balancesPerBlock.set(1, new BehaviorSubject<HistoricalBalance>({}));
-                    this.getBalanceAtBlock(1);
+    this.itemsObservable.subscribe({
+      complete: () => {
+        this.blockOne.pipe(
+          takeUntil(this.destroyer),
+          switchMap((hash) => {
+            if (this.accountId) {  // The items list is at its end. Check if at genesis there was an AccountInfo.
+              const timestampObservable = from(api.query.timestamp.now.at(hash)).pipe(
+                map((timestamp) => {
+                  if (timestamp.isEmpty === false) {
+                    return timestamp.toJSON() as EpochTimeStamp;
                   }
+                  return null;
+                })
+              );
 
-                  return {
-                    event: {blockNumber: 1, blockDatetime: timestamp},
-                    balances: this.balancesPerBlock.get(1)
-                  } as BalancesItem;
-                }
-              }
-              return null;
-            })
-          )
-        }
-        return of(null);
-      })
-    )
+              return (from(api.query.system.account.at(hash, this.accountId)) as Observable<AccountInfo>).pipe(
+                combineLatestWith(timestampObservable),
+                map<[AccountInfo, number | null], BalancesItem | null>(([accountInfo, timestamp]) => {  // Check if the account exists.
+                  if (accountInfo && accountInfo.data) {
+                    if (accountInfo.data.free.add(accountInfo.data.reserved).isZero() === false) {
+                      if (this.balancesPerBlock.has(1) === false) {
+                        this.balancesPerBlock.set(1, new BehaviorSubject<HistoricalBalance>({}));
+                        this.getBalanceAtBlock(1);
+                      }
+
+                      return {
+                        event: {blockNumber: 1, blockDatetime: timestamp},
+                        balances: this.balancesPerBlock.get(1)
+                      } as BalancesItem;
+                    }
+                  }
+                  return null;
+                })
+              )
+            }
+            return of(null);
+          })
+        ).subscribe(() => this.itemAtBlockOne)
+      }
+    });
   }
 
 
-  createBalancesObservable(api: ApiPromise): void {
+  createBalancesObservable(api: ApiRx): void {
     this.balancesObservable = this.itemsObservable.pipe(
+      take(4), // TEMP FIX
       takeUntil(this.destroyer),
       tap<pst.AccountEvent[]>(() => this.loading++),
       map<pst.AccountEvent[], pst.AccountEvent[]>((items) => { // Filter out double blocks
@@ -301,7 +301,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   }
 
 
-  createChartDataObservable(api: ApiPromise): void {
+  createChartDataObservable(api: ApiRx): void {
     const runParams = {
       chain: this.network,
       adapters: ['substrate-rpc']
@@ -311,16 +311,15 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
       takeUntil(this.destroyer),
       tap<BalancesItem[]>(() => this.chartLoadingObservable.next(true)),
       combineLatestWith( // Check if the account has a balance at the latest block height.
-        from(api.rpc.chain.getFinalizedHead()).pipe(
+        api.rpc.chain.getFinalizedHead().pipe(
           switchMap((hash) =>
-            from(
-              api.query.system.account.at(hash, this.accountId) as Promise<AccountInfo>)
+              (api.query.system.account.at(hash, this.accountId) as Observable<AccountInfo>)
               .pipe(
                 combineLatestWith(
-                  from(api.rpc.chain.getHeader(hash)).pipe(
+                  api.rpc.chain.getHeader(hash).pipe(
                     map<Header, number>((header) => header.number.toJSON() as number)
                   ),
-                  from(api.query.timestamp.now.at(hash)).pipe(
+                  api.query.timestamp.now.at(hash).pipe(
                     map<Codec, number>((timestamp) => timestamp.toJSON() as EpochTimeStamp)
                   )
                 )
@@ -567,7 +566,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   }
 
 
-  async getBalanceAtBlock(blockNumber: number): Promise<void> {   // TODO FIX ME!
+  async getBalanceAtBlock(blockNumber: number): Promise<void> {
+    return;
+    // TODO FIX ME!
     // this.loading++;
     //
     // const observable = this.balancesPerBlock.get(blockNumber)!;
@@ -674,13 +675,5 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
   async loadMoreItems(): Promise<void> {
     // Keep the item list in live mode. We don't expect items coming in on every block.
-    if (this.pageNext) {
-      await this.getItems(this.pageNext, this.blockLimitOffset);
-    } else if (this.blockLimitOffset && this.blockLimitCount) {
-      const blockLimitOffset = Math.max(0, this.blockLimitOffset - this.blockLimitCount)
-      if (blockLimitOffset > 0) {
-        await this.getItems(undefined, blockLimitOffset);
-      }
-    }
   }
 }

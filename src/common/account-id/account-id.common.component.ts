@@ -33,10 +33,10 @@ import { HexString } from '@polkadot/util/types';
 import { isHex, isU8a } from '@polkadot/util';
 import { ActivatedRoute } from '@angular/router';
 import { TooltipsService } from '../../app/services/tooltips.service';
-import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
-import { asObservable, temporaryAsObservableFn } from '../polkadapt-rxjs';
+import { catchError, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { ApiPromiseAsObservableFn } from '../polkadapt-rxjs';
 import { PolkadaptService } from '../../app/services/polkadapt.service';
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
+import { BehaviorSubject, from, Observable, of, Subject } from 'rxjs';
 import { DeriveAccountInfo } from '@polkadot/api-derive/types';
 
 @Component({
@@ -156,7 +156,7 @@ export class AccountIdCommonComponent implements OnInit, OnChanges, OnDestroy {
   @Input() iconSize?: number;
   @Input() ss58Prefix?: Prefix;
 
-  derivedAccountInfo: Observable<DeriveAccountInfo>;
+  derivedAccountInfo: Observable<DeriveAccountInfo | null>;
   accountJudgement: Observable<string>;
 
   relativeToRoute: ActivatedRoute | undefined;
@@ -181,7 +181,12 @@ export class AccountIdCommonComponent implements OnInit, OnChanges, OnDestroy {
           return of(null);
         }
         const apiPromise = this.pa.availableAdapters[network as string].substrateRpc.apiPromise;
-        return temporaryAsObservableFn(apiPromise, 'derive.accounts.info', address).pipe(takeUntil(this.destroyer));
+        return from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.derive.accounts.info(address).pipe(
+              takeUntil(this.destroyer)
+            ) as Observable<DeriveAccountInfo>
+          ));
       })
     );
 
