@@ -88,7 +88,7 @@ type ChartItem = {
 })
 export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.AccountEvent> implements OnInit, OnChanges {
 
-  @Input() accountId: AccountId | null | undefined;
+  @Input() accountId: any; // AccountId | null | undefined;
   accountIdObservable = new ReplaySubject<AccountId | null | undefined>(1);
 
   listSize = 200;

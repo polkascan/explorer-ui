@@ -8,7 +8,7 @@
 
   <ng-template #noAccount>
     <div *ngIf="(id | async) as address">
-      <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
+      <div class="account-address" *ngIf="(id | async) as address">
         <div class="account-address-identicon">
           <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format"
                      (copied)="copied($event)"></identicon>
@@ -21,7 +21,7 @@
   <ng-template #hasAccount>
     <ng-container *ngIf="(derivedAccountInfo | async) as dai">
 
-      <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
+      <div class="account-address" *ngIf="(id | async) as address">
         <div class="account-address-identicon">
           <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format"
                      (copied)="copied($event)"></identicon>
@@ -385,9 +385,9 @@
       </ng-container>
     </mat-tab>
 
-    <mat-tab label="Balance History" *ngIf="accountId">
+    <mat-tab label="Balance History" *ngIf="id | async as accountId">
       <ng-container *ngIf="loadedTabs[3]">
-        <app-historical-balance [accountId]="accountId | async"></app-historical-balance>
+        <app-historical-balance [accountId]="accountId"></app-historical-balance>
       </ng-container>
     </mat-tab>
 

@@ -29,21 +29,19 @@ import {
   shareReplay,
   startWith,
   switchMap,
-  takeUntil, tap
+  takeUntil,
+  tap
 } from 'rxjs/operators';
-import { BehaviorSubject, combineLatest, from, Observable, of, Subject } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, Subject, take } from 'rxjs';
 import {
   DeriveAccountFlags,
   DeriveAccountInfo,
   DeriveBalancesAll,
   DeriveStakingAccount
 } from '@polkadot/api-derive/types';
-import { BN, BN_ZERO, u8aToHex, u8aToString } from '@polkadot/util';
+import { BN, BN_ZERO, u8aToHex } from '@polkadot/util';
 import { types as pst } from '@polkadapt/core';
-import { AccountId, AccountIndex } from '@polkadot/types/interfaces';
-import { Codec } from '@polkadot/types/types';
 import { decodeAddress, validateAddress } from '@polkadot/util-crypto';
-import { AccountInfo } from '@polkadot/types/interfaces/system/types';
 import { TooltipsService } from '../../../../../services/tooltips.service';
 
 
@@ -99,19 +97,16 @@ function calcBonded(stakingInfo?: DeriveStakingAccount, bonded?: boolean | BN[])
 export class AccountDetailComponent implements OnInit, OnDestroy {
   id: Observable<string | null>;
   validAddress = new BehaviorSubject<string | null>(null);
-  account: Observable<AccountInfo>;
+  account: Observable<pst.Account | null>;
   subs: Observable<any>;
   identity: Observable<any>;
-  indices: Observable<any[]>;
-  accountIndex: Observable<AccountIndex | undefined>;
-  accountId: Observable<AccountId | undefined>;
-  accountNonce: Observable<number | undefined>
-  superOf: Observable<Codec | undefined>;
-  subsOf: Observable<any>;
+  accountIndex: Observable<number | null>;
+  accountNonce: Observable<number | null>
+  subsOf: Observable<string[]>;
   subsNames: Observable<string[]>;
-  parent: Observable<any>;
+  parentId: Observable<string | null>;
   parentIdentity: Observable<any>;
-  parentSubsOf: Observable<any>;
+  parentSubsOf: Observable<string[]>;
   derivedAccountInfo: Observable<DeriveAccountInfo>;
   derivedAccountFlags: Observable<DeriveAccountFlags>;
   derivedBalancesAll: Observable<DeriveBalancesAll>;
@@ -164,28 +159,40 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       switchMap((id: string) => {
         const n = parseInt(id, 10);
         if (id === n.toString() && Number.isInteger(n)) {
-          return from(this.pa.availableAdapters[this.ns.currentNetwork.value].substrateRpc.apiPromise)
-            .pipe(
-              takeUntil(this.destroyer),
-              switchMap((api) => api.query.indices.value(n).pipe(
-                takeUntil(this.destroyer)
-              )),
-              map((indices: any) => {  // TODO FIX TYPING
-                if (indices && indices.isSome) {
-                  indices = indices.toJSON();
-                  if (indices && indices[0]) {
-                    return indices[0] as string; // This is the ss58.
-                  }
-                }
-                return null;
-              })
-            )
+          // id is an index
+          return this.pa.run({observableResults: false}).getAccountIdFromIndex(n).pipe(take(1));
         } else {
           return of(id);
         }
       }),
-      shareReplay(1)
-    );
+      map((id) => {
+        let validAddress: boolean | undefined;
+        if (id) {
+          try {
+            validAddress = validateAddress(id);
+          } catch (e) {
+            validAddress = false;
+          }
+        }
+        if (validAddress) {
+          // Check if address belongs to this network/chain.
+          try {
+            validateAddress(id, false, this.networkProperties.value?.ss58Format);
+          } catch (e) {
+            validAddress = false;
+          }
+        }
+        if (validAddress) {
+          return id;
+        }
+
+        return null;
+      }),
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      })
+    ) as Observable<string | null>;
 
     // Remove all active subscriptions when id changes.
     idObservable.subscribe((id) => {
@@ -198,238 +205,158 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       this.signedExtrinsics.next([]);
 
       if (id) {
-        let validAddress: boolean;
         try {
-          validAddress = validateAddress(id);
+          const accountIdHex = u8aToHex(decodeAddress(id));
+          this.validAddress.next(accountIdHex);
+          this.fetchAndSubscribeExtrinsics(accountIdHex);
+          this.fetchTaggedAccounts(accountIdHex);
         } catch (e) {
-          validAddress = false;
-        }
-        if (validAddress) {
-          // Check if address belongs to this network/chain.
-          try {
-            validateAddress(id, false, this.networkProperties.value?.ss58Format);
-          } catch (e) {
-            validAddress = false;
-          }
-        }
-        if (validAddress) {
-          try {
-            const accountIdHex = u8aToHex(decodeAddress(id));
-            this.validAddress.next(accountIdHex);
-            this.fetchAndSubscribeExtrinsics(accountIdHex);
-            this.fetchTaggedAccounts(accountIdHex);
-          } catch (e) {
-          }
-        } else {
-          // Not a valid address.
-          this.validAddress.next(null);
-          this.errors.next('Not a valid address.');
         }
       } else {
-        // Account not found.
+        // Not a valid address.
         this.validAddress.next(null);
-        this.errors.next('Account not found.');
+        this.errors.next('Unknown or invalid address.');
       }
     });
 
-    const apiPromise = this.pa.availableAdapters[this.ns.currentNetwork.value].substrateRpc.apiPromise;
-
     this.account = idObservable.pipe(
       switchMap((id) =>
-        from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.query.system.account(id).pipe(takeUntil(this.destroyer))),
-          startWith(undefined),
-          map((account) => account ? account : undefined)
-        ))
-    ) as Observable<AccountInfo>;
+        id
+          ? this.pa.run({observableResults: false}).getAccount(id).pipe(
+            takeUntil(this.destroyer),
+            startWith(null),
+            map((account) => account ? account : null)
+          )
+          : of(null))
+    );
 
-    const idAndIndexObservable = idObservable.pipe(
+    this.accountIndex = idObservable.pipe(
       switchMap((id) =>
-        from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.derive.accounts.idAndIndex(id).pipe(takeUntil(this.destroyer))),
-        ))
-    );
-
-    this.accountId = idAndIndexObservable.pipe(
-      map((val) => val && val[0] ? val[0] : undefined)
-    );
-
-    this.accountIndex = idAndIndexObservable.pipe(
-      map((val) => val && val[1] ? val[1] : undefined)
-    );
+        id
+          ? this.pa.run({observableResults: false}).getIndexFromAccountId(id).pipe(
+            takeUntil(this.destroyer),
+            startWith(null)
+          )
+          : of(null)
+      )
+    )
 
     this.accountNonce = this.account.pipe(
-      map((account: AccountInfo) => account && account.nonce ? account.nonce.toNumber() : undefined)
+      map((account) => account && account.nonce ? account.nonce : null)
     );
-
-    this.indices = this.accountIndex.pipe(
-      switchMap((accountIndex) => accountIndex
-        ? from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.query.indices.accounts(accountIndex.toNumber()).pipe(takeUntil(this.destroyer))),
-        )
-        : of(undefined)),
-    ) as Observable<any>
-
-    this.superOf = idObservable.pipe(
-      switchMap((id) => id
-        ? from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.query.identity.superOf(id).pipe(takeUntil(this.destroyer)))
-        )
-        : of(null))
-    ) as Observable<Codec | undefined>;
 
     this.identity = idObservable.pipe(
       switchMap((id) => id
-        ? from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.query.identity.identityOf(id).pipe(takeUntil(this.destroyer)))
-        )
+        ? this.pa.run({observableResults: false}).getIdentity(id)
         : of(null))
     );
 
     this.subsOf = idObservable.pipe(
       switchMap((id) => id
-        ? from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.query.identity.subsOf(id).pipe(takeUntil(this.destroyer)))
-        )
-        : of(null))
+        ? this.pa.run({observableResults: false}).getAccountChildrenIds(id)
+        : of([]))
     );
 
-    this.derivedAccountInfo = idObservable.pipe(
-      switchMap((id) => id
-        ? from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.derive.accounts.info(id).pipe(takeUntil(this.destroyer)))
-        )
-        : of(null))
-    ) as Observable<DeriveAccountInfo>;
+    // this.derivedAccountInfo = idObservable.pipe(
+    //   switchMap((id) => id
+    //     ? from(apiPromise).pipe(
+    //       takeUntil(this.destroyer),
+    //       switchMap((api) => api.derive.accounts.info(id).pipe(takeUntil(this.destroyer)))
+    //     )
+    //     : of(null))
+    // ) as Observable<DeriveAccountInfo>;
+    //
+    // this.derivedAccountFlags = idObservable.pipe(
+    //   switchMap((id) => id
+    //     ? from(apiPromise).pipe(
+    //       takeUntil(this.destroyer),
+    //       switchMap((api) => api.derive.accounts.flags(id).pipe(takeUntil(this.destroyer)))
+    //     )
+    //     : of(null))
+    // ) as Observable<DeriveAccountFlags>;
+    //
+    // this.derivedBalancesAll = idObservable.pipe(
+    //   switchMap((id) => id
+    //     ? from(apiPromise).pipe(
+    //       takeUntil(this.destroyer),
+    //       switchMap((api) => api.derive.balances.all(id).pipe(takeUntil(this.destroyer)))
+    //     )
+    //     : of(null))
+    // ) as Observable<DeriveBalancesAll>;
+    //
+    // this.stakingInfo = idObservable.pipe(
+    //   switchMap((id) => id
+    //     ? from(apiPromise).pipe(
+    //       takeUntil(this.destroyer),
+    //       switchMap((api) => api.derive.staking.account(id).pipe(takeUntil(this.destroyer)))
+    //     )
+    //     : of(null))
+    // ) as Observable<DeriveStakingAccount>;
+    //
+    // this.accountBalances = combineLatest(
+    //   this.derivedBalancesAll.pipe(
+    //     catchError(() => {
+    //       return of(undefined);
+    //     })),
+    //   this.stakingInfo.pipe(
+    //     catchError(() => {
+    //       return of(undefined);
+    //     }))
+    // ).pipe(
+    //   takeUntil(this.destroyer),
+    //   map(([derivedBalancesAll, stakingInfo]) => {
+    //     const balances: any = {};
+    //     if (derivedBalancesAll) {
+    //       balances.locked = derivedBalancesAll.lockedBalance;
+    //       balances.total = derivedBalancesAll.freeBalance.add(derivedBalancesAll.reservedBalance);
+    //       balances.transferable = derivedBalancesAll.availableBalance;
+    //       balances.free = derivedBalancesAll.freeBalance;
+    //       balances.reserved = derivedBalancesAll.reservedBalance;
+    //     }
+    //     if (stakingInfo) {
+    //       balances.bonded = stakingInfo.stakingLedger.active.unwrap() ?? BN_ZERO;
+    //       balances.redeemable = stakingInfo.redeemable ?? BN_ZERO;
+    //       balances.unbonding = calcUnbonding(stakingInfo);
+    //     }
+    //     return balances;
+    //   })
+    // );
 
-    this.derivedAccountFlags = idObservable.pipe(
+    this.parentId = idObservable.pipe(
       switchMap((id) => id
-        ? from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.derive.accounts.flags(id).pipe(takeUntil(this.destroyer)))
-        )
-        : of(null))
-    ) as Observable<DeriveAccountFlags>;
-
-    this.derivedBalancesAll = idObservable.pipe(
-      switchMap((id) => id
-        ? from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.derive.balances.all(id).pipe(takeUntil(this.destroyer)))
-        )
-        : of(null))
-    ) as Observable<DeriveBalancesAll>;
-
-    this.stakingInfo = idObservable.pipe(
-      switchMap((id) => id
-        ? from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.derive.staking.account(id).pipe(takeUntil(this.destroyer)))
-        )
-        : of(null))
-    ) as Observable<DeriveStakingAccount>;
-
-    this.accountBalances = combineLatest(
-      this.derivedBalancesAll.pipe(
-        catchError(() => {
-          return of(undefined);
-        })),
-      this.stakingInfo.pipe(
-        catchError(() => {
-          return of(undefined);
-        }))
-    ).pipe(
-      takeUntil(this.destroyer),
-      map(([derivedBalancesAll, stakingInfo]) => {
-        const balances: any = {};
-        if (derivedBalancesAll) {
-          balances.locked = derivedBalancesAll.lockedBalance;
-          balances.total = derivedBalancesAll.freeBalance.add(derivedBalancesAll.reservedBalance);
-          balances.transferable = derivedBalancesAll.availableBalance;
-          balances.free = derivedBalancesAll.freeBalance;
-          balances.reserved = derivedBalancesAll.reservedBalance;
-        }
-        if (stakingInfo) {
-          balances.bonded = stakingInfo.stakingLedger.active.unwrap() ?? BN_ZERO;
-          balances.redeemable = stakingInfo.redeemable ?? BN_ZERO;
-          balances.unbonding = calcUnbonding(stakingInfo);
-        }
-        return balances;
-      })
+        ? this.pa.run({observableResults: false}).getAccountParentId(id)
+        : of(null)
+      )
     );
 
-    this.parent = this.superOf.pipe(
-      switchMap((val: any) => {
-        return val && val.value && val.value[0]
-          ? from(apiPromise).pipe(
-            takeUntil(this.destroyer),
-            switchMap((api) => api.query.system.account(val.value[0]).pipe(takeUntil(this.destroyer)))
-          )
-          : of(undefined)
-      })
+    this.parentIdentity = this.parentId.pipe(
+      switchMap((id) => id
+        ? this.pa.run({observableResults: false}).getIdentity(id)
+        : of(null))
     )
 
-    this.parentIdentity = this.superOf.pipe(
-      switchMap((val: any) => val && val.value && val.value[0]
-        ? from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.query.identity.identityOf(val.value[0]).pipe(takeUntil(this.destroyer)))
-        )
-        : of(undefined)),
-    )
-
-    this.parentSubsOf = this.superOf.pipe(
-      switchMap((val: any) => val && val.value && val.value[0]
-        ? from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.query.identity.subsOf(val.value[0]).pipe(takeUntil(this.destroyer)))
-        )
-        : of(undefined))
+    this.parentSubsOf = this.parentId.pipe(
+      switchMap((parentId: any) => parentId
+        ? this.pa.run({observableResults: false}).getAccountChildrenIds(parentId)
+        : of([]))
     )
 
     this.subsNames = combineLatest(
-      this.subsOf.pipe(
-        map((subsOf: any) => subsOf && subsOf[1] || [])
-      ),
-      this.parentSubsOf.pipe(
-        map((parentSubsOf: any) => parentSubsOf && parentSubsOf[1] || [])
-      )
+      this.subsOf,
+      this.parentSubsOf
     ).pipe(
       takeUntil(this.destroyer),
-      switchMap(([subsOf, parentSubsOf]) => {
-        const subs = subsOf && subsOf.length ? subsOf : parentSubsOf && parentSubsOf.length ? parentSubsOf : [];
-        const observables: Observable<any>[] = subs.map((sub: any) =>
-          from(apiPromise).pipe(
-            takeUntil(this.destroyer),
-            switchMap((api) => api.query.identity.superOf(sub).pipe(takeUntil(this.destroyer)))
-          ))
+      switchMap(([subsOfIds, parentSubsOfIds]) => {
+        const subs = subsOfIds && subsOfIds.length ? subsOfIds : parentSubsOfIds && parentSubsOfIds.length ? parentSubsOfIds : [];
+        const observables: Observable<any>[] = subs.map((subId: any) =>
+          this.pa.run({observableResults: false}).getChildAccountName(subId)
+        )
 
         if (observables.length > 0) {
           return combineLatest(observables);
         } else {
           return of([]);
         }
-      }),
-      map((subsSuperOf: any[]) => {
-        return subsSuperOf.map((subSuperOf: any) => {
-          if (subSuperOf && subSuperOf.value && subSuperOf.value[1]) {
-            const value = subSuperOf.value[1];
-            return value.isRaw
-              ? u8aToString(value.asRaw.toU8a(true))
-              : value.isNone
-                ? undefined
-                : value.toHex();
-          } else {
-            return '';
-          }
-        });
       })
     );
 
@@ -453,22 +380,22 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       })
     )
 
-    this.accountJudgement = this.derivedAccountInfo.pipe(
-      map((dai) => {
-        if (dai && dai.identity && dai.identity.judgements) {
-          const judgements = dai.identity.judgements.map((j) => j[1].toString());
-          if (judgements.find((j) => j === 'LowQuality')) {
-            return 'isBad';
-          }
-
-          if (judgements.find((j) => j === 'KnownGood' || j === 'Reasonable')) {
-            return 'isGood';
-          }
-        }
-        return '';
-      }),
-      catchError((e) => of(''))
-    )
+    // this.accountJudgement = this.derivedAccountInfo.pipe(
+    //   map((dai) => {
+    //     if (dai && dai.identity && dai.identity.judgements) {
+    //       const judgements = dai.identity.judgements.map((j) => j[1].toString());
+    //       if (judgements.find((j) => j === 'LowQuality')) {
+    //         return 'isBad';
+    //       }
+    //
+    //       if (judgements.find((j) => j === 'KnownGood' || j === 'Reasonable')) {
+    //         return 'isGood';
+    //       }
+    //     }
+    //     return '';
+    //   }),
+    //   catchError((e) => of(''))
+    // )
   }
 
 
