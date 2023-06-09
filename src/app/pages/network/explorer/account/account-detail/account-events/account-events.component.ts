@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
+import { BehaviorSubject, combineLatest, Subject, takeUntil } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
@@ -25,7 +25,7 @@ import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { NetworkService } from "../../../../../../services/network.service";
 import { TooltipsService } from "../../../../../../services/tooltips.service";
-import { tap } from 'rxjs/operators';
+import { switchMap, tap } from 'rxjs/operators';
 
 
 @Component({
@@ -64,8 +64,8 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
 
   loading = new BehaviorSubject<boolean>(false);
 
-  private unsubscribeFns: Map<string, (() => void)> = new Map();
-  private destroyer: Subject<undefined> = new Subject();
+  private reset: Subject<void> = new Subject();
+  private destroyer: Subject<void> = new Subject();
 
   constructor(private pa: PolkadaptService,
               private ns: NetworkService,
@@ -73,16 +73,18 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.unsubscribeFns.forEach(unsub => unsub());
-    this.unsubscribeFns.clear();
-    this.destroyer.next(undefined);
+    this.reset.complete()
+    this.destroyer.next();
     this.destroyer.complete();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     const address: string = changes.address.currentValue;
     this.events.next([]);
+    this.reset.next();
+
     this.fetchAndSubscribeEvents(address);
+
     const queryParams: { [p: string]: string } = {'address': address};
     if (this.eventTypes) {
       for (let pallet of Object.keys(this.eventTypes)) {
@@ -103,13 +105,6 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   }
 
   async fetchAndSubscribeEvents(address: string): Promise<void> {
-    const existingUnsubscribe = this.unsubscribeFns.get('eventsUnsubscribeFn');
-    if (existingUnsubscribe) {
-      existingUnsubscribe();
-    }
-
-    this.loading.next(true);
-
     const idHex: string = u8aToHex(decodeAddress(address));
     const filterParams: any = {eventTypes: this.eventTypes};
 
@@ -117,6 +112,8 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     const listSize = this.listSize || 50;
 
     const subscription = this.pa.run().getEventsByAccount(idHex, filterParams, listSize).pipe(
+      takeUntil(this.reset),
+      takeUntil(this.destroyer),
       tap({
         subscribe: () => {
           this.loading.next(true);
@@ -125,15 +122,18 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
           this.loading.next(false);
         }
       }),
-      takeUntil(this.destroyer)
+      switchMap((observables) => combineLatest(observables))
     ).subscribe((items) => {
-      events = [...events, ...items.filter((event) => {
-        events.some((item) =>
+      const merged = [...events, ...items.filter((event) => {
+        const isDuplicate = events.some((item) =>
           event.blockNumber === item.blockNumber
-          && event.eventIdx === item.eventIdx
-          && event.attributeName === item.attributeName
-        )
+            && event.eventIdx === item.eventIdx
+            && event.attributeName === item.attributeName
+        );
+        return !isDuplicate;
       })];
+      merged.sort((a, b) => (b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx));
+
 
       if (events.length > listSize) {
         // List size has been reached. List is done, limit to listsize.
@@ -141,10 +141,11 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
         subscription.unsubscribe();
       }
 
-      this.events.next(events);
+      this.events.next(merged);
     });
 
-    this.pa.run().subscribeNewEventByAccount(idHex, filterParams).pipe(
+    this.pa.run({observableResults: false}).subscribeNewEventByAccount(idHex, filterParams).pipe(
+      takeUntil(this.reset),
       takeUntil(this.destroyer)
     ).subscribe({
       next: (event: pst.AccountEvent) => {
@@ -155,7 +156,11 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
           && e.attributeName === event.attributeName)) {
           const merged = [event, ...events];
           merged.sort((a, b) => (b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx));
-          merged.length = this.listSize;
+
+          if (merged.length > listSize) {
+            merged.length = listSize;
+          }
+
           this.events.next(merged);
         }
       }

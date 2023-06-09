@@ -124,7 +124,7 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
-        this.listObservable.next([]);
+        this.itemsObservable.next([]);
         this.subscribeNewItem();
         this.getItems();
 

@@ -102,7 +102,7 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
         takeUntil(this.destroyer)
       )
       .subscribe((values) => {
-        this.listObservable.next([]);
+        this.itemsObservable.next([]);
         this.subscribeNewItem();
         this.getItems();
 

@@ -19,18 +19,18 @@
 import { Directive, OnDestroy, OnInit } from '@angular/core';
 import {
   BehaviorSubject,
-  combineLatest,
-  merge,
-  Observable, of,
+  combineLatest, isObservable,
+  Observable,
+  of,
   shareReplay,
   Subject,
   Subscription,
   switchMap,
-  take
+  take,
+  throwError
 } from 'rxjs';
 import { debounceTime, filter, map, takeUntil, tap } from 'rxjs/operators';
 import { NetworkService } from '../../app/services/network.service';
-import { types as pst } from '@polkadapt/core';
 
 
 @Directive()
@@ -52,12 +52,12 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   newItemSubscription: Subscription | undefined;
 
   readonly latestItemObservable = new Subject<Observable<T>>();
-  readonly listObservable = new BehaviorSubject<Observable<T>[]>([]);
-  readonly itemsObservable: Observable<T[]>;
+  readonly itemsObservable = new BehaviorSubject<T[]>([]);
   readonly loadingObservable: Observable<boolean>;
   readonly loadingCounterObservable = new BehaviorSubject<number>(0);
   readonly pageLiveObservable = new BehaviorSubject<boolean>(true);
-  private lowestBlockNumber: Observable<number | null>;
+  readonly listAtEnd = new BehaviorSubject<boolean>(false);
+  readonly lowestBlockNumber: Observable<number | null>;
 
   get pageLive(): boolean {
     return this.pageLiveObservable.value;
@@ -84,28 +84,6 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
 
   protected constructor(private _ns: NetworkService) {
     this.loadingObservable = this.loadingCounterObservable.pipe(takeUntil(this.destroyer), map((c) => !!c));
-
-    // Generate the items for the table datasource without duplicates and sorted.
-    this.itemsObservable = this.listObservable.pipe(
-      takeUntil(this.destroyer),
-      switchMap((itemsObservables) => {
-        if (Array.isArray(itemsObservables) && itemsObservables.length > 0) {
-          return combineLatest(itemsObservables)
-        }
-        return of([]);
-      }),
-      map((list) => {
-        // Remove duplicates
-        let items = list.filter((a, i) =>
-          list.filter((b, ii) =>
-            i <= ii ? false : this.equalityCompareFn(a, b)
-          ).length === 0
-        )
-        // Sort items
-        const result = items.sort(this.sortCompareFn);
-        return result;
-      })
-    );
 
     this.lowestBlockNumber = this.itemsObservable.pipe(
       takeUntil(this.destroyer),
@@ -147,14 +125,14 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
     this.latestItemObservable
       .pipe(
         takeUntil(this.destroyer),
-        filter(() => this.pageLive)
-      )
-      .subscribe((item: Observable<T>) => {
-        const itemObservables = this.listObservable.value;
-        // Add the latest item to the list.
-        itemObservables.splice(0, 0, item);
-        this.listObservable.next(itemObservables);
-      });
+        filter(() => this.pageLive),
+        switchMap<Observable<T> | T, Observable<T>>((item) => isObservable(item) ? item : of(item))
+      ).subscribe((item: T) => {
+      const itemObservables = this.itemsObservable.value;
+      // Add the latest item to the list.
+      itemObservables.splice(0, 0, item);
+      this.itemsObservable.next(itemObservables);
+    });
   }
 
 
@@ -197,7 +175,9 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   }
 
 
-  getItems(untilBlockNumber?: number): void {
+  getItems(untilBlockNumber?: number): Observable<T[] | Observable<T>[]> {
+    let listAtEnd = false;
+
     if (typeof this.createGetItemsRequest !== 'function') {
       throw new Error('[getItems] createGetItemsRequest must be a function.')
     }
@@ -211,8 +191,12 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
       let itemsSubscription: Subscription;
 
       if (this.onDestroyCalled) {
-        throw new Error('[getItems] Request ignored, component is already in process of destruction.')
+        return throwError(() =>
+          new Error('[getItems] Request ignored, component is already in process of destruction.')
+        );
       }
+
+      const list = this.itemsObservable.value
 
       // Merge list with current list, sort the list.
       itemsSubscription = itemsObservable.pipe(
@@ -225,21 +209,44 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
           finalize: () => {
             this.loading--;
           }
-        })
+        }),
+        switchMap<any, Observable<T[]>>((itemsObservables) => {   // FIX TYPING (any)
+          if (Array.isArray(itemsObservables) && itemsObservables.length > 0) {
+            return (isObservable(itemsObservables[0]) ? combineLatest(itemsObservables) : of(itemsObservables)).pipe(
+            )
+          }
+          return of([]);
+        }),
+        map((items) => items.filter(
+          (a) => list.findIndex(
+            (b) => {
+              return isObservable(a) && isObservable(b) ? (a as Observable<T>) === (b as Observable<T>) : this.equalityCompareFn((a as T), (b as T))
+            }
+          ) === -1
+        )),
+        map((items) => items.sort(this.sortCompareFn))
       ).subscribe({
         next: (items) => {
           if (items.length >= this.listSize) {
+            listAtEnd = false;
             itemsSubscription.unsubscribe();
+          } else {
+            listAtEnd = true;
           }
 
-          const list = this.listObservable.value.concat(items);
-          this.listObservable.next(list);
+          this.itemsObservable.next([...list, ...items]);
+        },
+        complete: () => {
+          this.listAtEnd.next(listAtEnd);
         }
       });
+
+      return itemsObservable;
 
     } catch (e) {
       // Ignore for now...
       console.error(e);
+      return throwError(() => e);
     }
   }
 
@@ -254,7 +261,8 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
 
   resetList(): void {
     this.reset.next();
-    this.listObservable.next([])
+    this.itemsObservable.next([])
+    this.listAtEnd.next(false);
     this.unsubscribeNewItem();
   }
 

@@ -29,27 +29,21 @@ import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
-import { BehaviorSubject, combineLatest, from, Observable, of, ReplaySubject, Subject, take } from 'rxjs';
-import { AccountId, Balance, BalanceLock, BlockHash, Header } from '@polkadot/types/interfaces';
+import { BehaviorSubject, combineLatest, Observable, of, ReplaySubject, Subject, take } from 'rxjs';
 import {
   combineLatestWith,
-  debounceTime,
+  distinctUntilChanged,
+  filter,
   map,
   shareReplay,
   switchMap,
   takeUntil,
-  tap,
-  skip,
-  filter
+  tap
 } from 'rxjs/operators';
-import { AccountInfo } from '@polkadot/types/interfaces/system/types';
-import { AccountData } from '@polkadot/types/interfaces/balances/types';
 import { BN } from '@polkadot/util';
 import * as Highcharts from 'highcharts';
 import { VariablesService } from '../../../../../services/variables.service';
 import { PricingService } from '../../../../../services/pricing.service';
-import { Codec } from '@polkadot/types/types';
-import { ApiPromise, ApiRx } from '@polkadot/api';
 
 
 type HistoricalBalance = {
@@ -87,9 +81,10 @@ type ChartItem = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.AccountEvent> implements OnInit, OnChanges {
+  @Input() accountId: string;
+  @Input() accountHex: string | null;
 
-  @Input() accountId: any; // AccountId | null | undefined;
-  accountIdObservable = new ReplaySubject<AccountId | null | undefined>(1);
+  accountIdObservable = new ReplaySubject<string | null | undefined>(1);
 
   listSize = 200;
   blockNumberIdentifier = 'blockNumber';
@@ -110,10 +105,12 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   } // optional function, defaults to null
   updateFlag = false; // optional boolean
   oneToOneFlag = true; // optional boolean, defaults to false
+
+  chartLoading = 0;
   chartLoadingObservable = new BehaviorSubject<boolean>(false);
 
-  blockOne = new ReplaySubject<BlockHash>(1);
-  itemAtBlockOne = new Subject<BalancesItem | null>();
+  blockOne: Observable<string>;
+  itemAtBlockOne: Observable<BalancesItem | null>;
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
@@ -123,25 +120,16 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     super(ns);
 
     // Fetch the block hash for block 1.
-    this.pa.availableAdapters[this.network].substrateRpc.apiPromise.then((api) => {
-      api.rpc.chain.getBlockHash(1).subscribe((hash) => this.blockOne.next(hash))
-    }, () => {
-    })
-
-    // Load more items automatically.
-    this.listObservable.pipe(skip(1)).subscribe((items) => {
-      // Try to get at least the list size in items.
-      if (items.length <= this.listSize) {
-        this.loadMoreItems();
-      }
-    });
+    this.blockOne = (this.pa.run().getBlockHash(1) as unknown as Observable<Observable<string>>).pipe( // FIX TYPING
+      takeUntil(this.destroyer),
+      switchMap((obs) => obs.pipe(takeUntil(this.destroyer))),
+      shareReplay(1)
+    )
 
     // Start observables for data retrieval and conversion for table and charts.
-    this.pa.availableAdapters[this.network].substrateRpc.apiPromise.then((api) => {
-      this.createItemAtBlockOneObservable(api);
-      this.createBalancesObservable(api);
-      this.createChartDataObservable(api);
-    })
+    this.createItemAtBlockOneObservable();
+    this.createBalancesObservable();
+    this.createChartDataObservable();
   }
 
   ngOnInit(): void {
@@ -173,10 +161,15 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
 
   createGetItemsRequest(untilBlockNumber?: number): Observable<Observable<pst.AccountEvent>[]> {
-    if (this.accountId) {
+    const filters = this.filters;
+    if (untilBlockNumber) {
+      filters.blockRangeEnd = untilBlockNumber;
+    }
+
+    if (this.accountId && this.accountHex) {
       return this.pa.run(this.network).getEventsByAccount(
-        this.accountId.toHex(),
-        this.filters,
+        this.accountHex,
+        filters,
         this.listSize
       ).pipe(takeUntil(this.destroyer)) as any;  // TODO FIX ME!!
     }
@@ -185,9 +178,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
 
   createNewItemSubscription(): Observable<Observable<(pst.AccountEvent)>> {
-    if (this.accountId) {
+    if (this.accountId && this.accountHex) {
       return this.pa.run(this.network).subscribeNewEventByAccount(
-        this.accountId?.toHex(),
+        this.accountHex,
         this.filters
       ).pipe(takeUntil(this.destroyer)) as any;  // TODO FIX ME!!
     }
@@ -218,74 +211,78 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   }
 
 
-  createItemAtBlockOneObservable(api: ApiRx): void {
-    const runParams = {
-      chain: this.network,
-      adapters: ['substrate-rpc']
-    };
-
+  createItemAtBlockOneObservable(): void {
     // Check if an account has balances at block 1.
-    this.itemsObservable.subscribe({
-      complete: () => {
-        this.blockOne.pipe(
-          takeUntil(this.destroyer),
-          switchMap((hash) => {
-            if (this.accountId) {  // The items list is at its end. Check if at genesis there was an AccountInfo.
-              const timestampObservable = from(api.query.timestamp.now.at(hash)).pipe(
-                map((timestamp) => {
-                  if (timestamp.isEmpty === false) {
-                    return timestamp.toJSON() as EpochTimeStamp;
-                  }
-                  return null;
-                })
-              );
+    this.itemAtBlockOne = this.listAtEnd.pipe(
+      takeUntil(this.destroyer),
+      distinctUntilChanged(),
+      switchMap((listAtEnd) =>
+        listAtEnd
+          ? this.blockOne.pipe(
+            takeUntil(this.destroyer),
+            switchMap((hash) => {
+              let observable = this.balancesPerBlock.get(1);
+              if (observable) {
+                // Empty the observable before fetching a possible new value.
+                observable.next({});
+              }
 
-              return (from(api.query.system.account.at(hash, this.accountId)) as Observable<AccountInfo>).pipe(
-                combineLatestWith(timestampObservable),
-                map<[AccountInfo, number | null], BalancesItem | null>(([accountInfo, timestamp]) => {  // Check if the account exists.
-                  if (accountInfo && accountInfo.data) {
-                    if (accountInfo.data.free.add(accountInfo.data.reserved).isZero() === false) {
-                      if (this.balancesPerBlock.has(1) === false) {
-                        this.balancesPerBlock.set(1, new BehaviorSubject<HistoricalBalance>({}));
+              if (this.accountId && hash) {  // The items list is at its end. Check if at genesis there was an AccountInfo.
+                const timestampObservable = this.pa.run({observableResults: false}).getTimestamp(hash);
+
+                return this.pa.run({observableResults: false}).getAccount(this.accountId, hash ? hash : undefined).pipe(
+                  takeUntil(this.destroyer),
+                  combineLatestWith(timestampObservable),
+                  map(([accountInfo, timestamp]) => {  // Check if the account exists.
+
+                    if (accountInfo && accountInfo.data) {
+                      if (accountInfo.data.free && accountInfo.data.reserved && accountInfo.data.free.add(accountInfo.data.reserved).isZero() === false) {
+                        if (!observable) {
+                          observable = new BehaviorSubject<HistoricalBalance>({})
+                          this.balancesPerBlock.set(1, observable);
+                        }
                         this.getBalanceAtBlock(1);
-                      }
 
-                      return {
-                        event: {blockNumber: 1, blockDatetime: timestamp},
-                        balances: this.balancesPerBlock.get(1)
-                      } as BalancesItem;
+                        return {
+                          event: {blockNumber: 1, blockDatetime: timestamp},
+                          balances: observable
+                        } as unknown as BalancesItem;
+                      }
                     }
-                  }
-                  return null;
-                })
-              )
-            }
-            return of(null);
-          })
-        ).subscribe(() => this.itemAtBlockOne)
-      }
-    });
+                    return null;
+                  })
+                )
+              }
+
+              return of(null);
+            }),
+            shareReplay(1)
+          )
+          : of(null)
+      )
+    )
   }
 
 
-  createBalancesObservable(api: ApiRx): void {
+  createBalancesObservable(): void {
     this.balancesObservable = this.itemsObservable.pipe(
-      take(4), // TEMP FIX
       takeUntil(this.destroyer),
-      tap<pst.AccountEvent[]>(() => this.loading++),
+      tap<pst.AccountEvent[]>(() => {
+        this.loading++;
+      }),
       map<pst.AccountEvent[], pst.AccountEvent[]>((items) => { // Filter out double blocks
         return items.filter((item) => items.find((other) => other.blockNumber === item.blockNumber) === item)
       }),
       map<pst.AccountEvent[], BalancesItem[]>((items) => {
         const result = items
+          .filter((item) => item !== null)
           .map((event) => {
             if (this.balancesPerBlock.has(event.blockNumber) === false) {
               this.balancesPerBlock.set(event.blockNumber, new BehaviorSubject<HistoricalBalance>({}));
               this.getBalanceAtBlock(event.blockNumber);
             }
             return {event: event, balances: this.balancesPerBlock.get(event.blockNumber)} as BalancesItem;
-          })
-          .filter((item) => item !== null);
+          });
         return result as BalancesItem[];
       }),
       tap<BalancesItem[]>(() => this.loading--),
@@ -296,97 +293,120 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         }
         return balanceItems;
       }),
-      shareReplay(1)
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      })
     );
   }
 
 
-  createChartDataObservable(api: ApiRx): void {
-    const runParams = {
-      chain: this.network,
-      adapters: ['substrate-rpc']
-    };
+  createChartDataObservable(): void {
+
+    const latestItemObservable = this.pa.run({observableResults: false}).getFinalizedHead().pipe(
+      takeUntil(this.destroyer),
+      take(1),
+      switchMap((hash) =>
+        combineLatest([
+          this.pa.run({observableResults: false}).getAccount(this.accountId, hash as string).pipe(
+            takeUntil(this.destroyer),
+            take(1)
+          ),
+          this.pa.run({observableResults: false}).getHeader(hash as string).pipe(
+            takeUntil(this.destroyer),
+            take(1),
+            map((header: pst.Header) => header.number as number)
+          ),
+          this.pa.run({observableResults: false}).getTimestamp(hash as string).pipe(
+            takeUntil(this.destroyer),
+            take(1)
+          )
+        ])
+      ),
+      map<[pst.Account, number, number], BalancesItem | null>(([accountInfo, blockNumber, timestamp]) => {
+        if (accountInfo && accountInfo.data) {
+          if (accountInfo.data.free && accountInfo.data.reserved && accountInfo.data.free.add(accountInfo.data.reserved).isZero() === false) {
+            let observable = this.balancesPerBlock.get(blockNumber);
+
+            if (!observable) {
+              observable = new BehaviorSubject({});
+              this.balancesPerBlock.set(blockNumber, observable);
+              this.getBalanceAtBlock(blockNumber);
+            }
+
+            const result = {
+              event: {
+                blockNumber: blockNumber,
+                blockDatetime: timestamp
+              },
+              balances: observable
+            } as unknown as BalancesItem; // Force this object to be a BalancesItem
+            return result;
+          }
+        }
+        return null;
+      })
+    )
 
     this.chartDataObservable = this.balancesObservable.pipe(
       takeUntil(this.destroyer),
-      tap<BalancesItem[]>(() => this.chartLoadingObservable.next(true)),
+      tap<BalancesItem[]>((items) => {
+        this.chartLoadingObservable.next(true);
+        this.updateFlag = false;
+      }),
       combineLatestWith( // Check if the account has a balance at the latest block height.
-        api.rpc.chain.getFinalizedHead().pipe(
-          switchMap((hash) =>
-              (api.query.system.account.at(hash, this.accountId) as Observable<AccountInfo>)
-              .pipe(
-                combineLatestWith(
-                  api.rpc.chain.getHeader(hash).pipe(
-                    map<Header, number>((header) => header.number.toJSON() as number)
-                  ),
-                  api.query.timestamp.now.at(hash).pipe(
-                    map<Codec, number>((timestamp) => timestamp.toJSON() as EpochTimeStamp)
-                  )
-                )
-              )
-          ),
-          map<[AccountInfo, number, number], BalancesItem | null>(([accountInfo, blockNumber, timestamp]) => {
-            if (accountInfo && accountInfo.data) {
-              if (accountInfo.data.free.add(accountInfo.data.reserved).isZero() === false) {
-                if (this.balancesPerBlock.has(blockNumber) === false) {
-                  this.balancesPerBlock.set(blockNumber, new BehaviorSubject<HistoricalBalance>({}));
-                  this.getBalanceAtBlock(blockNumber);
-                }
-
-                return {
-                  event: {blockNumber: blockNumber, blockDatetime: timestamp},
-                  balances: this.balancesPerBlock.get(blockNumber)
-                } as unknown as BalancesItem; // Force this object to be a BalancesItem
-              }
-            }
-            return null;
-          })
-        )
+        latestItemObservable
       ),
       map<[BalancesItem[], BalancesItem | null], BalancesItem[]>(([balanceItems, latestItem]) => {
         return latestItem ? [latestItem, ...balanceItems] : balanceItems;
       }),
       switchMap<BalancesItem[], Observable<(ChartItem | null)[]>>(
-        (bis): Observable<(ChartItem | null)[]> => combineLatest(
-          bis.map(
-            (bi) => combineLatest([of(bi.event), bi.balances]).pipe(
-              filter(([event, balances]) => Boolean(event && balances)),
-              map<[pst.AccountEvent, HistoricalBalance], ChartItem | null>(([event, balances]): ChartItem | null => {
-                if (this.chartItemPerBlock.has(event.blockNumber)) {
-                  return this.chartItemPerBlock.get(event.blockNumber) as ChartItem;
-                }
-
-                if (event && event.blockDatetime && balances) {
-                  const total = this.convertBNforChart(balances.total);
-                  const free = this.convertBNforChart(balances.free);
-                  const reserved = this.convertBNforChart(balances.reserved);
-                  const locked = this.convertBNforChart(balances.locked);
-                  const transferable = this.convertBNforChart(balances.transferable);
-                  const date = new Date(event.blockDatetime);
-                  if (total !== null) {
-                    const chartItem = {
-                      x: date.getTime(),
-                      y: total !== null ? parseFloat(total.split('.').map((b, i) => i === 1 ? b.substring(0, 2) : b).join('.')) : null,  // Only two decimals in the chart
-                      blockNumber: event.blockNumber,
-                      total: total,
-                      free: free,
-                      reserved: reserved,
-                      locked: locked,
-                      transferable: transferable,
-                      blockDate: date,
-                      utcStartOfDay: Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
-                    }
-                    this.chartItemPerBlock.set(event.blockNumber, chartItem);
-                    return chartItem;
+        (bis): Observable<(ChartItem | null)[]> => {
+          return combineLatest(
+            bis.map(
+              (bi) => of(bi.event).pipe(
+                combineLatestWith(bi.balances.pipe(filter((b) => Object.keys(b).length > 0))),
+                filter(([event, balances]) => Boolean(event && balances)),
+                map<[pst.AccountEvent, HistoricalBalance], ChartItem | null>(([event, balances]): ChartItem | null => {
+                  if (this.chartItemPerBlock.has(event.blockNumber)) {
+                    return this.chartItemPerBlock.get(event.blockNumber) as ChartItem;
                   }
-                }
-                return null;
-              })
+
+                  if (event && event.blockDatetime && balances) {
+                    const total = this.convertBNforChart(balances.total);
+                    const free = this.convertBNforChart(balances.free);
+                    const reserved = this.convertBNforChart(balances.reserved);
+                    const locked = this.convertBNforChart(balances.locked);
+                    const transferable = this.convertBNforChart(balances.transferable);
+                    const date = new Date(event.blockDatetime);
+
+                    if (total !== null) {
+                      const chartItem = {
+                        x: date.getTime(),
+                        y: total !== null ? parseFloat(total.split('.').map((b, i) => i === 1 ? b.substring(0, 2) : b).join('.')) : null,  // Only two decimals in the chart
+                        blockNumber: event.blockNumber,
+                        total: total,
+                        free: free,
+                        reserved: reserved,
+                        locked: locked,
+                        transferable: transferable,
+                        blockDate: date,
+                        utcStartOfDay: Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+                      }
+                      this.chartItemPerBlock.set(event.blockNumber, chartItem);
+                      return chartItem;
+                    }
+                  }
+                  return null;
+                })
+              )
             )
           )
-        )
+        }
       ),
-      map<(ChartItem | null)[], ChartItem[]>((items) => items.filter((i) => i !== null).sort((a, b) => +a!.blockDate - +b!.blockDate) as ChartItem[]),
+      map<(ChartItem | null)[], ChartItem[]>((items) => {
+        return items.filter((i) => i !== null).sort((a, b) => +a!.blockDate - +b!.blockDate) as ChartItem[]
+      }),
       combineLatestWith(this.pricing.dailyHistoricPrices),
       map<[ChartItem[], ([number, number][] | undefined)], Highcharts.Options>(([items, historicPrices]): Highcharts.Options => {
         let pointFormat = '<b>{point.x:%Y-%m-%d %H:%M:%S}</b><br>' +
@@ -566,89 +586,39 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   }
 
 
-  async getBalanceAtBlock(blockNumber: number): Promise<void> {
-    return;
-    // TODO FIX ME!
-    // this.loading++;
-    //
-    // const observable = this.balancesPerBlock.get(blockNumber)!;
-    // const runParams = {
-    //   chain: this.network,
-    //   adapters: ['substrate-rpc']
-    // };
-    //
-    // let balances: HistoricalBalance = {};
-    //
-    // // Fetch the blockHash for the given block number. And the accountInfo at the time of this blockHash.
-    // const api = await this.pa.availableAdapters[this.network].substrateRpc.apiPromise;
-    // let blockHash: BlockHash;
-    // try {
-    //   blockHash = await api.rpc.chain.getBlockHash(blockNumber);
-    // } catch (e) {
-    //   this.loading--;
-    //   throw (`[HistoricalBalance] Could not fetch block hash for block ${blockNumber}. ${e}`);
-    // }
-    //
-    // let systemAccount: AccountInfo | null = null;
-    // try {
-    //   systemAccount = await api.query.system.account.at(blockHash, this.accountId);
-    //   if (systemAccount && systemAccount.data) {
-    //     balances.free = systemAccount.data.free;
-    //     balances.reserved = systemAccount.data.reserved;
-    //     balances.total = systemAccount.data.free.add(systemAccount.data.reserved);
-    //     balances.transferable = systemAccount.data.free.sub(systemAccount.data.feeFrozen);
-    //     balances.locked = systemAccount.data.feeFrozen;
-    //
-    //     this.loading--;
-    //     observable.next(balances);
-    //     return;
-    //   }
-    // } catch (e) {
-    //   // Ignore.
-    // }
-    //
-    // // FALLBACK if system account did not work or does not exist.
-    //
-    // // Fetch accountInfo, staking information and session information at blockHash.
-    // const [accountData, locks, freeBalance, reservedBalance] = (await Promise.allSettled([
-    //   api.query.balances.account.at(blockHash, this.accountId),
-    //   api.query.balances.locks.at(blockHash, this.accountId),
-    //   api.query.balances.freeBalance.at(blockHash, this.accountId),
-    //   api.query.balances.reservedBalance.at(blockHash, this.accountId)
-    // ])).map((p) => p.status === 'fulfilled' ? p.value : null) as
-    //   [AccountData | null, BalanceLock[] | null, Balance | null, Balance | null];
-    //
-    // if (accountData) {
-    //   // Possible accountData will be a generated object with all zero balances.
-    //   balances.free = accountData.free;
-    //   balances.reserved = accountData.reserved;
-    //   balances.total = accountData.free.add(accountData.reserved);
-    //   balances.transferable = accountData.free.sub(accountData.feeFrozen);
-    //   balances.locked = accountData.feeFrozen;
-    //
-    // } else {
-    //   // Check if freeBalance or reservedBalance exist if balances.account was not available.
-    //   if (freeBalance) {
-    //     balances.free = freeBalance;
-    //   }
-    //   if (reservedBalance) {
-    //     balances.reserved = reservedBalance;
-    //   }
-    //   if (freeBalance && reservedBalance) {
-    //     balances.total = freeBalance.add(reservedBalance);
-    //   }
-    //   if (locks && locks.length) {
-    //     locks.sort((a, b) => b.amount.sub(a.amount).isNeg() ? -1 : 1);
-    //     balances.locked = locks[0].amount;
-    //
-    //     if (freeBalance) {
-    //       balances.transferable = freeBalance.sub(locks[0].amount);
-    //     }
-    //   }
-    // }
-    //
-    // this.loading--;
-    // observable.next(balances);
+  getBalanceAtBlock(blockNumber: number): Observable<HistoricalBalance> {
+    const observable = this.balancesPerBlock.get(blockNumber)!;
+    if (observable) {
+      // Fetch the blockHash for the given block number. And the accountInfo at the time of this blockHash.
+      this.pa.run({observableResults: false}).getBlockHash(blockNumber).pipe(
+        takeUntil(this.destroyer),
+        take(1),
+        tap({
+          subscribe: () => {
+            this.loading++;
+          },
+          finalize: () => {
+            this.loading--;
+          }
+        }),
+        switchMap((hash) =>
+          this.pa.run({observableResults: false}).getAccount(this.accountId, hash).pipe(
+            takeUntil(this.destroyer),
+            take(1) // TODO add filter for when all data is available that is needed.
+          )
+        ),
+        map((account) => ({
+          free: account?.data?.free || null,
+          reserved: account?.data?.reserved || null,
+          total: account?.data?.free && account?.data?.reserved && account.data.free.add(account.data.reserved) || null,
+          transferable: account?.data?.free && account?.data?.feeFrozen && account.data.free.sub(account.data.feeFrozen) || null,
+          locked: account?.data?.feeFrozen || null
+        }) as HistoricalBalance)
+      ).subscribe((val) => {
+        observable.next(val);
+      });
+    }
+    return observable;
   }
 
   convertBNforChart(val: BN | number | undefined | null): string | null {
@@ -675,5 +645,12 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
   async loadMoreItems(): Promise<void> {
     // Keep the item list in live mode. We don't expect items coming in on every block.
+    this.lowestBlockNumber.pipe(
+      take(1)
+    ).subscribe((blockNumber) => {
+      if (blockNumber !== null) {
+        this.getItems(blockNumber);
+      }
+    });
   }
 }

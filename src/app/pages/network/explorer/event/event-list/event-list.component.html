@@ -173,7 +173,7 @@
   <mat-progress-bar mode="indeterminate"></mat-progress-bar>
 </div>
 
-<div>
+<div *ngIf="(listAtEnd | async) === false" >
  <button [disabled]="(loadingObservable | async) === true" mat-stroked-button aria-label="Next" (click)="loadMoreItems()">
     Show More
  </button>

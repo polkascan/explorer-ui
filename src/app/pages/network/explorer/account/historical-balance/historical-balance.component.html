@@ -1,12 +1,12 @@
 <ng-container *ngIf="(networkProperties | async) as props">
   <mat-tab-group dynamicHeight animationDuration="0ms">
     <mat-tab label="Chart">
-      <ng-container [ngSwitch]="(loadingObservable | async) || (chartLoadingObservable | async)">
-        <p *ngSwitchCase="true">Loading chart...</p>
+      <div *ngIf="(chartDataObservable | async) as chartOptions" class="historical-balance-chart">
 
-        <ng-container *ngSwitchDefault>
-          <div *ngIf="(chartDataObservable | async) as chartOptions"
-               class="historical-balance-chart">
+        <ng-container [ngSwitch]="(loadingObservable | async) || (chartLoadingObservable | async)">
+          <p *ngSwitchCase="true">Loading chart...</p>
+
+          <ng-container *ngSwitchDefault>
             <highcharts-chart class="historical-balance-highcharts-chart"
                               [Highcharts]="Highcharts"
 
@@ -19,9 +19,9 @@
 
                               style="width: 1220px; height: 300px; display: block; max-width: 100%;">
             </highcharts-chart>
-          </div>
+          </ng-container>
         </ng-container>
-      </ng-container>
+      </div>
     </mat-tab>
 
     <mat-tab label="Table">
@@ -100,8 +100,9 @@
   </div>
 
 
- <button [disabled]="(loadingObservable | async) === true" mat-stroked-button aria-label="Next" (click)="loadMoreItems()">
+  <button *ngIf="(listAtEnd | async) === false" [disabled]="(loadingObservable | async) === true" mat-stroked-button aria-label="Next"
+          (click)="loadMoreItems()">
     Show More
- </button>
+  </button>
 
 </ng-container>

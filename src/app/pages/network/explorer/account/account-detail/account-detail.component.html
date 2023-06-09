@@ -387,7 +387,7 @@
 
     <mat-tab label="Balance History" *ngIf="id | async as accountId">
       <ng-container *ngIf="loadedTabs[3]">
-        <app-historical-balance [accountId]="accountId"></app-historical-balance>
+        <app-historical-balance [accountId]="accountId" [accountHex]="accountAsHex | async"></app-historical-balance>
       </ng-container>
     </mat-tab>
 
