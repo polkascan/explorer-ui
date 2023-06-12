@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,11 @@
  */
 
 import { Injectable } from '@angular/core';
-import { Polkadapt, PolkadaptRunConfig } from '@polkadapt/core';
+import { Polkadapt, PolkadaptRunArgument } from '@polkadapt/core';
 import * as substrate from '@polkadapt/substrate-rpc';
 import * as explorer from '@polkadapt/polkascan-explorer';
 import * as coingecko from '@polkadapt/coingecko';
+import * as subsquid from '@polkadapt/subsquid';
 import { AppConfig } from '../app-config';
 import { BehaviorSubject, Subject, Subscription, throttleTime } from 'rxjs';
 
@@ -31,7 +32,7 @@ type AdapterName = 'substrateRpc' | 'explorerApi' | 'coingeckoApi';
 @Injectable({providedIn: 'root'})
 export class PolkadaptService {
   polkadapt: Polkadapt<AugmentedApi>;
-  run: (config?: PolkadaptRunConfig | string) => AugmentedApi;
+  run: (config?: PolkadaptRunArgument | string) => AugmentedApi;
   substrateRpcUrls = new BehaviorSubject<string[] | null>(null);
   substrateRpcUrl = new BehaviorSubject<string | null>(null);
   substrateRpcConnected = new BehaviorSubject(false);
@@ -52,7 +53,8 @@ export class PolkadaptService {
     [network: string]: {
       substrateRpc: substrate.Adapter,
       explorerApi: explorer.Adapter,
-      coingeckoApi: coingecko.Adapter
+      coingeckoApi: coingecko.Adapter,
+      subsquid: subsquid.Adapter
     }
   } = {};
   badAdapterUrls: { [network: string]: { [K in AdapterName]: string[] } } = {};
@@ -100,6 +102,11 @@ export class PolkadaptService {
         coingeckoApi: new coingecko.Adapter({
           chain: network,
           apiEndpoint: 'https://api.coingecko.com/api/v3/'
+        }),
+        subsquid: new subsquid.Adapter({
+          chain: network,
+          archiveUrl: '',
+          giantSquidExplorerUrl: ''
         })
       };
       this.badAdapterUrls[network] = {
@@ -186,14 +193,6 @@ export class PolkadaptService {
     }
 
     const cAdapter = this.availableAdapters[network].coingeckoApi;
-    try {
-      await cAdapter.isReady;
-    } catch (e) {
-      // Coingecko adapter could not initialize.
-      // For now we unregister the adapter.
-      this.polkadapt.unregister(cAdapter);
-      console.error('Coingecko adapter could not be initialized, it is now unregistered from PolkAdapt.', e);
-    }
 
     // Reconnect on sleep and/or online event.
     if (this.sleepDetectorWorker) {
@@ -205,9 +204,6 @@ export class PolkadaptService {
     this.triggerReconnectSubscription = this.triggerReconnect
       .pipe(throttleTime(5000))
       .subscribe(() => this.forceReconnect());
-
-    // Wait until PolkADAPT has initialized at least the substrate rpc adapters.
-    await sAdapter.isReady;
   }
 
   clearNetwork(): void {

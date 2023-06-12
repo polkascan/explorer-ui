@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -82,7 +82,7 @@ export class PricingService {
         const date = new Date().getUTCDate();
         if (storedDate !== date) {
           storedDate = date;
-          void this.addLatestHistoricPrice(this.interval);
+          this.addLatestHistoricPrice(this.interval);
         }
       }
     }, 60000);
@@ -99,46 +99,34 @@ export class PricingService {
 
   async fetchAndSetPrice(interval: number): Promise<void> {
     try {
-      const adapterAvailable = await this.pa.availableAdapters[this.network as string].coingeckoApi.isReady;
-      if (adapterAvailable) {
-        const price = this.pa.run({chain: this.network as string, observableResults: false}).prices.getPrice(this.currency as string) as unknown as Observable<number>;
-        price.subscribe((price) => {
-          if (this.interval === interval) { // Check if interval has not been destroyed.
-            this.price.next(price as number);
-          }
-        })
-      }
+      const price = this.pa.run({chain: this.network as string, observableResults: false}).prices.getPrice(this.currency as string) as unknown as Observable<number>;
+      price.subscribe((price) => {
+        if (this.interval === interval) { // Check if interval has not been destroyed.
+          this.price.next(price as number);
+        }
+      })
     } catch (e) {
       this.price.next(null);
       // console.error(e);
     }
   }
 
-  async fetchDailyHistoricPrices(interval: number): Promise<void> {
-    try {
-      const adapterAvailable = await this.pa.availableAdapters[this.network as string].coingeckoApi.isReady;
-      if (adapterAvailable) {
-        const history = await this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 'max');
-        if (this.interval === interval && history) { // Check if interval has not been destroyed.
-          this.dailyHistoricPrices.next(history);
-        }
+  fetchDailyHistoricPrices(interval: number) {
+    this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 'max').subscribe(history => {
+      if (this.interval === interval && history) { // Check if interval has not been destroyed.
+        this.dailyHistoricPrices.next(history);
       }
-    } catch (e) {
-      console.error(e);
-    }
+    });
   }
 
-  async addLatestHistoricPrice(interval: number): Promise<void | number> {
-    const adapterAvailable = await this.pa.availableAdapters[this.network as string].coingeckoApi.isReady;
-    if (adapterAvailable) {
-      const history = await this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 1);
+  addLatestHistoricPrice(interval: number) {
+    this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 1).subscribe(history => {
       if (this.interval === interval && history) { // Check if interval has not been destroyed.
         const prices = this.dailyHistoricPrices.value;
         if (prices.find((p) => p[0] === history[0][0]) === undefined) {
           this.dailyHistoricPrices.next([...prices, history[0]]);
-          return history[0][0];
         }
       }
-    }
+    });
   }
 }
