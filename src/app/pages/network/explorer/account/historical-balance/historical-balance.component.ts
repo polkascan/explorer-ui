@@ -86,7 +86,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
   accountIdObservable = new ReplaySubject<string | null | undefined>(1);
 
-  listSize = 200;
+  listSize = 400;
   blockNumberIdentifier = 'blockNumber';
 
   balancesPerBlock = new Map<number, BehaviorSubject<HistoricalBalance>>();
@@ -123,7 +123,10 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     this.blockOne = (this.pa.run().getBlockHash(1) as unknown as Observable<Observable<string>>).pipe( // FIX TYPING
       takeUntil(this.destroyer),
       switchMap((obs) => obs.pipe(takeUntil(this.destroyer))),
-      shareReplay(1)
+      shareReplay({
+        bufferSize: 1,
+        refCount: false
+      })
     )
 
     // Start observables for data retrieval and conversion for table and charts.
@@ -614,8 +617,8 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           transferable: account?.data?.free && account?.data?.feeFrozen && account.data.free.sub(account.data.feeFrozen) || null,
           locked: account?.data?.feeFrozen || null
         }) as HistoricalBalance)
-      ).subscribe((val) => {
-        observable.next(val);
+      ).subscribe({
+        next: (val) => observable.next(val)
       });
     }
     return observable;
@@ -647,9 +650,11 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     // Keep the item list in live mode. We don't expect items coming in on every block.
     this.lowestBlockNumber.pipe(
       take(1)
-    ).subscribe((blockNumber) => {
-      if (blockNumber !== null) {
-        this.getItems(blockNumber);
+    ).subscribe({
+      next: (blockNumber) => {
+        if (blockNumber !== null) {
+          this.getItems(blockNumber);
+        }
       }
     });
   }

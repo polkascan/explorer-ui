@@ -65,7 +65,7 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   loading = new BehaviorSubject<boolean>(false);
 
   private reset: Subject<void> = new Subject();
-  private destroyer: Subject<void> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(private pa: PolkadaptService,
               private ns: NetworkService,
@@ -123,25 +123,27 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
         }
       }),
       switchMap((observables) => combineLatest(observables))
-    ).subscribe((items) => {
-      const merged = [...events, ...items.filter((event) => {
-        const isDuplicate = events.some((item) =>
-          event.blockNumber === item.blockNumber
+    ).subscribe({
+      next: (items) => {
+        const merged = [...events, ...items.filter((event) => {
+          const isDuplicate = events.some((item) =>
+            event.blockNumber === item.blockNumber
             && event.eventIdx === item.eventIdx
             && event.attributeName === item.attributeName
-        );
-        return !isDuplicate;
-      })];
-      merged.sort((a, b) => (b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx));
+          );
+          return !isDuplicate;
+        })];
+        merged.sort((a, b) => (b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx));
 
 
-      if (events.length > listSize) {
-        // List size has been reached. List is done, limit to listsize.
-        events.length = listSize;
-        subscription.unsubscribe();
+        if (events.length > listSize) {
+          // List size has been reached. List is done, limit to listsize.
+          events.length = listSize;
+          subscription.unsubscribe();
+        }
+
+        this.events.next(merged);
       }
-
-      this.events.next(merged);
     });
 
     this.pa.run({observableResults: false}).subscribeNewEventByAccount(idHex, filterParams).pipe(

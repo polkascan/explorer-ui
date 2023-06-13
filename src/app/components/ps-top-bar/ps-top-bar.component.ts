@@ -47,7 +47,7 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
   networks: string[];
   networkLabel = new BehaviorSubject('');
 
-  private destroyer = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(private host: ElementRef,
               private renderer: Renderer2,
@@ -67,17 +67,19 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer),
         distinctUntilChanged()
       )
-      .subscribe((network) => {
-        if (network) {
-          this.networkLabel.next('Network');
-        } else {
-          this.networkLabel.next(network);
+      .subscribe({
+        next: (network) => {
+          if (network) {
+            this.networkLabel.next('Network');
+          } else {
+            this.networkLabel.next(network);
+          }
         }
       });
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
   }
 
   setNetwork(network: string): void {

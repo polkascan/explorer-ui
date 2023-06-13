@@ -19,15 +19,15 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { debounceTime, distinctUntilChanged, filter, first, map, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
-import {u8aToHex} from "@polkadot/util";
-import {decodeAddress} from "@polkadot/util-crypto";
+import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs';
+import { u8aToHex } from "@polkadot/util";
+import { decodeAddress } from "@polkadot/util-crypto";
 
 
 @Component({
@@ -89,32 +89,35 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
         parseInt(params.get('blockRangeEnd') as string, 10) || '',
         params.get('address') as string || ''
       ] as [number | '', string, string, Date | '', Date | '', number | '', number | '', string])
-    ).subscribe(([specVersion, pallet, eventName, dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd, address]) => {
-      if (pallet !== this.palletControl.value) {
-        this.palletControl.setValue(pallet);
-      }
-      if (eventName !== this.eventNameControl.value) {
-        this.eventNameControl.setValue(eventName);
-      }
-      if (specVersion !== this.specVersionControl.value) {
-        this.specVersionControl.setValue(specVersion);
-      }
-      const oldDateStart = this.dateRangeBeginControl.value;
-      if ((dateRangeBegin && dateRangeBegin.getTime() || '') !== (oldDateStart && oldDateStart.getTime() || '')) {
-        this.dateRangeBeginControl.setValue(dateRangeBegin);
-      }
-      const oldDateEnd = this.dateRangeEndControl.value;
-      if ((dateRangeEnd && dateRangeEnd.getTime() || '') !== (oldDateEnd && oldDateEnd.getTime() || '')) {
-        this.dateRangeEndControl.setValue(dateRangeEnd);
-      }
-      if (blockRangeBegin !== this.blockRangeBeginControl.value) {
-        this.blockRangeBeginControl.setValue(blockRangeBegin);
-      }
-      if (blockRangeEnd !== this.blockRangeEndControl.value) {
-        this.blockRangeEndControl.setValue(blockRangeEnd);
-      }
-      if (address !== this.addressControl.value) {
-        this.addressControl.setValue(address);
+    ).subscribe({
+      next: ([specVersion, pallet, eventName, dateRangeBegin, dateRangeEnd,
+               blockRangeBegin, blockRangeEnd, address]) => {
+        if (pallet !== this.palletControl.value) {
+          this.palletControl.setValue(pallet);
+        }
+        if (eventName !== this.eventNameControl.value) {
+          this.eventNameControl.setValue(eventName);
+        }
+        if (specVersion !== this.specVersionControl.value) {
+          this.specVersionControl.setValue(specVersion);
+        }
+        const oldDateStart = this.dateRangeBeginControl.value;
+        if ((dateRangeBegin && dateRangeBegin.getTime() || '') !== (oldDateStart && oldDateStart.getTime() || '')) {
+          this.dateRangeBeginControl.setValue(dateRangeBegin);
+        }
+        const oldDateEnd = this.dateRangeEndControl.value;
+        if ((dateRangeEnd && dateRangeEnd.getTime() || '') !== (oldDateEnd && oldDateEnd.getTime() || '')) {
+          this.dateRangeEndControl.setValue(dateRangeEnd);
+        }
+        if (blockRangeBegin !== this.blockRangeBeginControl.value) {
+          this.blockRangeBeginControl.setValue(blockRangeBegin);
+        }
+        if (blockRangeEnd !== this.blockRangeEndControl.value) {
+          this.blockRangeEndControl.setValue(blockRangeEnd);
+        }
+        if (address !== this.addressControl.value) {
+          this.addressControl.setValue(address);
+        }
       }
     });
 
@@ -123,54 +126,58 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
         debounceTime(100),  // To make sure eventNameControl reset has taken place
         takeUntil(this.destroyer)
       )
-      .subscribe((values) => {
-        this.itemsObservable.next([]);
-        this.subscribeNewItem();
-        this.getItems();
+      .subscribe({
+        next: (values) => {
+          this.itemsObservable.next([]);
+          this.subscribeNewItem();
+          this.getItems();
 
-        const queryParams: Params = {};
-        if (values.pallet) {
-          queryParams.pallet = values.pallet;
-        }
-        if (values.eventName) {
-          queryParams.eventName = values.eventName;
-        }
-        if (values.specVersion) {
-          queryParams.runtime = values.specVersion;
-        }
-        if (values.dateRangeBegin) {
-          const d = new Date(values.dateRangeBegin.getTime() - values.dateRangeBegin.getTimezoneOffset() * 60000)
-          queryParams.dateRangeBegin = d.toISOString().substring(0, 10);
-        }
-        if (values.dateRangeEnd) {
-          const d = new Date(values.dateRangeEnd.getTime() - values.dateRangeEnd.getTimezoneOffset() * 60000)
-          queryParams.dateRangeEnd = d.toISOString().substring(0, 10);
-        }
-        if (values.blockRangeBegin) {
-          queryParams.blockRangeBegin = values.blockRangeBegin;
-        }
-        if (values.blockRangeEnd) {
-          queryParams.blockRangeEnd = values.blockRangeEnd;
-        }
-        if (values.address) {
-          queryParams.address = values.address;
-        }
+          const queryParams: Params = {};
+          if (values.pallet) {
+            queryParams.pallet = values.pallet;
+          }
+          if (values.eventName) {
+            queryParams.eventName = values.eventName;
+          }
+          if (values.specVersion) {
+            queryParams.runtime = values.specVersion;
+          }
+          if (values.dateRangeBegin) {
+            const d = new Date(values.dateRangeBegin.getTime() - values.dateRangeBegin.getTimezoneOffset() * 60000)
+            queryParams.dateRangeBegin = d.toISOString().substring(0, 10);
+          }
+          if (values.dateRangeEnd) {
+            const d = new Date(values.dateRangeEnd.getTime() - values.dateRangeEnd.getTimezoneOffset() * 60000)
+            queryParams.dateRangeEnd = d.toISOString().substring(0, 10);
+          }
+          if (values.blockRangeBegin) {
+            queryParams.blockRangeBegin = values.blockRangeBegin;
+          }
+          if (values.blockRangeEnd) {
+            queryParams.blockRangeEnd = values.blockRangeEnd;
+          }
+          if (values.address) {
+            queryParams.address = values.address;
+          }
 
-        this.router.navigate(['.'], {
-          relativeTo: this.route,
-          queryParams
-        });
+          this.router.navigate(['.'], {
+            relativeTo: this.route,
+            queryParams
+          });
+        }
       });
 
     this.addressControl.valueChanges
       .pipe(
         takeUntil(this.destroyer)
       )
-      .subscribe((address) => {
-        this.specVersionControl.reset('', {emitEvent: false});
-        this.eventFilters.clear();
-        if (this.network) {
-          this.loadEventFilters(this.network);
+      .subscribe({
+        next: (address) => {
+          this.specVersionControl.reset('', {emitEvent: false});
+          this.eventFilters.clear();
+          if (this.network) {
+            this.loadEventFilters(this.network);
+          }
         }
       });
 
@@ -178,12 +185,14 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
       .pipe(
         takeUntil(this.destroyer)
       )
-      .subscribe((specVersion) => {
-        this.palletControl.reset('', {emitEvent: false});
-        this.eventNameControl.reset('', {emitEvent: false});
-        this.eventFilters.clear();
-        if (this.network) {
-          this.loadEventFilters(this.network, specVersion || undefined);
+      .subscribe({
+        next: (specVersion) => {
+          this.palletControl.reset('', {emitEvent: false});
+          this.eventNameControl.reset('', {emitEvent: false});
+          this.eventFilters.clear();
+          if (this.network) {
+            this.loadEventFilters(this.network, specVersion || undefined);
+          }
         }
       });
 
@@ -191,8 +200,10 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
       .pipe(
         takeUntil(this.destroyer)
       )
-      .subscribe(() => {
-        this.eventNameControl.reset('', {emitEvent: false});
+      .subscribe({
+        next: () => {
+          this.eventNameControl.reset('', {emitEvent: false});
+        }
       });
 
     super.ngOnInit();
@@ -241,20 +252,24 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
       // Load all runtime versions and set the runtime control to the version in the route.
       this.runtimesSubscription = this.rs.getRuntimes(network).pipe(
         takeUntil(this.destroyer)
-      ).subscribe(runtimes => {
-        this.specVersions.next(runtimes.map(r => r.specVersion));
-        const params = this.route.snapshot.queryParamMap;
-        const specVersion: number | undefined = parseInt(params.get('runtime') as string, 10) || undefined;
-        if (specVersion) {
-          // If a runtime was set in the route, update the control.
-          this.rs.getRuntime(network, specVersion).pipe(
-            takeUntil(this.destroyer),
-            first()
-          ).subscribe((runtime: pst.Runtime | null) => {
-            if (runtime && runtime.specVersion !== this.specVersionControl.value) {
-              this.specVersionControl.setValue(runtime.specVersion);
-            }
-          });
+      ).subscribe({
+        next: (runtimes) => {
+          this.specVersions.next(runtimes.map(r => r.specVersion));
+          const params = this.route.snapshot.queryParamMap;
+          const specVersion: number | undefined = parseInt(params.get('runtime') as string, 10) || undefined;
+          if (specVersion) {
+            // If a runtime was set in the route, update the control.
+            this.rs.getRuntime(network, specVersion).pipe(
+              takeUntil(this.destroyer),
+              first()
+            ).subscribe({
+              next: (runtime: pst.Runtime | null) => {
+                if (runtime && runtime.specVersion !== this.specVersionControl.value) {
+                  this.specVersionControl.setValue(runtime.specVersion);
+                }
+              }
+            });
+          }
         }
       });
     }
@@ -262,23 +277,25 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
 
 
   loadEventFilters(network: string, specVersion?: number): void {
-    this.rs.getRuntime(network, specVersion)
-      .pipe(
-        takeUntil(this.destroyer),
-        filter((r) => r !== null),
-        first()
+    this.rs.getRuntime(network, specVersion).pipe(
+      takeUntil(this.destroyer),
+      filter((r) => r !== null),
+      switchMap((runtime) =>
+        combineLatest([
+          this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion).pipe(takeUntil(this.destroyer)),
+          this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion).pipe(takeUntil(this.destroyer))
+        ])
       )
-      .subscribe(async (runtime): Promise<void> => {
-        const pallets = await this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion);
-        const events = await this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion);
-
+    ).subscribe({
+      next: ([pallets, events]): void => {
         if (pallets) {
           pallets.forEach((pallet) => {
             this.eventFilters.set(pallet, events ? events.filter((event) => pallet.pallet === event.pallet).sort() : []);
           });
           this.cd.markForCheck();
         }
-      });
+      }
+    });
   }
 
 

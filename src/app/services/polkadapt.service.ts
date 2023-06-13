@@ -54,7 +54,7 @@ export class PolkadaptService {
       substrateRpc: substrate.Adapter,
       explorerApi: explorer.Adapter,
       coingeckoApi: coingecko.Adapter,
-      subsquid: subsquid.Adapter
+      // subsquid: subsquid.Adapter
     }
   } = {};
   badAdapterUrls: { [network: string]: { [K in AdapterName]: string[] } } = {};
@@ -103,11 +103,11 @@ export class PolkadaptService {
           chain: network,
           apiEndpoint: 'https://api.coingecko.com/api/v3/'
         }),
-        subsquid: new subsquid.Adapter({
-          chain: network,
-          archiveUrl: '',
-          giantSquidExplorerUrl: ''
-        })
+        // subsquid: new subsquid.Adapter({
+        //   chain: network,
+        //   archiveUrl: '',
+        //   giantSquidExplorerUrl: ''
+        // })
       };
       this.badAdapterUrls[network] = {
         substrateRpc: [],
@@ -117,13 +117,13 @@ export class PolkadaptService {
     }
   }
 
-  async setNetwork(network: string): Promise<void> {
+  setNetwork(network: string): void {
     // Remove active adapters.
     this.clearNetwork();
     this.currentNetwork = network;
 
     if (!this.availableAdapters.hasOwnProperty(network)) {
-      return Promise.reject(`There are no adapters for network '${network}'.`);
+      throw new Error(`There are no adapters for network '${network}'.`);
     }
 
     // Add new adapters. Use a (presumably) working URL, by using the last used or
@@ -203,7 +203,9 @@ export class PolkadaptService {
     // Throttle the reconnect trigger (can also be triggered from outside this service).
     this.triggerReconnectSubscription = this.triggerReconnect
       .pipe(throttleTime(5000))
-      .subscribe(() => this.forceReconnect());
+      .subscribe({
+        next: () => this.forceReconnect()
+      });
   }
 
   clearNetwork(): void {
@@ -268,12 +270,12 @@ export class PolkadaptService {
     }
   }
 
-  async setSubstrateRpcUrl(url: string): Promise<void> {
+  setSubstrateRpcUrl(url: string): void {
     window.localStorage.setItem(`lastUsedSubstrateRpcUrl-${this.currentNetwork}`, url);
     this.availableAdapters[this.currentNetwork].substrateRpc.setUrl(url);
     this.substrateRpcUrl.next(url);
     if (this.substrateRpcRegistered.value) {
-      await this.availableAdapters[this.currentNetwork].substrateRpc.connect();
+      this.availableAdapters[this.currentNetwork].substrateRpc.connect();
     } else {
       // Not registered, so let's try this url as well as the others again.
       this.badAdapterUrls[this.currentNetwork].substrateRpc.length = 0;
@@ -313,7 +315,7 @@ export class PolkadaptService {
     }
   }
 
-  async setExplorerWsUrl(url: string): Promise<void> {
+  setExplorerWsUrl(url: string): void {
     window.localStorage.setItem(`lastUsedExplorerWsUrl-${this.currentNetwork}`, url);
     this.availableAdapters[this.currentNetwork].explorerApi.setWsUrl(url);
     this.explorerWsUrl.next(url);

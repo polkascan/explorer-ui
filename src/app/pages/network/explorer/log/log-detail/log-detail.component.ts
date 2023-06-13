@@ -35,8 +35,7 @@ export class LogDetailComponent implements OnInit, OnDestroy {
   log: Observable<pst.Log | null>;
   fetchLogStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(private route: ActivatedRoute,
               private cd: ChangeDetectorRef,
@@ -62,7 +61,8 @@ export class LogDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchLogStatus.next('loading')),
       switchMap(([blockNr, logIdx]) => {
         const subject = new Subject<pst.Log>();
-        this.pa.run().getLog(blockNr, logIdx).pipe(
+        (this.pa.run().getLog(blockNr, logIdx) as unknown as Observable<Observable<pst.Log>>).pipe(  // TODO FIX TYPING
+          switchMap((obs) => obs),
           takeUntil(this.destroyer)
         ).subscribe({
           next: (log) => {
@@ -87,7 +87,7 @@ export class LogDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 }

@@ -20,7 +20,7 @@ import { Injectable } from '@angular/core';
 import { PolkadaptService } from '../polkadapt.service';
 import { types as pst } from '@polkadapt/core';
 import { BehaviorSubject, take } from 'rxjs';
-import { filter, first, map } from 'rxjs/operators';
+import { filter, first, map, switchMap } from 'rxjs/operators';
 
 type SpecVersion = number;
 
@@ -30,14 +30,14 @@ type RuntimeCache = {
 };
 
 type RuntimeCacheAttributes = {
-  runtimeCalls?: pst.RuntimeCall[];
-  runtimeCallArguments?: pst.RuntimeCallArgument[];
-  runtimeConstants?: pst.RuntimeConstant[];
-  runtimeErrorMessages?: pst.RuntimeErrorMessage[];
-  runtimeEvents?: pst.RuntimeEvent[];
-  runtimeEventAttributes?: pst.RuntimeEventAttribute[];
-  runtimePallets?: pst.RuntimePallet[];
-  runtimeStorages?: pst.RuntimeStorage[];
+  runtimeCalls?: BehaviorSubject<pst.RuntimeCall[]>;
+  runtimeCallArguments?: BehaviorSubject<pst.RuntimeCallArgument[]>;
+  runtimeConstants?: BehaviorSubject<pst.RuntimeConstant[]>;
+  runtimeErrorMessages?: BehaviorSubject<pst.RuntimeErrorMessage[]>;
+  runtimeEvents?: BehaviorSubject<pst.RuntimeEvent[]>;
+  runtimeEventAttributes?: BehaviorSubject<pst.RuntimeEventAttribute[]>;
+  runtimePallets?: BehaviorSubject<pst.RuntimePallet[]>;
+  runtimeStorages?: BehaviorSubject<pst.RuntimeStorage[]>;
 };
 
 type RuntimeCacheMap = Map<SpecVersion, RuntimeCache & RuntimeCacheAttributes>;
@@ -69,12 +69,14 @@ export class RuntimeService {
       this.latestRuntimes[network] = new BehaviorSubject<pst.Runtime | null>(null);
     }
 
-    const runtime = this.pa.run({observableResults: false}).getLatestRuntime().pipe(
+    this.pa.run({observableResults: false}).getLatestRuntime().pipe(
       take(1)
-    ).subscribe((runtime: pst.Runtime) => {
-      // First cache the runtime, then broadcast it. This order is important.
-      this.cacheRuntime(network, runtime);
-      this.latestRuntimes[network].next(runtime);
+    ).subscribe({
+      next: (runtime: pst.Runtime) => {
+        // First cache the runtime, then broadcast it. This order is important.
+        this.cacheRuntime(network, runtime);
+        this.latestRuntimes[network].next(runtime);
+      }
     });
   }
 
@@ -122,16 +124,19 @@ export class RuntimeService {
         .pipe(
           filter(r => r !== null),
           map((r: pst.Runtime | null): string => (r as pst.Runtime).specName),
-          first()
-        ).subscribe(async (specName) => {
-        try {
-          const runtime = await this.pa.run({observableResults: false}).getRuntime(specName, specVersion).toPromise();
+          take(1),
+          switchMap((specName) =>
+            this.pa.run({observableResults: false}).getRuntime(specName, specVersion).pipe(take(1))
+          )
+        ).subscribe({
+        next: (runtime) => {
           if (!cachedRuntime.value) {
             // Only update cache if it's still empty.
-            cachedRuntime.next(runtime as pst.Runtime);
+            cachedRuntime.next(runtime);
           }
-        } catch (e) {
-          cachedRuntime.error(e);
+        },
+        error: (errorResponse) => {
+          cachedRuntime.error(errorResponse);
         }
       });
 
@@ -159,7 +164,7 @@ export class RuntimeService {
           bs.next(items);
         }
       },
-      error: (errorResponse: any) => {
+      error: (errorResponse) => {
         console.error(errorResponse);
       }
     });
@@ -168,7 +173,7 @@ export class RuntimeService {
   }
 
 
-  private async getRuntimeCache(network: string, specVersion: number): Promise<RuntimeCache & RuntimeCacheAttributes> {
+  private getRuntimeCache(network: string, specVersion: number): RuntimeCache & RuntimeCacheAttributes {
     if (!this.runtimes[network]
       || !this.runtimes[network].has(specVersion)
       || !(this.runtimes[network].get(specVersion) as RuntimeCache & RuntimeCacheAttributes).runtime.value) {
@@ -178,80 +183,97 @@ export class RuntimeService {
   }
 
 
-  async getRuntimePallets(network: string, specVersion: number): Promise<pst.RuntimePallet[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimePallets(network: string, specVersion: number): BehaviorSubject<pst.RuntimePallet[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimePallets')) {
-      const items = await this.pa.run({observableResults: false}).getRuntimePallets(
-        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
-      cache.runtimePallets = items;
+      const runtimePallets = cache.runtimePallets = new BehaviorSubject([] as pst.RuntimePallet[]);
+      this.pa.run({observableResults: false}).getRuntimePallets((cache.runtime.value as pst.Runtime).specName, specVersion).pipe(
+        take(1)
+      ).subscribe({
+        next: (items) => runtimePallets.next(items)
+      });
     }
-
-    return cache.runtimePallets as pst.RuntimePallet[];
+    return cache.runtimePallets!;
   }
 
 
-  async getRuntimeEvents(network: string, specVersion: number): Promise<pst.RuntimeEvent[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimeEvents(network: string, specVersion: number): BehaviorSubject<pst.RuntimeEvent[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeEvents')) {
-      const items = await this.pa.run({observableResults: false}).getRuntimeEvents(
-        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
-      cache.runtimeEvents = items;
+      const runtimeEvents = cache.runtimeEvents = new BehaviorSubject([] as pst.RuntimeEvent[]);
+      this.pa.run({observableResults: false}).getRuntimeEvents((cache.runtime.value as pst.Runtime).specName, specVersion).pipe(
+        take(1)
+      ).subscribe({
+        next: (items) => runtimeEvents.next(items)
+      });
     }
 
-    return cache.runtimeEvents as pst.RuntimeEvent[];
+    return cache.runtimeEvents!;
   }
 
 
-  async getRuntimeCalls(network: string, specVersion: number): Promise<pst.RuntimeCall[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimeCalls(network: string, specVersion: number): BehaviorSubject<pst.RuntimeCall[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeCalls')) {
-      const items = await this.pa.run({observableResults: false}).getRuntimeCalls(
-        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
-      cache.runtimeCalls = items;
+      const runtimeCalls = cache.runtimeCalls = new BehaviorSubject([] as pst.RuntimeCall[]);
+      this.pa.run({observableResults: false}).getRuntimeCalls((cache.runtime.value as pst.Runtime).specName, specVersion).pipe(
+        take(1)
+      ).subscribe({
+        next: (items) => runtimeCalls.next(items)
+      });
     }
 
-    return cache.runtimeCalls as pst.RuntimeCall[];
+    return cache.runtimeCalls!;
   }
 
 
-  async getRuntimeStorages(network: string, specVersion: number): Promise<pst.RuntimeStorage[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimeStorages(network: string, specVersion: number): BehaviorSubject<pst.RuntimeStorage[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeStorage')) {
-      const items = await this.pa.run({observableResults: false}).getRuntimeStorages(
-        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
-      cache.runtimeStorages = items;
+      const runtimeStorages = cache.runtimeStorages = new BehaviorSubject([] as pst.RuntimeStorage[]);
+      this.pa.run({observableResults: false}).getRuntimeStorages((cache.runtime.value as pst.Runtime).specName, specVersion).pipe(
+        take(1)
+      ).subscribe({
+        next: (items) => runtimeStorages.next(items)
+      });
     }
 
-    return cache.runtimeStorages as pst.RuntimeStorage[];
+    return cache.runtimeStorages!;
   }
 
 
-  async getRuntimeConstants(network: string, specVersion: number): Promise<pst.RuntimeConstant[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimeConstants(network: string, specVersion: number): BehaviorSubject<pst.RuntimeConstant[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeConstant')) {
-      const items = await this.pa.run({observableResults: false}).getRuntimeConstants(
-        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
-      cache.runtimeConstants = items;
+      const runtimeConstants = cache.runtimeConstants = new BehaviorSubject([] as pst.RuntimeConstant[]);
+      this.pa.run({observableResults: false}).getRuntimeConstants((cache.runtime.value as pst.Runtime).specName, specVersion).pipe(
+        take(1)
+      ).subscribe({
+        next: (items) => runtimeConstants.next(items)
+      });
     }
 
-    return cache.runtimeConstants as pst.RuntimeConstant[];
+    return cache.runtimeConstants!;
   }
 
 
-  async getRuntimeErrorMessages(network: string, specVersion: number): Promise<pst.RuntimeErrorMessage[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimeErrorMessages(network: string, specVersion: number): BehaviorSubject<pst.RuntimeErrorMessage[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeErrorMessages')) {
-      const items = await this.pa.run({observableResults: false}).getRuntimeErrorMessages(
-        (cache.runtime.value as pst.Runtime).specName, specVersion).toPromise();
-      cache.runtimeErrorMessages = items;
+      const runtimeErrorMessages = cache.runtimeErrorMessages = new BehaviorSubject([] as pst.RuntimeErrorMessage[]);
+      this.pa.run({observableResults: false}).getRuntimeErrorMessages((cache.runtime.value as pst.Runtime).specName, specVersion).pipe(
+        take(1)
+      ).subscribe({
+        next: (items) => runtimeErrorMessages.next(items)
+      });
     }
 
-    return cache.runtimeErrorMessages as pst.RuntimeErrorMessage[];
+    return cache.runtimeErrorMessages!;
   }
 }

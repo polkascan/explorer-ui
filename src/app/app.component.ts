@@ -29,12 +29,12 @@ import { VariablesService } from './services/variables.service';
 })
 export class AppComponent implements OnDestroy {
   title = 'explorer-ui';
-  private destroyer = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(public vars: VariablesService) {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
   }
 }

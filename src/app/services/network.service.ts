@@ -17,28 +17,29 @@
  */
 
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, firstValueFrom, skip, take } from 'rxjs';
+import { BehaviorSubject, debounceTime, filter, skip, take } from 'rxjs';
 import { PolkadaptService } from './polkadapt.service';
 import { BlockHarvester } from './block/block.harvester';
 import { BlockService } from './block/block.service';
 import { RuntimeService } from './runtime/runtime.service';
 import { PricingService } from './pricing.service';
 import { VariablesService } from './variables.service';
-import { ChainProperties } from '@polkadot/types/interfaces';
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 import { IconTheme } from '../../common/identicon/identicon.types';
 import { getSystemIcon } from '../../common/identicon/polkadot-js';
-import { debounceTime, filter, takeUntil } from 'rxjs/operators';
+import { types } from '@polkadapt/core'
+import { takeUntil } from 'rxjs/operators';
 
 
 export interface NetworkProperties {
   ss58Format: number;
   tokenSymbol: string;
   tokenDecimals: number;
-  systemName?: string;
-  specName?: string;
-  systemVersion?: string;
+  systemName: string | null;
+  specName: string | null;
+  systemVersion: string | null;
   iconTheme: IconTheme;
+  blockTime: number | null;
 }
 
 
@@ -65,7 +66,7 @@ export class NetworkService {
     window.addEventListener('offline', () => this.online.next(false));
   }
 
-  async setNetwork(network: string): Promise<void> {
+  setNetwork(network: string): void {
     // Only if we set a new network, we will continue.
     if (!network || network === this.settingNetwork) {
       return;
@@ -83,18 +84,17 @@ export class NetworkService {
     }
 
     try {
-      await this.pa.setNetwork(network);
+      this.pa.setNetwork(network);
     } catch (e) {
       this.currentNetwork.next('');
       console.error('[NetworkService] Could not switch network.');
     }
+
     if (network !== this.settingNetwork || this.settingNonce !== nonce) {
       // If network or nonce has changed intermittently (before the 'await' above is resolved), we'll just ignore the
       // rest of this call.
       return;
     }
-
-    const apiRx = await this.pa.availableAdapters[network].substrateRpc.apiPromise;
 
     // Only the last of concurring calls to this function will continue on the code below.
     if (network) {
@@ -103,85 +103,47 @@ export class NetworkService {
         this.blockHarvester.resume();
       }
 
-      this.ps.initialize(network, this.vs.currency.value);
+      this.currentNetwork.next(network);
       this.rs.initialize(network);
+      this.ps.initialize(network, this.vs.currency.value);
 
-      let chainSS58: number | undefined;
-      let chainDecimals: number[] | undefined;
-      let chainTokens: string[] | undefined;
-      let systemName: string | undefined;
-      let specName: string | undefined;
-      let systemVersion: string | undefined;
-      let properties: ChainProperties | undefined;
+      this.pa.run({observableResults: false}).getChainProperties().subscribe({
+        next: (properties: types.ChainProperties) => {
+          const ss58Format: number = properties.chainSS58 ?? this.defaultSS58;
+          const tokenSymbol: string = (properties.chainTokens && properties.chainTokens[0]) ?? this.defaultSymbol;
+          const tokenDecimals: number = (properties.chainDecimals && properties.chainDecimals[0]) ?? this.defaultDecimals;
+          const iconTheme: IconTheme = properties.systemName && properties.specName && getSystemIcon(properties.systemName, properties.specName) || 'substrate';
 
-      try {
-        chainSS58 = await apiRx.registry.chainSS58;
-        chainDecimals = await apiRx.registry.chainDecimals;
-        chainTokens = await apiRx.registry.chainTokens;
-      } catch (e) {
-        console.error(e);
-      }
+          this.currentNetworkProperties.next({
+            ss58Format: ss58Format,
+            tokenSymbol: tokenSymbol,
+            tokenDecimals: tokenDecimals,
+            systemName: properties.systemName,
+            specName: properties.specName,
+            systemVersion: properties.systemVersion,
+            iconTheme: iconTheme,
+            blockTime: properties.blockTime,
+          });
 
-      try {
-        systemName = (await apiRx.rpc.system.name())?.toString();
-        specName = await apiRx.runtimeVersion.specName?.toString();
-        systemVersion = (await apiRx.rpc.system.version())?.toString();
-      } catch (e) {
-        console.error(e);
-      }
-
-      try {
-        properties = await firstValueFrom(apiRx.rpc.system.properties());
-        if (properties) {
-          chainSS58 = chainSS58 ?? ((properties.ss58Format || (properties as any).ss58Prefix).isSome
-            ? (properties.ss58Format || (properties as any).ss58Prefix).toJSON() as number
-            : undefined);
-          chainTokens = chainTokens ?? ((properties.tokenSymbol && properties.tokenSymbol.isSome)
-            ? properties.tokenSymbol.toJSON() as string[]
-            : undefined);
-          chainDecimals = chainDecimals ?? ((properties.tokenDecimals && properties.tokenDecimals.isSome)
-            ? properties.tokenDecimals.toJSON() as number[]
-            : undefined);
+          // Check if blocks are coming in at the expected block time. If not, trigger reload connection.
+          try {
+            if (Number.isInteger(properties.blockTime)) {
+              this.blockHarvester.headNumber.pipe(
+                skip(1), // Ignore the initial value (or first block)
+                debounceTime((properties.blockTime! + 10000)), // 10 seconds after the last expected block
+                takeUntil(this.currentNetwork.pipe( // Stop the subscription when the network changes.
+                  filter((n: string) => network !== n),
+                  take(1))
+                )
+              ).subscribe({
+                next: (v) => this.pa.triggerReconnect.next(v)
+              })
+            }
+          } catch (e) {
+            // The expected block time is unknown. No need to do anything.
+          }
         }
-
-      } catch (e) {
-        console.error(e);
-      }
-
-      const ss58Format: number = chainSS58 ?? this.defaultSS58;
-      const tokenSymbol: string = (chainTokens && chainTokens[0]) ?? this.defaultSymbol;
-      const tokenDecimals: number = (chainDecimals && chainDecimals[0]) ?? this.defaultDecimals;
-      const iconTheme: IconTheme = systemName && specName && getSystemIcon(systemName, specName) || 'substrate';
-
-      this.currentNetworkProperties.next({
-        ss58Format: ss58Format,
-        tokenSymbol: tokenSymbol,
-        tokenDecimals: tokenDecimals,
-        systemName: systemName,
-        specName: specName,
-        systemVersion: systemVersion,
-        iconTheme: iconTheme
       });
-    }
-
-    this.currentNetwork.next(network);
-
-    // Check if blocks are coming in at the expected block time. If not, trigger reload connection.
-    try {
-      const expectedBlockTime = await apiRx.consts.babe.expectedBlockTime;
-      const blockTime: number = (expectedBlockTime as any).toNumber();
-      if (Number.isInteger(blockTime)) {
-        this.blockHarvester.headNumber.pipe(
-          skip(1), // Ignore the initial value (or first block)
-          debounceTime((blockTime + 10000)), // 10 seconds after the last expected block
-          takeUntil(this.currentNetwork.pipe( // Stop the subscription when the network changes.
-            filter((n: string) => network !== n),
-            take(1))
-          )
-        ).subscribe(this.pa.triggerReconnect)
-      }
-    } catch (e) {
-      // The expected block time is unknown. No need to do anything.
     }
   }
 

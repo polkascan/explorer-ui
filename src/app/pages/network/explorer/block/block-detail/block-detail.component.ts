@@ -21,10 +21,9 @@ import { ActivatedRoute, Params } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { BehaviorSubject, combineLatest, Observable, Subject, take } from 'rxjs';
 import { Block } from '../../../../../services/block/block.harvester';
-import { catchError, filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
+import { catchError, filter, first, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { types as pst } from '@polkadapt/core';
-import { ListResponse } from '@polkadapt/polkascan-explorer/lib/polkascan-explorer.types';
 
 @Component({
   selector: 'app-block-detail',
@@ -33,7 +32,7 @@ import { ListResponse } from '@polkadapt/polkascan-explorer/lib/polkascan-explor
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BlockDetailComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
   block = new BehaviorSubject<Block | null>(null);
   extrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
   events = new BehaviorSubject<pst.Event[]>([]);
@@ -62,38 +61,22 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
       tap(() => {
         this.invalidHash.next(false);
       }),
-      switchMap<Params, Observable<pst.Block>>(((params) => {
+      switchMap<Params, Observable<pst.Header>>(((params) => {
         const idOrHash = params['idOrHash'];
-        const number = parseInt(idOrHash, 10);
-        return this.pa.run({
-          adapters: ['substrate-rpc'],
-          observableResults: false
-        }).getBlock(`${number}` === idOrHash ? number : idOrHash);
+        return this.pa.run({observableResults: false}).getHeader(idOrHash).pipe(
+          take(1)
+        );
       })),
       catchError((err) => {
         this.invalidHash.next(true);
         throw new Error(`Block detail could not be fetched. The header maybe invalid or does not exist. ${err}`);
       }),
-      switchMap((block) => combineLatest(
+      switchMap((header) => combineLatest([
         // Update block when block data changes.
-        this.ns.blockHarvester.blocks[block.number].pipe(
-          tap(block => {
-            console.log(block);
-            this.block.next(block);
-            if (block.finalized) {
-
-              (this.pa.run({observableResults: false}).getExtrinsics({
-                blockNumber: block.number
-              }, 100) as unknown as Observable<ListResponse<pst.Extrinsic>>).pipe(
-                take(1),
-                map((r) => r.objects)
-              ).subscribe(this.extrinsics);
-
-              (this.pa.run({observableResults: false}).getEvents({
-                blockNumber: block.number}, 100) as unknown as Observable<ListResponse<pst.Event>>).pipe(
-                take(1),
-                map((r) => r.objects)
-              ).subscribe(this.events);
+        this.ns.blockHarvester.blocks[header.number].pipe(
+          tap({
+            next: (block) => {
+              this.block.next(block);
             }
           })
         ),
@@ -104,16 +87,42 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
             this.headNumber.next(nr);
           })
         )
-      ).pipe(
+      ]).pipe(
         takeUntil(this.destroyer),
         // Stop watching when this block is finalized.
         takeWhile(result => !result[0].finalized),
       ))
     ).subscribe();
+
+
+    this.block.pipe(
+      filter((block) => Boolean(block && block.finalized === true)),
+      take(1)
+    ).subscribe({
+      next: (block) => {
+        if (block && block.finalized) {
+          this.pa.run().getExtrinsics({blockNumber: block.number, blockRangeBegin: block.number, blockRangeEnd: block.number}, 300).pipe(
+            take(1),
+            switchMap((extrinsics) => combineLatest(extrinsics)),
+            takeUntil(this.destroyer)
+          ).subscribe({
+            next: (extrinsics: pst.Extrinsic[]) => this.extrinsics.next(extrinsics)
+          });
+
+          this.pa.run().getEvents({blockNumber: block.number, blockRangeBegin: block.number, blockRangeEnd: block.number}, 300).pipe(
+            take(1),
+            switchMap((events) => combineLatest(events)),
+            takeUntil(this.destroyer),
+          ).subscribe({
+            next: (events: pst.Event[]) => this.events.next(events)
+          });
+        }
+      }
+    })
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 }

@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
@@ -41,7 +41,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
 
   visibleColumns = ['icon', 'type', 'typeComposition'];
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
@@ -63,7 +63,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
-          const specVersion = params['runtime'].substring(lastIndex);
+          const specVersion = params['runtime'].substring(lastIndex + 1);
           return [specName, parseInt(specVersion, 10), params['pallet'], params['eventName']];
         }),
         tap(([specName, specVersion, pallet]) => {
@@ -83,21 +83,22 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
     this.event = runtimeObservable.pipe(
       tap(() => this.fetchEventStatus.next('loading')),
       switchMap(([runtime, pallet, eventName]) => {
-        const subject: Subject<pst.RuntimeEvent | null> = new Subject();
+        const subject = new BehaviorSubject<pst.RuntimeEvent | null>(null);
         if (runtime) {
-          this.rs.getRuntimeEvents(runtime.specName, runtime.specVersion).then(
-            (events) => {
+          this.rs.getRuntimeEvents(runtime.specName, runtime.specVersion).pipe(
+            takeUntil(this.destroyer)
+          ).subscribe({
+            next: (events) => {
               const matchedEvent: pst.RuntimeEvent = events.filter(e => e.pallet === pallet && e.eventName === eventName)[0];
               if (matchedEvent) {
                 subject.next(matchedEvent);
                 this.fetchEventStatus.next(null);
-              } else {
-                subject.error('Runtime event not found.');
               }
             },
-            (e) => {
+            error: (e) => {
               subject.error(e);
-            });
+            }
+          });
         }
         return subject.pipe(takeUntil(this.destroyer));
       }),
@@ -110,11 +111,12 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
     this.eventAttributes = runtimeObservable.pipe(
       tap(() => this.fetchEventAttributesStatus.next('loading')),
       switchMap(([runtime, pallet, eventName]) => {
-        const subject: Subject<(pst.RuntimeEventAttribute & { parsedComposition?: any })[]> = new Subject();
+        const subject = new BehaviorSubject<(pst.RuntimeEventAttribute & { parsedComposition?: any })[]>([]);
         this.pa.run().getRuntimeEventAttributes(runtime.specName, runtime.specVersion, pallet, eventName).pipe(
+          switchMap((obs) => combineLatest(obs)),
           takeUntil(this.destroyer)
-        ).subscribe(
-          (items) => {
+        ).subscribe({
+          next: (items) => {
             if (Array.isArray(items)) {
               const objects: (pst.RuntimeEventAttribute & { parsedComposition?: any })[] = [...items];
               for (let obj of objects) {
@@ -124,13 +126,12 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
               }
               subject.next(objects);
               this.fetchEventAttributesStatus.next(null);
-            } else {
-              subject.error('Invalid response.')
             }
           },
-          (e) => {
+          error: (e) => {
             subject.error(e);
-          });
+          }
+        });
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {
@@ -141,7 +142,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

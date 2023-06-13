@@ -55,7 +55,7 @@ export class BlockListComponent implements OnInit, OnDestroy {
 
   visibleColumns = ['icon', 'number', 'age', 'blockHash', 'signedExtrinsics', 'moduleEvents', 'details'];
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     private pa: PolkadaptService,
@@ -67,8 +67,8 @@ export class BlockListComponent implements OnInit, OnDestroy {
       this.latestBlockNumber,
       this.customUntilObservable
     ).pipe(
-      map<any, boolean>(([p,l,c]) => (p && l > this.listSize || c && c > this.listSize)
-    ));
+      map<any, boolean>(([p, l, c]) => (p && l > this.listSize || c && c > this.listSize)
+      ));
   }
 
   ngOnInit(): void {
@@ -110,20 +110,22 @@ export class BlockListComponent implements OnInit, OnDestroy {
       switchMap(nr => this.ns.blockHarvester.blocks[nr].pipe(
         takeUntil(this.destroyer)
       ))
-    ).subscribe(block => {
-      const newBlockCount: number = block.number - this.latestBlockNumber.value;
-      if (newBlockCount > 0) {
-        this.latestBlockNumber.next(block.number);
-        // Add new blocks to the beginning (while removing same amount at the end) of the Array.
-        if (this.pageLiveObservable.value) {
-          this.spliceBlocks(Math.min(newBlockCount, this.listSize));
+    ).subscribe({
+      next: (block) => {
+        const newBlockCount: number = block.number - this.latestBlockNumber.value;
+        if (newBlockCount > 0) {
+          this.latestBlockNumber.next(block.number);
+          // Add new blocks to the beginning (while removing same amount at the end) of the Array.
+          if (this.pageLiveObservable.value) {
+            this.spliceBlocks(Math.min(newBlockCount, this.listSize));
+          }
         }
       }
     });
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

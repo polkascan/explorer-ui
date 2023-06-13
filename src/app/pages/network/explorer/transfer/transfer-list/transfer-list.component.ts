@@ -76,23 +76,25 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
         parseInt(params.get('blockRangeEnd') as string, 10) || '',
         params.get('address') as string || ''
       ] as [Date | '', Date | '', number | '', number | '', string])
-    ).subscribe(([dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd, address]) => {
-      const oldDateStart = this.dateRangeBeginControl.value;
-      if ((dateRangeBegin && dateRangeBegin.getTime() || '') !== (oldDateStart && oldDateStart.getTime() || '')) {
-        this.dateRangeBeginControl.setValue(dateRangeBegin);
-      }
-      const oldDateEnd = this.dateRangeEndControl.value;
-      if ((dateRangeEnd && dateRangeEnd.getTime() || '') !== (oldDateEnd && oldDateEnd.getTime() || '')) {
-        this.dateRangeEndControl.setValue(dateRangeEnd);
-      }
-      if (blockRangeBegin !== this.blockRangeBeginControl.value) {
-        this.blockRangeBeginControl.setValue(blockRangeBegin);
-      }
-      if (blockRangeEnd !== this.blockRangeEndControl.value) {
-        this.blockRangeEndControl.setValue(blockRangeEnd);
-      }
-      if (address !== this.addressControl.value) {
-        this.addressControl.setValue(address);
+    ).subscribe({
+      next: ([dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd, address]) => {
+        const oldDateStart = this.dateRangeBeginControl.value;
+        if ((dateRangeBegin && dateRangeBegin.getTime() || '') !== (oldDateStart && oldDateStart.getTime() || '')) {
+          this.dateRangeBeginControl.setValue(dateRangeBegin);
+        }
+        const oldDateEnd = this.dateRangeEndControl.value;
+        if ((dateRangeEnd && dateRangeEnd.getTime() || '') !== (oldDateEnd && oldDateEnd.getTime() || '')) {
+          this.dateRangeEndControl.setValue(dateRangeEnd);
+        }
+        if (blockRangeBegin !== this.blockRangeBeginControl.value) {
+          this.blockRangeBeginControl.setValue(blockRangeBegin);
+        }
+        if (blockRangeEnd !== this.blockRangeEndControl.value) {
+          this.blockRangeEndControl.setValue(blockRangeEnd);
+        }
+        if (address !== this.addressControl.value) {
+          this.addressControl.setValue(address);
+        }
       }
     });
 
@@ -101,34 +103,36 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
         debounceTime(100),  // To make sure eventNameControl reset has taken place
         takeUntil(this.destroyer)
       )
-      .subscribe((values) => {
-        this.itemsObservable.next([]);
-        this.subscribeNewItem();
-        this.getItems();
+      .subscribe({
+        next: (values) => {
+          this.itemsObservable.next([]);
+          this.subscribeNewItem();
+          this.getItems();
 
-        const queryParams: Params = {};
-        if (values.dateRangeBegin) {
-          const d = new Date(values.dateRangeBegin.getTime() - values.dateRangeBegin.getTimezoneOffset() * 60000)
-          queryParams.dateRangeBegin = d.toISOString().substring(0, 10);
-        }
-        if (values.dateRangeEnd) {
-          const d = new Date(values.dateRangeEnd.getTime() - values.dateRangeEnd.getTimezoneOffset() * 60000)
-          queryParams.dateRangeEnd = d.toISOString().substring(0, 10);
-        }
-        if (values.blockRangeBegin) {
-          queryParams.blockRangeBegin = values.blockRangeBegin;
-        }
-        if (values.blockRangeEnd) {
-          queryParams.blockRangeEnd = values.blockRangeEnd;
-        }
-        if (values.address) {
-          queryParams.address = values.address;
-        }
+          const queryParams: Params = {};
+          if (values.dateRangeBegin) {
+            const d = new Date(values.dateRangeBegin.getTime() - values.dateRangeBegin.getTimezoneOffset() * 60000)
+            queryParams.dateRangeBegin = d.toISOString().substring(0, 10);
+          }
+          if (values.dateRangeEnd) {
+            const d = new Date(values.dateRangeEnd.getTime() - values.dateRangeEnd.getTimezoneOffset() * 60000)
+            queryParams.dateRangeEnd = d.toISOString().substring(0, 10);
+          }
+          if (values.blockRangeBegin) {
+            queryParams.blockRangeBegin = values.blockRangeBegin;
+          }
+          if (values.blockRangeEnd) {
+            queryParams.blockRangeEnd = values.blockRangeEnd;
+          }
+          if (values.address) {
+            queryParams.address = values.address;
+          }
 
-        this.router.navigate(['.'], {
-          relativeTo: this.route,
-          queryParams
-        });
+          this.router.navigate(['.'], {
+            relativeTo: this.route,
+            queryParams
+          });
+        }
       });
 
     super.ngOnInit();

@@ -21,7 +21,7 @@ import { RuntimeService } from '../../../../../services/runtime/runtime.service'
 import { BehaviorSubject, Subject } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { NetworkService } from '../../../../../services/network.service';
-import {filter, first, map, switchMap, takeUntil, tap} from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 
 
 @Component({
@@ -31,9 +31,10 @@ import {filter, first, map, switchMap, takeUntil, tap} from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RuntimeListComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
+  private destroyed = false;
   runtimes = new BehaviorSubject<pst.Runtime[]>([]);
-  blockDates: {[blockNumber: string]: BehaviorSubject<Date | null>} = {};
+  blockDates: { [blockNumber: string]: BehaviorSubject<Date | null> } = {};
 
   visibleColumns = ['icon', 'name', 'version', 'blockNumber', 'date', 'pallets', 'events', 'calls', 'storage', 'constants', 'details'];
 
@@ -49,29 +50,33 @@ export class RuntimeListComponent implements OnInit, OnDestroy {
       switchMap(network => this.rs.getRuntimes(network).pipe(
         takeUntil(this.destroyer)
       ))
-    ).subscribe(runtimes => {
-      for (let runtime of runtimes) {
-        const datetimeBlockNumber: number = Math.max(1, runtime.blockNumber);
-        if (!this.blockDates[runtime.blockNumber]) {
-          this.blockDates[runtime.blockNumber] = new BehaviorSubject<Date | null>(null)
-        }
-        this.ns.blockHarvester.blocks[datetimeBlockNumber].pipe(
-          takeUntil(this.destroyer),
-          filter(block => Boolean(block.datetime)),
-          map(block => block.datetime),
-          first()
-        ).subscribe(datetime => {
-          if (datetime) {
-            this.blockDates[runtime.blockNumber].next(new Date(datetime));
+    ).subscribe({
+      next: (runtimes) => {
+        for (let runtime of runtimes) {
+          const datetimeBlockNumber: number = Math.max(1, runtime.blockNumber);
+          if (!this.blockDates[runtime.blockNumber]) {
+            this.blockDates[runtime.blockNumber] = new BehaviorSubject<Date | null>(null)
           }
-        });
+          this.ns.blockHarvester.blocks[datetimeBlockNumber].pipe(
+            filter(block => Boolean(block.datetime)),
+            map(block => block.datetime),
+            takeWhile(() => this.destroyed === false)
+          ).subscribe({
+            next: (datetime) => {
+              if (datetime) {
+                this.blockDates[runtime.blockNumber].next(new Date(datetime));
+              }
+            }
+          });
+        }
+        this.runtimes.next(runtimes);
       }
-      this.runtimes.next(runtimes);
     });
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyed = true;
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

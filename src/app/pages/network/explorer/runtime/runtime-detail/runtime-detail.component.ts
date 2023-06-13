@@ -36,7 +36,7 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
   fetchRuntimeStatus = new BehaviorSubject<any>(null);
   fetchPalletsStatus = new BehaviorSubject<any>(null);
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   visibleColumns = {
     pallets: ['icon', 'name', 'events', 'calls', 'storage', 'constants', 'details']
@@ -59,7 +59,7 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
-          const specVersion = params['runtime'].substring(lastIndex);
+          const specVersion = params['runtime'].substring(lastIndex + 1);
           return [specName, parseInt(specVersion, 10)];
         })
       ))
@@ -87,16 +87,19 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
           throw new Error('Runtime not available');
         }
 
-        const subject = new Subject<pst.RuntimePallet[]>();
+        const subject = new BehaviorSubject<pst.RuntimePallet[]>([]);
 
-        this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).then(
-          (pallets) => {
+        this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).pipe(
+          takeUntil(this.destroyer)
+        ).subscribe({
+          next: (pallets) => {
             subject.next(pallets);
             this.fetchPalletsStatus.next(null)
           },
-          (e) => {
+          error: (e) => {
             subject.error(e)
-          })
+          }
+        });
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {
@@ -107,7 +110,7 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

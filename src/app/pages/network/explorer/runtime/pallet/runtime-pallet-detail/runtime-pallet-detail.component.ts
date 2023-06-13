@@ -55,7 +55,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     errors: ['icon', 'name', 'index', 'documentation']
   };
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
@@ -76,7 +76,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
-          const specVersion = params['runtime'].substring(lastIndex);
+          const specVersion = params['runtime'].substring(lastIndex + 1);
           return [specName, parseInt(specVersion, 10), params['pallet']];
         })
       ))
@@ -107,21 +107,22 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchPalletStatus.next('loading')),
       filter(([n, r]) => !!r),
       switchMap(([[specName, specVersion, pallet], runtime]) => {
-        const subject: Subject<pst.RuntimePallet | null> = new Subject();
+        const subject = new BehaviorSubject<pst.RuntimePallet | null>(null);
         if (runtime) {
-          this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).then(
-            (pallets) => {
+          this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).pipe(
+            takeUntil(this.destroyer)
+          ).subscribe({
+            next: (pallets) => {
               const matchedPallet: pst.RuntimePallet = pallets.filter(p => p.pallet === pallet)[0];
               if (matchedPallet) {
                 subject.next(matchedPallet);
                 this.fetchPalletStatus.next(null);
-              } else {
-                subject.error('Runtime pallet not found.');
               }
             },
-            (e) => {
+            error: (e) => {
               subject.error(e);
-            });
+            }
+          });
         }
 
         return subject.pipe(takeUntil(this.destroyer));
@@ -136,17 +137,20 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchCallsStatus.next('loading')),
       filter(([p, r]) => !!r),
       switchMap(([[specName, specVersion, pallet], runtime]) => {
-        const subject: Subject<pst.RuntimeCall[]> = new Subject();
+        const subject = new BehaviorSubject<pst.RuntimeCall[]>([]);
         if (runtime) {
-          this.rs.getRuntimeCalls(runtime.specName as string, runtime.specVersion as number).then(
-            (calls) => {
+          this.rs.getRuntimeCalls(runtime.specName as string, runtime.specVersion as number).pipe(
+            takeUntil(this.destroyer)
+          ).subscribe({
+            next: (calls) => {
               const palletCalls: pst.RuntimeCall[] = calls.filter(c => c.pallet === pallet);
               subject.next(palletCalls)
               this.fetchCallsStatus.next(null);
             },
-            (e) => {
+            error: (e) => {
               subject.error(e);
-            });
+            }
+          });
         }
 
         return subject.pipe(takeUntil(this.destroyer));
@@ -161,17 +165,20 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchEventsStatus.next('loading')),
       filter(([p, r]) => !!r),
       switchMap(([[specName, specVersion, pallet], runtime]) => {
-        const subject: Subject<pst.RuntimeEvent[]> = new Subject();
+        const subject = new BehaviorSubject<pst.RuntimeEvent[]>([]);
         if (runtime) {
-          this.rs.getRuntimeEvents(runtime.specName as string, runtime.specVersion as number).then(
-            (events) => {
+          this.rs.getRuntimeEvents(runtime.specName as string, runtime.specVersion as number).pipe(
+            takeUntil(this.destroyer)
+          ).subscribe({
+            next: (events) => {
               const palletEvents: pst.RuntimeEvent[] = events.filter(e => e.pallet === pallet);
               subject.next(palletEvents);
               this.fetchEventsStatus.next(null);
-              },
-            (e) => {
+            },
+            error: (e) => {
               subject.error(e);
-            });
+            }
+          });
         }
 
         return subject.pipe(takeUntil(this.destroyer));
@@ -186,17 +193,20 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchStoragesStatus.next('loading')),
       filter(([p, r]) => !!r),
       switchMap(([[specName, specVersion, pallet], runtime]) => {
-        const subject: Subject<pst.RuntimeStorage[]> = new Subject();
+        const subject = new BehaviorSubject<pst.RuntimeStorage[]>([]);
         if (runtime) {
-          this.rs.getRuntimeStorages(runtime.specName as string, runtime.specVersion as number).then(
-            (storages) => {
+          this.rs.getRuntimeStorages(runtime.specName as string, runtime.specVersion as number).pipe(
+            takeUntil(this.destroyer)
+          ).subscribe({
+            next: (storages) => {
               const palletStorages: pst.RuntimeStorage[] = storages.filter(s => s.pallet === pallet);
               subject.next(palletStorages);
               this.fetchStoragesStatus.next(null);
-              },
-            (e) => {
+            },
+            error: (e) => {
               subject.error(e);
-            });
+            }
+          });
         }
 
         return subject.pipe(takeUntil(this.destroyer));
@@ -211,17 +221,20 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchConstantsStatus.next('loading')),
       filter(([p, r]) => !!r),
       switchMap(([[specName, specVersion, pallet], runtime]) => {
-        const subject: Subject<pst.RuntimeConstant[]> = new Subject();
+        const subject = new BehaviorSubject<pst.RuntimeConstant[]>([]);
         if (runtime) {
-          this.rs.getRuntimeConstants(runtime.specName as string, runtime.specVersion as number).then(
-            (constants) => {
+          this.rs.getRuntimeConstants(runtime.specName as string, runtime.specVersion as number).pipe(
+            takeUntil(this.destroyer)
+          ).subscribe({
+            next: (constants) => {
               const palletConstants: pst.RuntimeConstant[] = constants.filter(c => c.pallet === pallet);
               subject.next(palletConstants);
               this.fetchConstantsStatus.next(null);
-              },
-            (e) => {
+            },
+            error: (e) => {
               subject.error(e);
-            });
+            }
+          });
         }
 
         return subject.pipe(takeUntil(this.destroyer));
@@ -236,17 +249,20 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchErrorMessagesStatus.next('loading')),
       filter(([p, r]) => !!r),
       switchMap(([[specName, specVersion, pallet], runtime]) => {
-        const subject: Subject<pst.RuntimeErrorMessage[]> = new Subject();
+        const subject = new BehaviorSubject<pst.RuntimeErrorMessage[]>([]);
         if (runtime) {
-          this.rs.getRuntimeErrorMessages(runtime.specName as string, runtime.specVersion as number).then(
-            (errors) => {
+          this.rs.getRuntimeErrorMessages(runtime.specName as string, runtime.specVersion as number).pipe(
+            takeUntil(this.destroyer)
+          ).subscribe({
+            next: (errors) => {
               const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet === pallet);
               subject.next(palletErrors);
               this.fetchErrorMessagesStatus.next(null);
-              },
-            (e) => {
+            },
+            error: (e) => {
               subject.error(e);
-            });
+            }
+          });
         }
 
         return subject.pipe(takeUntil(this.destroyer));
@@ -259,7 +275,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

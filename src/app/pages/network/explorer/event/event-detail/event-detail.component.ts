@@ -44,7 +44,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   networkProperties = this.ns.currentNetworkProperties;
   fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
   private onDestroyCalled = false;
 
   constructor(private route: ActivatedRoute,
@@ -73,7 +73,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchEventStatus.next('loading')),
       switchMap(([blockNr, eventIdx]) => {
         const subject = new BehaviorSubject<pst.Event | null>(null);
-        this.pa.run().getEvent(blockNr, eventIdx).pipe(
+        (this.pa.run().getEvent(blockNr, eventIdx) as unknown as Observable<Observable<pst.Event>>).pipe( // TODO FIX TYPING
+          switchMap((obs) => obs),
           takeUntil(this.destroyer)
         ).subscribe({
           next: (event) => {
@@ -127,7 +128,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.onDestroyCalled = true;
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 }

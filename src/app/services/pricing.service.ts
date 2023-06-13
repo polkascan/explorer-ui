@@ -34,14 +34,16 @@ export class PricingService {
 
   constructor(private pa: PolkadaptService,
               private vs: VariablesService) {
-    this.price.subscribe(this.vs.price);
+    this.price.subscribe({
+      next: (v) => this.vs.price.next(v)
+    });
 
     window.addEventListener('online', () => this.startPriceWatch());
     window.addEventListener('offline', () => this.stopPriceWatch());
   }
 
 
-  async initialize(network: string, currency: string): Promise<void> {
+  initialize(network: string, currency: string): void {
     if (!network) {
       throw new Error(`[PricingService] initialize: network was not provided.`);
     }
@@ -99,10 +101,15 @@ export class PricingService {
 
   async fetchAndSetPrice(interval: number): Promise<void> {
     try {
-      const price = this.pa.run({chain: this.network as string, observableResults: false}).prices.getPrice(this.currency as string) as unknown as Observable<number>;
-      price.subscribe((price) => {
-        if (this.interval === interval) { // Check if interval has not been destroyed.
-          this.price.next(price as number);
+      const price = this.pa.run({
+        chain: this.network as string,
+        observableResults: false
+      }).prices.getPrice(this.currency as string) as unknown as Observable<number>;
+      price.subscribe({
+        next: (price) => {
+          if (this.interval === interval) { // Check if interval has not been destroyed.
+            this.price.next(price as number);
+          }
         }
       })
     } catch (e) {
@@ -112,19 +119,23 @@ export class PricingService {
   }
 
   fetchDailyHistoricPrices(interval: number) {
-    this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 'max').subscribe(history => {
-      if (this.interval === interval && history) { // Check if interval has not been destroyed.
-        this.dailyHistoricPrices.next(history);
+    this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 'max').subscribe({
+      next: (history) => {
+        if (this.interval === interval && history) { // Check if interval has not been destroyed.
+          this.dailyHistoricPrices.next(history);
+        }
       }
     });
   }
 
   addLatestHistoricPrice(interval: number) {
-    this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 1).subscribe(history => {
-      if (this.interval === interval && history) { // Check if interval has not been destroyed.
-        const prices = this.dailyHistoricPrices.value;
-        if (prices.find((p) => p[0] === history[0][0]) === undefined) {
-          this.dailyHistoricPrices.next([...prices, history[0]]);
+    this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 1).subscribe({
+      next: (history) => {
+        if (this.interval === interval && history) { // Check if interval has not been destroyed.
+          const prices = this.dailyHistoricPrices.value;
+          if (prices.find((p) => p[0] === history[0][0]) === undefined) {
+            this.dailyHistoricPrices.next([...prices, history[0]]);
+          }
         }
       }
     });

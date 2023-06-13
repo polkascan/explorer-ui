@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { BehaviorSubject, combineLatest, defer, Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, defer, Observable, Subject, Subscription, take, takeWhile, timer } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt, types } from '@polkadapt/core';
-import { filter, finalize, first } from 'rxjs/operators';
+import { filter, finalize, first, switchMap, takeUntil, tap } from 'rxjs/operators';
 
 export type Block = Partial<types.Block> & {
   status: 'new' | 'loading' | 'loaded',
@@ -31,7 +31,7 @@ export type Block = Partial<types.Block> & {
 
 export type BlockSubject = BehaviorSubject<Block>;
 
-type BlockCache = {[nr: string]: BlockSubject};
+type BlockCache = { [nr: string]: BlockSubject };
 
 export class BlockHarvester {
   private newBlockSubscription: Subscription | null;
@@ -41,7 +41,7 @@ export class BlockHarvester {
   finalizedNumber = new BehaviorSubject<number>(0);
   loadedNumber = new BehaviorSubject<number>(0);
   blocks: BlockCache;
-  observedBlocks: {[nr: string]: number} = {};
+  observedBlocks: { [nr: string]: number } = {};
   paused = false;
   untilBlocksObservable: Observable<types.Block[]>;
 
@@ -88,14 +88,26 @@ export class BlockHarvester {
   private async subscribeNewBlocks(): Promise<void> {
     if (!this.newBlockSubscription) {
       // Subscribe to new blocks *without finality*.
-      this.newBlockSubscription = this.polkadapt.run({chain: this.network, observableResults: false}).subscribeNewBlock().subscribe(
-        (block: types.Block) => {
-          this.newBlockHandler(block);
-          if (block.complete) {
-            this.finalizedBlockHandler(block);
-          }
+      this.newBlockSubscription = (this.polkadapt.run().subscribeNewBlock() as unknown as Observable<Observable<types.Block>>).pipe( // TODO FIX TYPING
+      ).subscribe({
+        next: (block) => {
+          const done = new Subject<void>();
+
+          // Subscribe to the block observable to catch the latest response from an adapter.
+          block.pipe(
+            takeUntil(done)
+          ).subscribe((block) => {
+            if (block.complete) {
+              this.finalizedBlockHandler(block);
+              // A finalized block has been retrieved and processed. Unsubscribe the observable.
+              done.next();
+              done.complete();
+            } else {
+              this.newBlockHandler(block);
+            }
+          })
         }
-      );
+      });
     }
   }
 
@@ -149,50 +161,57 @@ export class BlockHarvester {
     combineLatest(this.headNumber, this.finalizedNumber).pipe(
       filter(([hn, fn]) => hn > 0 || fn > 0),
       first()  // So it stops right after we get one of the two numbers.
-    ).subscribe(async ([headNumber, finalizedNumber]) => {
-      let block = Object.assign({}, cached.value);
-      if (
-        block.status === 'loading' || // It's already loading this block.
-        nr > headNumber ||  // Block doesn't exist, yet.
-        nr > finalizedNumber && block.status === 'loaded' ||  // Block can't load finalized data, yet.
-        block.finalized  // Block is already finalized.
-      ) {
-        // Do nothing.
-        return;
-      }
-      // Otherwise, raise the loading flag.
-      const oldStatus: 'new' | 'loaded' = block.status;
-      block.status = 'loading';
-      cached.next(block);
-
-      if (block.number <= finalizedNumber) {
-        // Load finalized data from Polkascan.
-        let loaded;
-        try {
-          loaded = this.polkadapt.run({chain: this.network, observableResults: false}).getBlock(block.number);
+    ).subscribe({
+      next: ([headNumber, finalizedNumber]) => {
+        let block = Object.assign({}, cached.value);
+        if (
+          block.status === 'loading' || // It's already loading this block.
+          nr > headNumber ||  // Block doesn't exist, yet.
+          nr > finalizedNumber && block.status === 'loaded' ||  // Block can't load finalized data, yet.
+          block.finalized  // Block is already finalized.
+        ) {
+          // Do nothing.
+          return;
         }
-        catch (e) {
-          block.status = oldStatus;
-          throw new Error('Error loading block from Polkascan, will try again when possible and if necessary.');
-        }
-        block = Object.assign(block, loaded);
-        block.finalized = true;
-        block.extrinsics = new Array(block.countExtrinsics);
-        block.events = new Array(block.countEvents);
-        block.status = 'loaded';
+        // Otherwise, raise the loading flag.
+        const oldStatus: 'new' | 'loaded' = block.status;
+        block.status = 'loading';
         cached.next(block);
-      } else {
-        if (cached.value.status !== 'loaded') {
-          block.status = 'loaded';
-          cached.next(block);
-          // If this block can be finalized already, do it now.
-          if (nr <= this.finalizedNumber.value) {
-            this.loadBlock(nr);
+
+        if (block.number <= finalizedNumber) {
+          // Load finalized data from Polkascan.
+          (this.polkadapt.run({adapters: ['polkascan-explorer']})  // TODO REMOVE adapters property
+            .getBlock(block.number) as unknown as Observable<Observable<types.Block>>).pipe( // TODO FIX TYPING
+            switchMap(obs => obs),
+          ).subscribe({
+            next: response => {
+              block = Object.assign(block, response);
+              block.finalized = true;
+              block.extrinsics = new Array(block.countExtrinsics);
+              block.events = new Array(block.countEvents);
+              block.status = 'loaded';
+              cached.next(block);
+            },
+            error: err => {
+              block.status = oldStatus;
+              cached.next(block);
+              console.error(err);
+              throw new Error('Error loading block, will try again when possible and if necessary.');
+            }
+          });
+        } else {
+          if (cached.value.status !== 'loaded') {
+            block.status = 'loaded';
+            cached.next(block);
+            // If this block can be finalized already, do it now.
+            if (nr <= this.finalizedNumber.value) {
+              this.loadBlock(nr);
+            }
           }
         }
-      }
-      if (nr > this.loadedNumber.value) {
-        this.loadedNumber.next(nr);
+        if (nr > this.loadedNumber.value) {
+          this.loadedNumber.next(nr);
+        }
       }
     });
   }
@@ -234,26 +253,31 @@ export class BlockHarvester {
 
     if (loadBlocks) {
       // Then, await the result from Polkascan and update our cached block data.
-      this.polkadapt.run({chain: this.network, observableResults: false}).getBlocksUntil(untilNumber, pageSize).subscribe((blocks: types.Block[]) => {
-        if (blocks) {
-          for (const obj of blocks) {
-            const blockNr: number = obj.number;
-            const cached: BehaviorSubject<Block> = this.cache[blockNr];
-            if (!cached.value.finalized || cached.value.status !== 'loaded') {
-              const block: Block = Object.assign({}, cached.value, obj, {
-                status: 'loaded',
-                finalized: true,
-                extrinsics: new Array(obj.countExtrinsics),
-                events: new Array(obj.countEvents)
-              });
-              cached.next(block);
-            }
-            if (blockNr > this.loadedNumber.value) {
-              this.loadedNumber.next(blockNr);
+      (this.polkadapt.run({chain: this.network})
+        .getBlocksUntil(untilNumber, pageSize) as unknown as Observable<Observable<types.Block>>).pipe(
+        switchMap((obs) => combineLatest(obs))
+      ).subscribe({
+          next: (blocks: types.Block[]) => {
+            if (blocks) {
+              for (const obj of blocks) {
+                const blockNr: number = obj.number;
+                const cached: BehaviorSubject<Block> = this.cache[blockNr];
+                if (!cached.value.finalized || cached.value.status !== 'loaded') {
+                  const block: Block = Object.assign({}, cached.value, obj, {
+                    status: 'loaded',
+                    finalized: true,
+                    extrinsics: new Array(obj.countExtrinsics),
+                    events: new Array(obj.countEvents)
+                  });
+                  cached.next(block);
+                }
+                if (blockNr > this.loadedNumber.value) {
+                  this.loadedNumber.next(blockNr);
+                }
+              }
             }
           }
-        }
-      });
+        });
     }
   }
 

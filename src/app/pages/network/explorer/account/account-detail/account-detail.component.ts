@@ -127,7 +127,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   listsSize = 50;
   loadedTabs: { [index: number]: boolean } = {0: true};
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
@@ -195,25 +195,27 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     ) as Observable<string | null>;
 
     // Remove all active subscriptions when id changes.
-    idObservable.subscribe((id) => {
-      this.loadedTabs = {0: true};
-      this.errors.next(null);
+    idObservable.subscribe({
+      next: (id) => {
+        this.loadedTabs = {0: true};
+        this.errors.next(null);
 
-      this.signedExtrinsics.next([]);
+        this.signedExtrinsics.next([]);
 
-      if (id) {
-        try {
-          // Try to create the hex for accountId manually.
-          const hex = this.accountAsHex.value;
-          if (hex) {
-            this.fetchAndSubscribeExtrinsics(hex);
-            this.fetchTaggedAccounts(hex);
+        if (id) {
+          try {
+            // Try to create the hex for accountId manually.
+            const hex = this.accountAsHex.value;
+            if (hex) {
+              this.fetchAndSubscribeExtrinsics(hex);
+              this.fetchTaggedAccounts(hex);
+            }
+          } catch (e) {
           }
-        } catch (e) {
+        } else {
+          // Not a valid address.
+          this.errors.next('Unknown or invalid address.');
         }
-      } else {
-        // Not a valid address.
-        this.errors.next('Unknown or invalid address.');
       }
     });
 
@@ -251,18 +253,18 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.subsOf = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountChildrenIds(id).pipe(
-            takeUntil(this.destroyer),
-            startWith([])
-          )
+          takeUntil(this.destroyer),
+          startWith([])
+        )
         : of([]))
     );
 
     this.derivedAccountInfo = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountInformation(id).pipe(
-            takeUntil(this.destroyer),
-            startWith(null)
-          )
+          takeUntil(this.destroyer),
+          startWith(null)
+        )
         : of(null))
     ) as Observable<pst.AccountInformation>;
 
@@ -273,27 +275,27 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.derivedAccountFlags = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountFlags(id).pipe(
-            takeUntil(this.destroyer),
-            startWith(null)
-          )
+          takeUntil(this.destroyer),
+          startWith(null)
+        )
         : of(null))
     );
 
     this.derivedBalancesAll = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountBalances(id).pipe(
-            takeUntil(this.destroyer),
-            startWith(null)
-          )
+          takeUntil(this.destroyer),
+          startWith(null)
+        )
         : of(null))
     );
 
     this.stakingInfo = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountStaking(id).pipe(
-            takeUntil(this.destroyer),
-            startWith(null)
-          )
+          takeUntil(this.destroyer),
+          startWith(null)
+        )
         : of(null))
     );
 
@@ -462,11 +464,13 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   fetchTaggedAccounts(accountIdHex: string): void {
     this.pa.run().getTaggedAccount(accountIdHex).pipe(
       takeUntil(this.destroyer)
-    ).subscribe((account: pst.TaggedAccount) => this.polkascanAccountInfo);
+    ).subscribe({
+      next: (account: pst.TaggedAccount) => this.polkascanAccountInfo
+    });
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

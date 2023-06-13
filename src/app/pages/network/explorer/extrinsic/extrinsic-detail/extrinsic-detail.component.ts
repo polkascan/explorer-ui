@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, Subject, tap } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
@@ -40,7 +40,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
   fetchEventsStatus: BehaviorSubject<any> = new BehaviorSubject(null);
   visibleColumns = ['eventId', 'pallet', 'event', 'details']
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
   private onDestroyCalled = false;
 
   constructor(private router: Router,
@@ -69,7 +69,8 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchExtrinsicStatus.next('loading')),
       switchMap(([blockNr, extrinsicIdx]) => {
         const subject = new Subject<pst.Extrinsic>();
-        this.pa.run().getExtrinsic(blockNr, extrinsicIdx).pipe(
+        (this.pa.run().getExtrinsic(blockNr, extrinsicIdx) as unknown as Observable<Observable<pst.Extrinsic>>).pipe(  // TODO FIX TYPING
+          switchMap((obs) => obs),
           takeUntil(this.destroyer)
         ).subscribe({
           next: (inherent) => {
@@ -97,7 +98,10 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchEventsStatus.next('loading')),
       switchMap(([blockNr, extrinsicIdx]) => {
         const subject = new Subject<pst.Event[]>();
-        this.pa.run().getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100).pipe(
+        (this.pa.run()
+          .getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100) as unknown as Observable<Observable<pst.Event>[]>) // TODO FIX TYPING
+          .pipe(
+          switchMap((obs) => combineLatest(obs)),
           takeUntil(this.destroyer)
         ).subscribe({
           next: (items) => {
@@ -137,7 +141,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.onDestroyCalled = true;
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

@@ -26,6 +26,8 @@ export class TooltipsService {
   history = new ReplaySubject(20);
 
   constructor() {
-    this.notify.subscribe(this.history);
+    this.notify.subscribe({
+      next: (v) => this.history.next(v)
+    });
   }
 }

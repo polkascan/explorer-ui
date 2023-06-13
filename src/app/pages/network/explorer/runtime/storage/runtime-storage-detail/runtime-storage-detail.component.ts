@@ -36,7 +36,7 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
   storage: Observable<pst.RuntimeStorage | null>;
   fetchStorageStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
@@ -57,7 +57,7 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
           map(params => {
             const lastIndex = params['runtime'].lastIndexOf('-');
             const specName = params['runtime'].substring(0, lastIndex);
-            const specVersion = params['runtime'].substring(lastIndex);
+            const specVersion = params['runtime'].substring(lastIndex + 1);
             return [specName, parseInt(specVersion, 10), params['pallet'], params['storageName']];
           })
         )
@@ -83,9 +83,11 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
         )
       ),
       switchMap(([runtime, pallet, storageName]) => {
-        const subject = new Subject<pst.RuntimeStorage>();
-        this.rs.getRuntimeStorages(runtime.specName, runtime.specVersion).then(
-          (storages) => {
+        const subject = new BehaviorSubject<pst.RuntimeStorage | null>(null);
+        this.rs.getRuntimeStorages(runtime.specName, runtime.specVersion).pipe(
+          takeUntil(this.destroyer)
+        ).subscribe({
+          next: (storages) => {
             const palletStorages: pst.RuntimeStorage[] = storages.filter(s =>
               s.pallet === pallet && s.storageName === storageName
             );
@@ -93,13 +95,12 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
             if (storage) {
               subject.next(storage);
               this.fetchStorageStatus.next(null)
-            } else {
-              subject.error('Storage function not found.');
             }
           },
-          (e) => {
+          error: (e) => {
             subject.error(e);
-          });
+          }
+        });
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {
@@ -110,7 +111,7 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 }

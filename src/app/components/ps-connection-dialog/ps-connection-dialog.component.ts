@@ -46,31 +46,36 @@ export class PsConnectionDialogComponent implements OnInit, OnDestroy {
     url: new FormControl('')
   });
 
-  private destroyer = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     public dialogRef: MatDialogRef<PsConnectionDialogComponent>,
     public pa: PolkadaptService,
     public ns: NetworkService,
     public vars: VariablesService
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
-    this.pa.substrateRpcUrl.pipe(takeUntil(this.destroyer)).subscribe(url => {
-      this.substrateRpcUrlForm.setValue({url});
+    this.pa.substrateRpcUrl.pipe(takeUntil(this.destroyer)).subscribe({
+      next: (url) => {
+        this.substrateRpcUrlForm.setValue({url});
+      }
     });
 
-    this.pa.explorerWsUrl.pipe(takeUntil(this.destroyer)).subscribe(url => {
-      this.explorerWsUrlForm.setValue({url});
+    this.pa.explorerWsUrl.pipe(takeUntil(this.destroyer)).subscribe({
+      next: (url) => {
+        this.explorerWsUrlForm.setValue({url});
+      }
     });
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
   }
 
-  async submitSubstrateRpcUrl(): Promise<void> {
-    await this.pa.setSubstrateRpcUrl(this.substrateRpcUrlForm.value.url!);
+  submitSubstrateRpcUrl(): void {
+    this.pa.setSubstrateRpcUrl(this.substrateRpcUrlForm.value.url!);
   }
 
   async submitExplorerWsUrl(): Promise<void> {
