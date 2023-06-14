@@ -61,7 +61,7 @@ export class LogDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchLogStatus.next('loading')),
       switchMap(([blockNr, logIdx]) => {
         const subject = new Subject<pst.Log>();
-        (this.pa.run().getLog(blockNr, logIdx) as unknown as Observable<Observable<pst.Log>>).pipe(  // TODO FIX TYPING
+        this.pa.run().getLog(blockNr, logIdx).pipe(
           switchMap((obs) => obs),
           takeUntil(this.destroyer)
         ).subscribe({

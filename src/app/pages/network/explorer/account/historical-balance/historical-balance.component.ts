@@ -120,7 +120,7 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     super(ns);
 
     // Fetch the block hash for block 1.
-    this.blockOne = (this.pa.run().getBlockHash(1) as unknown as Observable<Observable<string>>).pipe( // FIX TYPING
+    this.blockOne = this.pa.run().getBlockHash(1).pipe(
       takeUntil(this.destroyer),
       switchMap((obs) => obs.pipe(takeUntil(this.destroyer))),
       shareReplay({

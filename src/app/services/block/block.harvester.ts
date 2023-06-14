@@ -99,7 +99,7 @@ export class BlockHarvester {
   private async subscribeNewBlocks(): Promise<void> {
     if (!this.newBlockSubscription) {
       // Subscribe to new blocks *without finality*.
-      this.newBlockSubscription = (this.polkadapt.run().subscribeNewBlock() as unknown as Observable<Observable<types.Block>>).pipe( // TODO FIX TYPING
+      this.newBlockSubscription = this.polkadapt.run().subscribeNewBlock().pipe(
       ).subscribe({
         next: (block) => {
           const done = new Subject<void>();
@@ -191,9 +191,10 @@ export class BlockHarvester {
 
         if (block.number <= finalizedNumber) {
           // Load finalized data from Polkascan.
-          (this.polkadapt.run({adapters: ['polkascan-explorer']})  // TODO REMOVE adapters property
-            .getBlock(block.number) as unknown as Observable<Observable<types.Block>>).pipe( // TODO FIX TYPING
+          this.polkadapt.run().getBlock(block.number).pipe(
             switchMap(obs => obs),
+            filter(block => Boolean(block.complete)),
+            take(1)
           ).subscribe({
             next: response => {
               block = Object.assign(block, response);
@@ -264,8 +265,7 @@ export class BlockHarvester {
 
     if (loadBlocks) {
       // Then, await the result from Polkascan and update our cached block data.
-      (this.polkadapt.run({chain: this.network})
-        .getBlocksUntil(untilNumber, pageSize) as unknown as Observable<Observable<types.Block>[]>).pipe(
+      this.polkadapt.run({chain: this.network}).getBlocksUntil(untilNumber, pageSize).pipe(
         switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
       ).subscribe({
           next: (blocks: types.Block[]) => {

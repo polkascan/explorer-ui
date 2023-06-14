@@ -23,6 +23,13 @@ type NetworkConfig = {
   [network: string]: {
     substrateRpcUrlArray: string[];
     explorerWsUrlArray: string[];
+    subsquid: {
+      archiveUrl: string,
+      explorerUrl: string;
+      giantSquidExplorerUrl: string;
+      giantSquidMainUrl: string;
+      balancesUrl: string;
+    };
   };
 };
 

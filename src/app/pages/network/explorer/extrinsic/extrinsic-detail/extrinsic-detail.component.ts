@@ -69,7 +69,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchExtrinsicStatus.next('loading')),
       switchMap(([blockNr, extrinsicIdx]) => {
         const subject = new Subject<pst.Extrinsic>();
-        (this.pa.run().getExtrinsic(blockNr, extrinsicIdx) as unknown as Observable<Observable<pst.Extrinsic>>).pipe(  // TODO FIX TYPING
+        this.pa.run().getExtrinsic(blockNr, extrinsicIdx).pipe(
           switchMap((obs) => obs),
           takeUntil(this.destroyer)
         ).subscribe({
@@ -98,8 +98,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchEventsStatus.next('loading')),
       switchMap(([blockNr, extrinsicIdx]) => {
         const subject = new Subject<pst.Event[]>();
-        (this.pa.run()
-          .getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100) as unknown as Observable<Observable<pst.Event>[]>) // TODO FIX TYPING
+        this.pa.run().getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100)
           .pipe(
           switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
           takeUntil(this.destroyer)

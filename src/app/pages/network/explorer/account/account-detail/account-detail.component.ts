@@ -458,7 +458,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   }
 
   fetchTaggedAccounts(accountIdHex: string): void {
-    (this.pa.run().getTaggedAccount(accountIdHex) as unknown as Observable<Observable<pst.TaggedAccount>>).pipe(
+    this.pa.run().getTaggedAccount(accountIdHex).pipe(
       takeUntil(this.destroyer),
       switchMap((obs) => obs),
     ).subscribe({

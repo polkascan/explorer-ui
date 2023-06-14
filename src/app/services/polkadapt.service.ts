@@ -17,7 +17,7 @@
  */
 
 import { Injectable } from '@angular/core';
-import { Polkadapt, PolkadaptRunArgument } from '@polkadapt/core';
+import { Polkadapt, PolkadaptRunArgument, RecursiveObservableWrapper } from '@polkadapt/core';
 import * as substrate from '@polkadapt/substrate-rpc';
 import * as explorer from '@polkadapt/polkascan-explorer';
 import * as coingecko from '@polkadapt/coingecko';
@@ -32,7 +32,7 @@ type AdapterName = 'substrateRpc' | 'explorerApi' | 'coingeckoApi';
 @Injectable({providedIn: 'root'})
 export class PolkadaptService {
   polkadapt: Polkadapt<AugmentedApi>;
-  run: (config?: PolkadaptRunArgument | string) => AugmentedApi;
+  run: <P extends PolkadaptRunArgument>(config?: P) => P extends {observableResults: false} ? AugmentedApi : RecursiveObservableWrapper<AugmentedApi>;
   substrateRpcUrls = new BehaviorSubject<string[] | null>(null);
   substrateRpcUrl = new BehaviorSubject<string | null>(null);
   substrateRpcConnected = new BehaviorSubject(false);
@@ -54,7 +54,7 @@ export class PolkadaptService {
       substrateRpc: substrate.Adapter,
       explorerApi: explorer.Adapter,
       coingeckoApi: coingecko.Adapter,
-      // subsquid: subsquid.Adapter
+      subsquid: subsquid.Adapter
     }
   } = {};
   badAdapterUrls: { [network: string]: { [K in AdapterName]: string[] } } = {};
@@ -103,11 +103,14 @@ export class PolkadaptService {
           chain: network,
           apiEndpoint: 'https://api.coingecko.com/api/v3/'
         }),
-        // subsquid: new subsquid.Adapter({
-        //   chain: network,
-        //   archiveUrl: '',
-        //   giantSquidExplorerUrl: ''
-        // })
+        subsquid: new subsquid.Adapter({
+          chain: network,
+          archiveUrl: this.config.networks[network].subsquid?.archiveUrl,
+          explorerUrl: this.config.networks[network].subsquid?.explorerUrl,
+          giantSquidExplorerUrl: this.config.networks[network].subsquid?.giantSquidExplorerUrl,
+          giantSquidMainUrl: this.config.networks[network].subsquid?.giantSquidMainUrl,
+          balancesUrl: this.config.networks[network].subsquid?.balancesUrl
+        })
       };
       this.badAdapterUrls[network] = {
         substrateRpc: [],

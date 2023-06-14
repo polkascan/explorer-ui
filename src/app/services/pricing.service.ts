@@ -101,11 +101,10 @@ export class PricingService {
 
   async fetchAndSetPrice(interval: number): Promise<void> {
     try {
-      const price = this.pa.run({
+      this.pa.run({
         chain: this.network as string,
         observableResults: false
-      }).prices.getPrice(this.currency as string) as unknown as Observable<number>;
-      price.subscribe({
+      }).prices.getPrice(this.currency as string).subscribe({
         next: (price) => {
           if (this.interval === interval) { // Check if interval has not been destroyed.
             this.price.next(price as number);
@@ -119,7 +118,9 @@ export class PricingService {
   }
 
   fetchDailyHistoricPrices(interval: number) {
-    this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 'max').subscribe({
+    this.pa.run({
+      chain: this.network as string, observableResults: false
+    }).prices.getHistoricalPrices(this.currency as string, 'max').subscribe({
       next: (history) => {
         if (this.interval === interval && history) { // Check if interval has not been destroyed.
           this.dailyHistoricPrices.next(history);
@@ -129,7 +130,9 @@ export class PricingService {
   }
 
   addLatestHistoricPrice(interval: number) {
-    this.pa.run(this.network as string).prices.getHistoricalPrices(this.currency as string, 1).subscribe({
+    this.pa.run({
+      chain: this.network as string, observableResults: false
+    }).prices.getHistoricalPrices(this.currency as string, 1).subscribe({
       next: (history) => {
         if (this.interval === interval && history) { // Check if interval has not been destroyed.
           const prices = this.dailyHistoricPrices.value;

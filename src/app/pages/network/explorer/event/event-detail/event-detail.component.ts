@@ -73,7 +73,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       tap(() => this.fetchEventStatus.next('loading')),
       switchMap(([blockNr, eventIdx]) => {
         const subject = new BehaviorSubject<pst.Event | null>(null);
-        (this.pa.run().getEvent(blockNr, eventIdx) as unknown as Observable<Observable<pst.Event>>).pipe( // TODO FIX TYPING
+        this.pa.run().getEvent(blockNr, eventIdx).pipe(
           takeUntil(this.destroyer),
           switchMap((obs) => obs),
         ).subscribe({
