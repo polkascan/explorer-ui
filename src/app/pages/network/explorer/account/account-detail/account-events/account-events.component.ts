@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-import { BehaviorSubject, combineLatest, Subject, takeUntil } from 'rxjs';
+import { BehaviorSubject, combineLatest, of, Subject, takeUntil } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
@@ -122,7 +122,7 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
           this.loading.next(false);
         }
       }),
-      switchMap((observables) => combineLatest(observables))
+      switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
     ).subscribe({
       next: (items) => {
         const merged = [...events, ...items.filter((event) => {

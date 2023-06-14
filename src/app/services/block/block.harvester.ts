@@ -16,7 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { BehaviorSubject, combineLatest, defer, Observable, Subject, Subscription, take, takeWhile, timer } from 'rxjs';
+import {
+  BehaviorSubject,
+  combineLatest,
+  defer,
+  Observable,
+  of,
+  Subject,
+  Subscription,
+  take,
+  takeWhile,
+  timer
+} from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt, types } from '@polkadapt/core';
 import { filter, finalize, first, switchMap, takeUntil, tap } from 'rxjs/operators';
@@ -254,8 +265,8 @@ export class BlockHarvester {
     if (loadBlocks) {
       // Then, await the result from Polkascan and update our cached block data.
       (this.polkadapt.run({chain: this.network})
-        .getBlocksUntil(untilNumber, pageSize) as unknown as Observable<Observable<types.Block>>).pipe(
-        switchMap((obs) => combineLatest(obs))
+        .getBlocksUntil(untilNumber, pageSize) as unknown as Observable<Observable<types.Block>[]>).pipe(
+        switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
       ).subscribe({
           next: (blocks: types.Block[]) => {
             if (blocks) {

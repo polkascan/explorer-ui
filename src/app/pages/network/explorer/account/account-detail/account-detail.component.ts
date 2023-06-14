@@ -358,11 +358,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           this.pa.run({observableResults: false}).getChildAccountName(subId)
         )
 
-        if (observables.length > 0) {
-          return combineLatest(observables);
-        } else {
-          return of([]);
-        }
+        return observables.length ? combineLatest(observables) : of([]);
       })
     );
 
@@ -422,7 +418,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           this.signedExtrinsicsLoading.next(false);
         }
       }),
-      switchMap((observables) => combineLatest(observables))
+      switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
     ).subscribe({
       next: (items) => {
         extrinsics = [
@@ -462,10 +458,11 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   }
 
   fetchTaggedAccounts(accountIdHex: string): void {
-    this.pa.run().getTaggedAccount(accountIdHex).pipe(
-      takeUntil(this.destroyer)
+    (this.pa.run().getTaggedAccount(accountIdHex) as unknown as Observable<Observable<pst.TaggedAccount>>).pipe(
+      takeUntil(this.destroyer),
+      switchMap((obs) => obs),
     ).subscribe({
-      next: (account: pst.TaggedAccount) => this.polkascanAccountInfo
+      next: (account: pst.TaggedAccount) => this.polkascanAccountInfo.next(account)
     });
   }
 

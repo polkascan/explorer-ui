@@ -19,7 +19,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
-import { BehaviorSubject, combineLatest, Observable, Subject, take } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, Subject, take } from 'rxjs';
 import { Block } from '../../../../../services/block/block.harvester';
 import { catchError, filter, first, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
@@ -103,7 +103,7 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
         if (block && block.finalized) {
           this.pa.run().getExtrinsics({blockNumber: block.number, blockRangeBegin: block.number, blockRangeEnd: block.number}, 300).pipe(
             take(1),
-            switchMap((extrinsics) => combineLatest(extrinsics)),
+            switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
             takeUntil(this.destroyer)
           ).subscribe({
             next: (extrinsics: pst.Extrinsic[]) => this.extrinsics.next(extrinsics)
@@ -111,7 +111,7 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
 
           this.pa.run().getEvents({blockNumber: block.number, blockRangeBegin: block.number, blockRangeEnd: block.number}, 300).pipe(
             take(1),
-            switchMap((events) => combineLatest(events)),
+            switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
             takeUntil(this.destroyer),
           ).subscribe({
             next: (events: pst.Event[]) => this.events.next(events)

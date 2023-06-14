@@ -17,8 +17,6 @@
   -->
 
 <ng-container *ngIf="(networkProperties | async) as props">
-  {{(balancesObservable | async)?.length}}
-
   <mat-tab-group dynamicHeight animationDuration="0ms">
     <mat-tab label="Chart">
       <div *ngIf="(chartDataObservable | async) as chartOptions" class="historical-balance-chart">

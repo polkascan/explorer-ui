@@ -113,7 +113,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
       switchMap(([runtime, pallet, eventName]) => {
         const subject = new BehaviorSubject<(pst.RuntimeEventAttribute & { parsedComposition?: any })[]>([]);
         this.pa.run().getRuntimeEventAttributes(runtime.specName, runtime.specVersion, pallet, eventName).pipe(
-          switchMap((obs) => combineLatest(obs)),
+          switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
           takeUntil(this.destroyer)
         ).subscribe({
           next: (items) => {

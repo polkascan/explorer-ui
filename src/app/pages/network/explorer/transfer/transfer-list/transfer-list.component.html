@@ -52,7 +52,7 @@
 </div>
 
 <div class="centered-button-bar" *ngIf="(pageLiveObservable | async) === false">
-  <button [disabled]="loadingObservable | async" mat-stroked-button
+  <button [disabled]="(loadingObservable | async) === true" mat-stroked-button
           aria-label="Show latest" (click)="gotoLatestItems()">
     Show latest
     <mat-icon>change_circle</mat-icon>

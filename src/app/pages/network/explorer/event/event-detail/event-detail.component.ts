@@ -28,7 +28,7 @@ import {
   switchMap,
   takeUntil
 } from 'rxjs/operators';
-import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, Subject, tap } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 
@@ -74,8 +74,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       switchMap(([blockNr, eventIdx]) => {
         const subject = new BehaviorSubject<pst.Event | null>(null);
         (this.pa.run().getEvent(blockNr, eventIdx) as unknown as Observable<Observable<pst.Event>>).pipe( // TODO FIX TYPING
+          takeUntil(this.destroyer),
           switchMap((obs) => obs),
-          takeUntil(this.destroyer)
         ).subscribe({
           next: (event) => {
             if (event) {
@@ -102,13 +102,11 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         if (event && event.specName && event.specVersion && event.eventModule && event.eventName) {
           const subject: Subject<pst.RuntimeEventAttribute[]> = new Subject();
           this.pa.run().getRuntimeEventAttributes(event.specName, event.specVersion, event.eventModule, event.eventName).pipe(
-
+            switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
           ).subscribe({
             next: (items) => {
               if (Array.isArray(items)) {
                 subject.next(items);
-              } else {
-                subject.error('Invalid response.')
               }
             },
             error: (e) => {

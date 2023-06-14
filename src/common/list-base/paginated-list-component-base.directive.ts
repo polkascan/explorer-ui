@@ -126,12 +126,22 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
       .pipe(
         takeUntil(this.destroyer),
         filter(() => this.pageLive),
-        switchMap<Observable<T> | T, Observable<T>>((item) => isObservable(item) ? item : of(item))
+        switchMap<Observable<T> | T, Observable<T>>((item) => isObservable(item) ? item.pipe(takeUntil(this.destroyer)) : of(item))
       ).subscribe((item: T) => {
       const itemObservables = this.itemsObservable.value;
       // Add the latest item to the list.
-      itemObservables.splice(0, 0, item);
-      this.itemsObservable.next(itemObservables);
+      if (itemObservables.findIndex(
+        (b) => {
+          return this.equalityCompareFn((item as T), (b as T))
+        }
+      ) === -1) {
+        const list = [item, ...itemObservables];
+        list.sort(this.sortCompareFn);
+        if (list.length > this.listSize) {
+          list.length = this.listSize;
+        }
+        this.itemsObservable.next(list);
+      }
     });
   }
 
@@ -169,7 +179,7 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
     if (typeof this.createNewItemSubscription === 'function') {
       const newItemObservable = this.createNewItemSubscription();
       this.newItemSubscription = newItemObservable.pipe(
-        takeUntil(this.destroyer)
+        takeUntil(this.destroyer),
       ).subscribe((item) => this.handleItem(item));
     }
   }
@@ -230,14 +240,12 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
           if (items.length >= this.listSize) {
             listAtEnd = false;
             itemsSubscription.unsubscribe();
-          } else {
+          } else if (items.length === 0) {
             listAtEnd = true;
           }
 
-          this.itemsObservable.next([...list, ...items]);
-        },
-        complete: () => {
           this.listAtEnd.next(listAtEnd);
+          this.itemsObservable.next([...list, ...items]);
         }
       });
 

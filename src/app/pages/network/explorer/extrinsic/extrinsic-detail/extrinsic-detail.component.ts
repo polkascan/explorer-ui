@@ -101,7 +101,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
         (this.pa.run()
           .getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100) as unknown as Observable<Observable<pst.Event>[]>) // TODO FIX TYPING
           .pipe(
-          switchMap((obs) => combineLatest(obs)),
+          switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
           takeUntil(this.destroyer)
         ).subscribe({
           next: (items) => {
