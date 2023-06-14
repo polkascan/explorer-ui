@@ -330,9 +330,9 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
     if (this.addressControl.value) {
       filters.multiAddressAccountId = u8aToHex(decodeAddress(this.addressControl.value));
     }
-    if (this.specVersionControl.value) {
-      filters.specVersion = this.specVersionControl.value;
-    }
+    // if (this.specVersionControl.value) {  // TURNED OFF, can be turned on when specversion is indexed in the db.
+    //   filters.specVersion = this.specVersionControl.value;
+    // }
     if (this.dateRangeBeginControl.value) {
       filters.dateRangeBegin = this.dateRangeBeginControl.value;
     }

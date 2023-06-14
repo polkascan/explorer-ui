@@ -352,9 +352,9 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
     if (this.eventNameControl.value) {
       filters.eventName = this.eventNameControl.value;
     }
-    if (this.specVersionControl.value) {
-      filters.specVersion = this.specVersionControl.value;
-    }
+    // if (this.specVersionControl.value) {   // TURNED OFF, can be turned on when specversion is indexed in the db.
+    //   filters.specVersion = this.specVersionControl.value;
+    // }
     if (this.dateRangeBeginControl.value) {
       filters.dateRangeBegin = this.dateRangeBeginControl.value;
     }

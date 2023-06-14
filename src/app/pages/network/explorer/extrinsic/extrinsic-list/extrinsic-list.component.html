@@ -23,7 +23,7 @@
     <mat-label>Runtime</mat-label>
     <mat-select [formControl]="specVersionControl">
       <mat-option *ngIf="(specVersions | async)?.length === 0" [value]="specVersionControl.value">Loading...</mat-option>
-      <mat-option [value]="''">All versions</mat-option>
+      <mat-option [value]="''">Current version</mat-option>
       <ng-container *ngFor="let specVersion of specVersions | async">
         <mat-option [value]="specVersion">
           {{specVersion}}
