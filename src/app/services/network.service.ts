@@ -37,9 +37,8 @@ export interface NetworkProperties {
   tokenDecimals: number;
   systemName: string | null;
   specName: string | null;
-  systemVersion: string | null;
   iconTheme: IconTheme;
-  blockTime: number | null;
+  blockTime?: number | null;
 }
 
 
@@ -107,20 +106,23 @@ export class NetworkService {
       this.rs.initialize(network);
       this.ps.initialize(network, this.vs.currency.value);
 
-      this.pa.run({observableResults: false}).getChainProperties().subscribe({
+      this.pa.run({observableResults: false}).getChainProperties()
+        .pipe(
+          filter((properties) => Boolean((properties.name || properties.systemName) && properties.specName))
+        ).subscribe({
         next: (properties: types.ChainProperties) => {
+          const name: string = (properties.name ? properties.name : properties.systemName) as string;
           const ss58Format: number = properties.chainSS58 ?? this.defaultSS58;
           const tokenSymbol: string = (properties.chainTokens && properties.chainTokens[0]) ?? this.defaultSymbol;
           const tokenDecimals: number = (properties.chainDecimals && properties.chainDecimals[0]) ?? this.defaultDecimals;
-          const iconTheme: IconTheme = properties.systemName && properties.specName && getSystemIcon(properties.systemName, properties.specName) || 'substrate';
+          const iconTheme: IconTheme = name && properties.specName && getSystemIcon(name, properties.specName) || 'substrate';
 
           this.currentNetworkProperties.next({
             ss58Format: ss58Format,
             tokenSymbol: tokenSymbol,
             tokenDecimals: tokenDecimals,
-            systemName: properties.systemName,
+            systemName: name,
             specName: properties.specName,
-            systemVersion: properties.systemVersion,
             iconTheme: iconTheme,
             blockTime: properties.blockTime,
           });
