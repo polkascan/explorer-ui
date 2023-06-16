@@ -16,21 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import {
-  BehaviorSubject,
-  combineLatest,
-  defer,
-  Observable,
-  of,
-  Subject,
-  Subscription,
-  take,
-  takeWhile,
-  timer
-} from 'rxjs';
+import { BehaviorSubject, combineLatest, defer, Observable, of, Subject, Subscription, take } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt, types } from '@polkadapt/core';
-import { filter, finalize, first, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { filter, finalize, first, switchMap, takeUntil } from 'rxjs/operators';
 
 export type Block = Partial<types.Block> & {
   status: 'new' | 'loading' | 'loaded',
@@ -99,8 +88,7 @@ export class BlockHarvester {
   private async subscribeNewBlocks(): Promise<void> {
     if (!this.newBlockSubscription) {
       // Subscribe to new blocks *without finality*.
-      this.newBlockSubscription = this.polkadapt.run().subscribeNewBlock().pipe(
-      ).subscribe({
+      this.newBlockSubscription = this.polkadapt.run().subscribeNewBlock().subscribe({
         next: (block) => {
           const done = new Subject<void>();
 
@@ -268,27 +256,27 @@ export class BlockHarvester {
       this.polkadapt.run({chain: this.network}).getBlocksUntil(untilNumber, pageSize).pipe(
         switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
       ).subscribe({
-          next: (blocks: types.Block[]) => {
-            if (blocks) {
-              for (const obj of blocks) {
-                const blockNr: number = obj.number;
-                const cached: BehaviorSubject<Block> = this.cache[blockNr];
-                if (!cached.value.finalized || cached.value.status !== 'loaded') {
-                  const block: Block = Object.assign({}, cached.value, obj, {
-                    status: 'loaded',
-                    finalized: true,
-                    extrinsics: new Array(obj.countExtrinsics),
-                    events: new Array(obj.countEvents)
-                  });
-                  cached.next(block);
-                }
-                if (blockNr > this.loadedNumber.value) {
-                  this.loadedNumber.next(blockNr);
-                }
+        next: (blocks: types.Block[]) => {
+          if (blocks) {
+            for (const obj of blocks) {
+              const blockNr: number = obj.number;
+              const cached: BehaviorSubject<Block> = this.cache[blockNr];
+              if (!cached.value.finalized || cached.value.status !== 'loaded') {
+                const block: Block = Object.assign({}, cached.value, obj, {
+                  status: 'loaded',
+                  finalized: true,
+                  extrinsics: new Array(obj.countExtrinsics),
+                  events: new Array(obj.countEvents)
+                });
+                cached.next(block);
+              }
+              if (blockNr > this.loadedNumber.value) {
+                this.loadedNumber.next(blockNr);
               }
             }
           }
-        });
+        }
+      });
     }
   }
 
