@@ -239,7 +239,7 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
         next: (items) => {
           if (items.length >= this.listSize) {
             listAtEnd = false;
-            itemsSubscription.unsubscribe();
+            // itemsSubscription.unsubscribe();
           } else if (items.length === 0) {
             listAtEnd = true;
           }
