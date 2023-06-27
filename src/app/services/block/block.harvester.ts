@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { BehaviorSubject, combineLatest, defer, Observable, of, Subject, Subscription, take } from 'rxjs';
+import { BehaviorSubject, combineLatest, defer, EMPTY, merge, Observable, of, Subject, Subscription, take } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt, types } from '@polkadapt/core';
-import { filter, finalize, first, switchMap, takeUntil } from 'rxjs/operators';
+import { debounceTime, filter, finalize, first, switchMap, takeUntil } from 'rxjs/operators';
 
 export type Block = Partial<types.Block> & {
   status: 'new' | 'loading' | 'loaded',
@@ -253,27 +253,21 @@ export class BlockHarvester {
 
     if (loadBlocks) {
       // Then, await the result from Polkascan and update our cached block data.
-      this.polkadapt.run({chain: this.network}).getBlocksUntil(untilNumber, pageSize).pipe(
-        switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+      this.polkadapt.run().getBlocksUntil(untilNumber, pageSize).pipe(
+        switchMap((obs) => obs.length ? merge(...obs) : EMPTY)
       ).subscribe({
-        next: (blocks: types.Block[]) => {
-          if (blocks) {
-            for (const obj of blocks) {
-              const blockNr: number = obj.number;
-              const cached: BehaviorSubject<Block> = this.cache[blockNr];
-              if (!cached.value.finalized || cached.value.status !== 'loaded') {
-                const block: Block = Object.assign({}, cached.value, obj, {
-                  status: 'loaded',
-                  finalized: true,
-                  extrinsics: new Array(obj.countExtrinsics),
-                  events: new Array(obj.countEvents)
-                });
-                cached.next(block);
-              }
-              if (blockNr > this.loadedNumber.value) {
-                this.loadedNumber.next(blockNr);
-              }
-            }
+        next: (obj) => {
+          const blockNr: number = obj.number;
+          const cached: BehaviorSubject<Block> = this.cache[blockNr];
+          const block: Block = Object.assign({}, cached.value, obj, {
+            status: 'loaded',
+            finalized: true,
+            extrinsics: new Array(obj.countExtrinsics),
+            events: new Array(obj.countEvents)
+          });
+          cached.next(block);
+          if (blockNr > this.loadedNumber.value) {
+            this.loadedNumber.next(blockNr);
           }
         }
       });

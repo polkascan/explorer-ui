@@ -614,8 +614,11 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           free: account?.data?.free || null,
           reserved: account?.data?.reserved || null,
           total: account?.data?.free && account?.data?.reserved && account.data.free.add(account.data.reserved) || null,
-          transferable: account?.data?.free && account?.data?.feeFrozen && account.data.free.sub(account.data.feeFrozen) || null,
-          locked: account?.data?.feeFrozen || null
+          transferable: account?.data?.free
+            && (account?.data?.frozen || account?.data?.feeFrozen)
+            && account.data.free.sub((account?.data?.frozen || account?.data?.feeFrozen) as BN)
+            || null,
+          locked: account?.data?.frozen || account?.data?.feeFrozen || null
         }) as HistoricalBalance)
       ).subscribe({
         next: (val) => observable.next(val)

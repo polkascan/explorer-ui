@@ -31,7 +31,7 @@ import {
   takeUntil,
   tap
 } from 'rxjs/operators';
-import { BehaviorSubject, catchError, combineLatest, Observable, of, Subject, take } from 'rxjs';
+import { BehaviorSubject, catchError, combineLatest, EMPTY, Observable, of, Subject, take } from 'rxjs';
 import { DeriveAccountFlags, DeriveBalancesAll, DeriveStakingAccount } from '@polkadot/api-derive/types';
 import { BN, BN_ZERO, u8aToHex } from '@polkadot/util';
 import { types as pst } from '@polkadapt/core';
@@ -460,7 +460,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   fetchTaggedAccounts(accountIdHex: string): void {
     this.pa.run().getTaggedAccount(accountIdHex).pipe(
       takeUntil(this.destroyer),
-      switchMap((obs) => obs),
+      switchMap((obs) => obs ? obs : EMPTY),
     ).subscribe({
       next: (account: pst.TaggedAccount) => this.polkascanAccountInfo.next(account)
     });
