@@ -47,12 +47,12 @@
     <ng-container [ngSwitch]="(ns.online | async)">
       <mat-icon *ngSwitchCase="false">wifi_off</mat-icon>
       <ng-container *ngSwitchDefault>
-        <ng-container [ngSwitch]="(pa.substrateRpcRegistered|async) === false || (pa.explorerRegistered|async) === false">
+        <ng-container [ngSwitch]="(pa.substrateRpcRegistered|async) === false || (pa.availableAdapters[ns.currentNetwork.value].explorerApi && pa.explorerRegistered|async) === false">
           <ng-container *ngSwitchCase="true">
             <mat-icon>report_problem</mat-icon>
           </ng-container>
           <ng-container *ngSwitchDefault>
-            <mat-icon [class.connecting]="(pa.substrateRpcConnected|async) === false || (pa.explorerWsConnected|async) === false">wifi</mat-icon>
+            <mat-icon [class.connecting]="(pa.substrateRpcConnected|async) === false || (pa.availableAdapters[ns.currentNetwork.value].explorerApi && pa.explorerWsConnected|async) === false">wifi</mat-icon>
           </ng-container>
         </ng-container>
       </ng-container>

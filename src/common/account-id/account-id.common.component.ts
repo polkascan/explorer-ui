@@ -177,10 +177,10 @@ export class AccountIdCommonComponent implements OnInit, OnChanges, OnDestroy {
 
     this.derivedAccountInfo = this.encoded.pipe(
       switchMap((address: string) => {
-        if (!address) {
+        if (!address || !this.pa.availableAdapters[network as string].substrateRpc) {
           return of(null);
         }
-        const apiPromise = this.pa.availableAdapters[network as string].substrateRpc.apiPromise;
+        const apiPromise = this.pa.availableAdapters[network as string].substrateRpc!.apiPromise;
         return from(apiPromise).pipe(
           takeUntil(this.destroyer),
           switchMap((api) => api.derive.accounts.info(address).pipe(

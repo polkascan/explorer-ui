@@ -52,7 +52,7 @@
       </ng-container>
     </form>
 
-    <form [formGroup]="explorerWsUrlForm" (ngSubmit)="submitExplorerWsUrl()">
+    <form *ngIf="pa.availableAdapters[ns.currentNetwork.value].explorerApi" [formGroup]="explorerWsUrlForm" (ngSubmit)="submitExplorerWsUrl()">
       <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
         <mat-label>{{vars.network|async}} Polkascan URL</mat-label>
         <input type="text"

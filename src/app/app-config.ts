@@ -30,6 +30,9 @@ type NetworkConfig = {
       giantSquidMainUrl: string;
       balancesUrl: string;
     };
+    coingecko: {
+      coinId: string;
+    };
   };
 };
 
