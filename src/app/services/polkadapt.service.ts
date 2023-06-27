@@ -116,11 +116,14 @@ export class PolkadaptService {
           balancesUrl: this.config.networks[network].subsquid?.balancesUrl
         });
       }
-      aa.coingeckoApi = new coingecko.Adapter({
-        chain: network,
-        apiEndpoint: 'https://api.coingecko.com/api/v3/',
-        coinId: config.coingecko.coinId
-      });
+      if (config.coingecko && config.coingecko.coinId) {
+        aa.coingeckoApi = new coingecko.Adapter({
+          chain: network,
+          apiEndpoint: 'https://api.coingecko.com/api/v3/',
+          coinId: config.coingecko.coinId
+        });
+      }
+
       this.badAdapterUrls[network] = {
         substrateRpc: [],
         explorerApi: [],
