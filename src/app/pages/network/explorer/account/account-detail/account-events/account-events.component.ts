@@ -177,9 +177,9 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     const attrNames = ['amount', 'actual_fee', 'tip'];
     const amounts: [string, number][] = [];
     for (let name of attrNames) {
-      const match = new RegExp(`"${name}": ?(\"?\\d+\"?)`).exec(data);
+      const match = new RegExp(`"${name}": ?\"?(\\d+)\"?`).exec(data);
       if (match) {
-        amounts.push([name, parseInt(match[1].replace('"', ''), 10)]);
+        amounts.push([name, parseInt(match[1], 10)]);
       }
     }
     return amounts;
