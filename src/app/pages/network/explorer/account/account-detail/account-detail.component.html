@@ -25,8 +25,8 @@
   </ng-container>
 
   <ng-template #noAccount>
-    <div *ngIf="(id | async) as address">
-      <div class="account-address" *ngIf="(id | async) as address">
+    <div *ngIf="(address | async) as address">
+      <div class="account-address">
         <div class="account-address-identicon">
           <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format"
                      (copied)="copied($event)"></identicon>
@@ -39,7 +39,7 @@
   <ng-template #hasAccount>
     <ng-container *ngIf="(derivedAccountInfo | async) as dai">
 
-      <div class="account-address" *ngIf="(id | async) as address">
+      <div class="account-address" *ngIf="(address | async) as address">
         <div class="account-address-identicon">
           <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format"
                      (copied)="copied($event)"></identicon>
@@ -385,7 +385,7 @@
 
     <mat-tab label="Transfers">
       <ng-container *ngIf="loadedTabs[1]">
-        <ng-container *ngIf="id | async as address">
+        <ng-container *ngIf="(id | async) as address">
           <app-account-events [address]="address" [listSize]="listsSize"
                               [eventTypes]="{'Balances': ['Transfer']}"
                               [columns]="['icon', 'referencedTransaction', 'age', 'direction', 'address', 'amount', 'detailsExtrinsic']"></app-account-events>
@@ -395,7 +395,7 @@
 
     <mat-tab label="Staking">
       <ng-container *ngIf="loadedTabs[2]">
-        <ng-container *ngIf="id | async as address">
+        <ng-container *ngIf="(id | async) as address">
           <app-account-events [address]="address" [listSize]="listsSize"
                               [eventTypes]="{'Staking': ['Bonded', 'Chilled', 'Kicked', 'Rewarded', 'Slashed', 'Unbonded', 'Withdrawn']}"
                               [columns]="['icon', 'age', 'event', 'amount', 'details']"></app-account-events>
@@ -403,7 +403,7 @@
       </ng-container>
     </mat-tab>
 
-    <mat-tab label="Balance History" *ngIf="id | async as accountId">
+    <mat-tab label="Balance History" *ngIf="(id | async) as accountId">
       <ng-container *ngIf="loadedTabs[3]">
         <app-historical-balance [accountId]="accountId" [accountHex]="accountAsHex | async"></app-historical-balance>
       </ng-container>
@@ -411,7 +411,7 @@
 
     <mat-tab label="Events">
       <ng-container *ngIf="loadedTabs[4]">
-        <ng-container *ngIf="id | async as address">
+        <ng-container *ngIf="(id | async) as address">
           <app-account-events [address]="address" [listSize]="listsSize"></app-account-events>
         </ng-container>
       </ng-container>

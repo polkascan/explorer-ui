@@ -31,16 +31,22 @@ import {
   takeUntil,
   tap
 } from 'rxjs/operators';
-import { BehaviorSubject, catchError, combineLatest, EMPTY, Observable, of, Subject, take } from 'rxjs';
-import { DeriveAccountFlags, DeriveBalancesAll, DeriveStakingAccount } from '@polkadot/api-derive/types';
-import { BN, BN_ZERO, u8aToHex } from '@polkadot/util';
-import { types as pst } from '@polkadapt/core';
-import { decodeAddress, validateAddress } from '@polkadot/util-crypto';
-import { TooltipsService } from '../../../../../services/tooltips.service';
 import {
-  getAccountBalances,
-  getAccountFlags
-} from '../../../../../../../polkadapt/projects/substrate-rpc/src/lib/web-socket/account.functions';
+  BehaviorSubject,
+  catchError,
+  combineLatest,
+  combineLatestWith,
+  EMPTY,
+  Observable,
+  of,
+  Subject,
+  take
+} from 'rxjs';
+import { DeriveStakingAccount } from '@polkadot/api-derive/types';
+import { BN, BN_ZERO, isHex, isU8a, u8aToHex } from '@polkadot/util';
+import { types as pst } from '@polkadapt/core';
+import { decodeAddress, encodeAddress, validateAddress } from '@polkadot/util-crypto';
+import { TooltipsService } from '../../../../../services/tooltips.service';
 
 
 interface AccountBalance {
@@ -96,6 +102,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   id: Observable<string | null>;
   accountAsHex = new BehaviorSubject<string | null>(null);
   account: Observable<pst.Account | null>;
+  address: Observable<string>;
   subs: Observable<any>;
   identity: Observable<pst.AccountIdentity | null>;
   accountIndex: Observable<number | null>;
@@ -229,6 +236,17 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           )
           : of(null))
     );
+
+    this.address = idObservable.pipe(
+      combineLatestWith(this.networkProperties),
+      map(([id, props]) => {
+          if (id && props && (isU8a(id) || isHex(id))) {
+            return encodeAddress(id, props.ss58Format);
+          }
+          return id || '';
+        }
+      )
+    )
 
     this.accountIndex = idObservable.pipe(
       switchMap((id) =>
