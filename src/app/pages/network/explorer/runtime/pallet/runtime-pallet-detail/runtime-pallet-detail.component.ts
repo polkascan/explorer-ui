@@ -120,11 +120,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
               }
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });
         }
-
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {
@@ -148,11 +148,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
               this.fetchCallsStatus.next(null);
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });
         }
-
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {
@@ -176,11 +176,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
               this.fetchEventsStatus.next(null);
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });
         }
-
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {
@@ -204,11 +204,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
               this.fetchStoragesStatus.next(null);
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });
         }
-
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {
@@ -232,11 +232,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
               this.fetchConstantsStatus.next(null);
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });
         }
-
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {
@@ -260,11 +260,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
               this.fetchErrorMessagesStatus.next(null);
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });
         }
-
         return subject.pipe(takeUntil(this.destroyer));
       }),
       catchError((e) => {

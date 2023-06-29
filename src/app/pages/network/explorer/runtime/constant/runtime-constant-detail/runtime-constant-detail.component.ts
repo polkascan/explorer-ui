@@ -94,6 +94,7 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
               }
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });

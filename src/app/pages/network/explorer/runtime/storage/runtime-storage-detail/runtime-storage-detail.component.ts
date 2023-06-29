@@ -98,6 +98,7 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
             }
           },
           error: (e) => {
+            console.error(e);
             subject.error(e);
           }
         });

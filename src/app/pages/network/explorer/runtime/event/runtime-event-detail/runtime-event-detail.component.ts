@@ -96,6 +96,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
               }
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });
@@ -129,6 +130,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
             }
           },
           error: (e) => {
+            console.error(e);
             subject.error(e);
           }
         });

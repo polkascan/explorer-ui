@@ -20,14 +20,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnIni
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import {
-  catchError,
-  filter,
-  first,
-  map,
-  switchMap,
-  takeUntil
-} from 'rxjs/operators';
+import { catchError, filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
 import { BehaviorSubject, combineLatest, Observable, of, Subject, tap } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
@@ -86,6 +79,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
             }
           },
           error: (e) => {
+            console.error(e);
             subject.error(e);
           }
         });
@@ -110,6 +104,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
               }
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });

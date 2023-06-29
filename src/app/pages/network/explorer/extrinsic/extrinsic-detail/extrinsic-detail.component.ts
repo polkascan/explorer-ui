@@ -83,6 +83,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
           }
           ,
           error: (e) => {
+            console.error(e);
             subject.error(e);
           }
         });
@@ -113,6 +114,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
           }
           ,
           error: (e) => {
+            console.error(e);
             subject.error(e)
           }
         });

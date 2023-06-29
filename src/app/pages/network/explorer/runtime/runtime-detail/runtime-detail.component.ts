@@ -97,7 +97,8 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
             this.fetchPalletsStatus.next(null)
           },
           error: (e) => {
-            subject.error(e)
+            console.error(e);
+            subject.error(e);
           }
         });
         return subject.pipe(takeUntil(this.destroyer));

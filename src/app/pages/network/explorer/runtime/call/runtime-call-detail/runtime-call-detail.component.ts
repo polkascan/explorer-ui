@@ -99,6 +99,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
               }
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });
@@ -133,6 +134,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
               }
             },
             error: (e) => {
+              console.error(e);
               subject.error(e);
             }
           });
