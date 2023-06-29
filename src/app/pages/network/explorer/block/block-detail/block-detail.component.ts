@@ -19,7 +19,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
-import { BehaviorSubject, combineLatest, Observable, of, Subject, take } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, Subject, take, timer } from 'rxjs';
 import { Block } from '../../../../../services/block/block.harvester';
 import { catchError, filter, first, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
@@ -96,23 +96,39 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
 
 
     this.block.pipe(
-      filter((block) => Boolean(block && block.finalized === true)),
+      filter((block): block is Block => Boolean(block && block.finalized === true)),
       take(1)
     ).subscribe({
       next: (block) => {
-        if (block && block.finalized) {
-          this.pa.run().getExtrinsics({blockNumber: block.number, blockRangeBegin: block.number, blockRangeEnd: block.number}, 300).pipe(
-            take(1),
-            switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
-            takeUntil(this.destroyer)
+        this.extrinsics.next([]);
+        if (block.countExtrinsics) {
+          timer(0, 1000).pipe(
+            take(10),  // Try it for 10 seconds.
+            switchMap(() => this.pa.run().getExtrinsics({
+              blockNumber: block.number,
+              blockRangeBegin: block.number,
+              blockRangeEnd: block.number
+            }, 300)),
+            takeUntil(this.destroyer),
+            takeWhile((extrinsics) => block.countExtrinsics! > extrinsics.length, true),
+            switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
           ).subscribe({
             next: (extrinsics: pst.Extrinsic[]) => this.extrinsics.next(extrinsics)
           });
+        }
 
-          this.pa.run().getEvents({blockNumber: block.number, blockRangeBegin: block.number, blockRangeEnd: block.number}, 300).pipe(
-            take(1),
-            switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
+        this.events.next([]);
+        if (block.countEvents) {
+          timer(0, 1000).pipe(
+            take(10),  // Try it for 10 seconds.
+            switchMap(() => this.pa.run().getEvents({
+              blockNumber: block.number,
+              blockRangeBegin: block.number,
+              blockRangeEnd: block.number
+            }, 300)),
             takeUntil(this.destroyer),
+            takeWhile((events) => block.countEvents! > events.length, true),
+            switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
           ).subscribe({
             next: (events: pst.Event[]) => this.events.next(events)
           });

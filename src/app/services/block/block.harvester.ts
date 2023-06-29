@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { BehaviorSubject, combineLatest, defer, EMPTY, merge, Observable, of, Subject, Subscription, take } from 'rxjs';
+import { BehaviorSubject, combineLatest, defer, EMPTY, merge, Observable, Subject, Subscription, take } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
 import { Polkadapt, types } from '@polkadapt/core';
-import { debounceTime, filter, finalize, first, switchMap, takeUntil } from 'rxjs/operators';
+import { filter, finalize, first, switchMap, takeUntil } from 'rxjs/operators';
 
 export type Block = Partial<types.Block> & {
   status: 'new' | 'loading' | 'loaded',
