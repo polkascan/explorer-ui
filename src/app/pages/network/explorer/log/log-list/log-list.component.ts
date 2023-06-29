@@ -21,7 +21,8 @@ import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-log-list',
@@ -33,6 +34,7 @@ export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
   listSize = 100;
   blockNumberIdentifier = 'blockNumber'
   visibleColumns = ['icon', 'logID', 'age', 'block', 'type', 'details'];
+  logsNotAvailable = new BehaviorSubject<boolean>(false);
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService) {
@@ -42,7 +44,12 @@ export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
 
   createGetItemsRequest(untilBlockNumber?: number): Observable<Observable<pst.Log>[]> {
     const filters = untilBlockNumber ? { blockRangeEnd: untilBlockNumber } : undefined;
-    return this.pa.run(this.network).getLogs(filters, this.listSize);
+    return this.pa.run(this.network).getLogs(filters, this.listSize).pipe(
+      catchError((e) => {
+        this.logsNotAvailable.next(true);
+        return throwError(e)
+      })
+    );
   }
 
 
