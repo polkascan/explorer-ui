@@ -299,12 +299,12 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
     return this.pa.run(this.network).getExtrinsics(
       filters,
       this.listSize
-    ) as any;  // TODO FIX ME!!
+    );
   }
 
 
   createNewItemSubscription(): Observable<Observable<pst.Extrinsic>> {
-    return this.pa.run(this.network).subscribeNewExtrinsic(this.filters) as any;  // TODO FIX ME!!
+    return this.pa.run(this.network).subscribeNewExtrinsic(this.filters);
   }
 
 

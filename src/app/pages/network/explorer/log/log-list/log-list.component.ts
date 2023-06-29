@@ -42,12 +42,12 @@ export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
 
   createGetItemsRequest(untilBlockNumber?: number): Observable<Observable<pst.Log>[]> {
     const filters = untilBlockNumber ? { blockRangeEnd: untilBlockNumber } : undefined;
-    return this.pa.run(this.network).getLogs(filters, this.listSize) as any;  // TODO FIX ME!!
+    return this.pa.run(this.network).getLogs(filters, this.listSize);
   }
 
 
   createNewItemSubscription(): Observable<Observable<pst.Log>> {
-    return this.pa.run(this.network).subscribeNewLog() as any;  // TODO FIX ME!!
+    return this.pa.run(this.network).subscribeNewLog();
   }
 
 

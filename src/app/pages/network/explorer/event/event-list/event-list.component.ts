@@ -310,12 +310,12 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
         u8aToHex(decodeAddress(this.addressControl.value)),
         filters,
         this.listSize
-      ) as any;  // TODO FIX ME!!
+      );
     } else {
       return this.pa.run(this.network).getEvents(
         filters,
         this.listSize
-      ) as any;  // TODO FIX ME!!
+      );
     }
   }
 
@@ -325,11 +325,11 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
       return this.pa.run(this.network).subscribeNewEventByAccount(
         u8aToHex(decodeAddress(this.addressControl.value)),
         this.filters
-      ) as any;  // TODO FIX ME!!
+      );
     } else {
       return this.pa.run(this.network).subscribeNewEvent(
         this.filters
-      ) as any;  // TODO FIX ME!!
+      );
     }
   }
 

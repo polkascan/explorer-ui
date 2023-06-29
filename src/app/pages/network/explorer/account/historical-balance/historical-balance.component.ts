@@ -29,7 +29,7 @@ import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
-import { BehaviorSubject, combineLatest, Observable, of, ReplaySubject, Subject, take } from 'rxjs';
+import { BehaviorSubject, combineLatest, EMPTY, Observable, of, ReplaySubject, Subject, take } from 'rxjs';
 import {
   combineLatestWith,
   distinctUntilChanged,
@@ -174,9 +174,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         this.accountHex,
         filters,
         this.listSize
-      ).pipe(takeUntil(this.destroyer)) as any;  // TODO FIX ME!!
+      ).pipe(takeUntil(this.destroyer));
     }
-    return new Subject<pst.AccountEvent[]>().pipe(takeUntil(this.destroyer)) as any;  // TODO FIX ME!!
+    return EMPTY;
   }
 
 
@@ -185,9 +185,9 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
       return this.pa.run(this.network).subscribeNewEventByAccount(
         this.accountHex,
         this.filters
-      ).pipe(takeUntil(this.destroyer)) as any;  // TODO FIX ME!!
+      ).pipe(takeUntil(this.destroyer));
     }
-    return new Subject<pst.AccountEvent>().pipe(takeUntil(this.destroyer)) as any;  // TODO FIX ME!!
+    return EMPTY;
   }
 
 

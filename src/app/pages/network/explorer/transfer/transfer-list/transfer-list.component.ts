@@ -174,12 +174,12 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
         u8aToHex(decodeAddress(this.addressControl.value)),
         filters,
         this.listSize
-      ) as any;  // TODO FIX ME!!!
+      );
     } else {
       return this.pa.run(this.network).getEvents(
         filters,
         this.listSize
-      ) as any;  // TODO FIX ME!!!!
+      );
     }
   }
 
@@ -189,11 +189,11 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
       return this.pa.run(this.network).subscribeNewEventByAccount(
         u8aToHex(decodeAddress(this.addressControl.value)),
         this.filters
-      ) as any;  // TODO FIX ME!!!
+      );
     } else {
       return this.pa.run(this.network).subscribeNewEvent(
         this.filters
-      ) as any;   // TODO FIX ME!!!
+      );
     }
   }
 
