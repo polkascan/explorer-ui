@@ -190,7 +190,10 @@ export class RuntimeService {
       const runtimePallets = cache.runtimePallets = new BehaviorSubject([] as pst.RuntimePallet[]);
       this.pa.run({observableResults: false}).getRuntimePallets((cache.runtime.value as pst.Runtime).specName, specVersion).subscribe({
         next: (items) => runtimePallets.next(items),
-        error: () => delete cache.runtimePallets
+        error: (e) => {
+          console.error(e);
+          delete cache.runtimePallets
+        }
       });
     }
     return cache.runtimePallets!;
