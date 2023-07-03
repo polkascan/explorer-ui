@@ -117,8 +117,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
       switchMap(([runtime, pallet, callName]) => {
         const subject = new BehaviorSubject<(pst.RuntimeCallArgument & { parsedComposition?: any })[]>([]);
         if (runtime) {
-          this.pa.run().getRuntimeCallArguments(runtime.specName, runtime.specVersion, pallet, callName).pipe(
-            switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
+          this.rs.getRuntimeCallArguments(runtime.specName, runtime.specVersion, pallet, callName).pipe(
             takeUntil(this.destroyer)
           ).subscribe({
             next: (items) => {

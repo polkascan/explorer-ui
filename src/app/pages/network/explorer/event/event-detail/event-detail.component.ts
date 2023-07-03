@@ -97,7 +97,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
           const subject: Subject<pst.RuntimeEventAttribute[]> = new Subject();
 
           this.rs.getRuntimeEventAttributes(this.ns.currentNetwork.value, event.specVersion, event.eventModule, event.eventName).pipe(
-            switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+            takeUntil(this.destroyer)
           ).subscribe({
             next: (items) => {
               if (Array.isArray(items)) {

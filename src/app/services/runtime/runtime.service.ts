@@ -31,7 +31,7 @@ type RuntimeCache = {
 
 type RuntimeCacheAttributes = {
   runtimeCalls?: BehaviorSubject<types.RuntimeCall[]>;
-  runtimeCallArguments?: BehaviorSubject<types.RuntimeCallArgument[]>;
+  runtimeCallArguments?: Map<string, BehaviorSubject<types.RuntimeCallArgument[]>>;
   runtimeConstants?: BehaviorSubject<types.RuntimeConstant[]>;
   runtimeErrorMessages?: BehaviorSubject<types.RuntimeErrorMessage[]>;
   runtimeEvents?: BehaviorSubject<types.RuntimeEvent[]>;
@@ -276,6 +276,35 @@ export class RuntimeService {
     }
 
     return cache.runtimeCalls!;
+  }
+
+
+  getRuntimeCallArguments(network: string, specVersion: number, callModule: string, callName: string): BehaviorSubject<types.RuntimeCallArgument[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
+
+    if (!cache.hasOwnProperty('runtimeCallArguments')) {
+      cache.runtimeCallArguments = new Map();
+    }
+
+    const id = `${callModule}-${callName}`;
+    let argumentsCache = cache.runtimeCallArguments!.get(id);
+
+    if (!argumentsCache) {
+      argumentsCache = new BehaviorSubject([] as types.RuntimeCallArgument[]);
+      cache.runtimeCallArguments!.set(id, argumentsCache);
+
+      this.pa.run().getRuntimeCallArguments((cache.runtime.value as types.Runtime).specName, specVersion, callModule, callName).pipe(
+        switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+      ).subscribe({
+        next: (items) => argumentsCache!.next(items),
+        error: (e) => {
+          console.error(e);
+          cache.runtimeCallArguments?.delete(id)
+        }
+      });
+    }
+
+    return argumentsCache;
   }
 
 

@@ -39,7 +39,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
   fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
   fetchEventAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-  visibleColumns = ['icon', 'type', 'typeComposition'];
+  visibleColumns = ['icon', 'eventAttributeName', 'type', 'typeComposition'];
 
   private destroyer = new Subject<void>();
 
@@ -114,7 +114,6 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
       switchMap(([runtime, pallet, eventName]) => {
         const subject = new BehaviorSubject<(pst.RuntimeEventAttribute & { parsedComposition?: any })[]>([]);
         this.rs.getRuntimeEventAttributes(this.ns.currentNetwork.value, runtime.specVersion, pallet, eventName).pipe(
-          switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
           takeUntil(this.destroyer)
         ).subscribe({
           next: (items) => {
