@@ -18,26 +18,26 @@
 
 import { Injectable } from '@angular/core';
 import { PolkadaptService } from '../polkadapt.service';
-import { types as pst } from '@polkadapt/core';
-import { BehaviorSubject, combineLatest, of, take } from 'rxjs';
+import { types } from '@polkadapt/core';
+import { BehaviorSubject, combineLatest, last, merge, of, take } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
 
 type SpecVersion = number;
 
 
 type RuntimeCache = {
-  runtime: BehaviorSubject<pst.Runtime | null>;
+  runtime: BehaviorSubject<types.Runtime | null>;
 };
 
 type RuntimeCacheAttributes = {
-  runtimeCalls?: BehaviorSubject<pst.RuntimeCall[]>;
-  runtimeCallArguments?: BehaviorSubject<pst.RuntimeCallArgument[]>;
-  runtimeConstants?: BehaviorSubject<pst.RuntimeConstant[]>;
-  runtimeErrorMessages?: BehaviorSubject<pst.RuntimeErrorMessage[]>;
-  runtimeEvents?: BehaviorSubject<pst.RuntimeEvent[]>;
-  runtimeEventAttributes?: Map<string, BehaviorSubject<pst.RuntimeEventAttribute[]>>;
-  runtimePallets?: BehaviorSubject<pst.RuntimePallet[]>;
-  runtimeStorages?: BehaviorSubject<pst.RuntimeStorage[]>;
+  runtimeCalls?: BehaviorSubject<types.RuntimeCall[]>;
+  runtimeCallArguments?: BehaviorSubject<types.RuntimeCallArgument[]>;
+  runtimeConstants?: BehaviorSubject<types.RuntimeConstant[]>;
+  runtimeErrorMessages?: BehaviorSubject<types.RuntimeErrorMessage[]>;
+  runtimeEvents?: BehaviorSubject<types.RuntimeEvent[]>;
+  runtimeEventAttributes?: Map<string, BehaviorSubject<types.RuntimeEventAttribute[]>>;
+  runtimePallets?: BehaviorSubject<types.RuntimePallet[]>;
+  runtimeStorages?: BehaviorSubject<types.RuntimeStorage[]>;
 };
 
 type RuntimeCacheMap = Map<SpecVersion, RuntimeCache & RuntimeCacheAttributes>;
@@ -47,7 +47,7 @@ type RuntimeCacheMap = Map<SpecVersion, RuntimeCache & RuntimeCacheAttributes>;
 export class RuntimeService {
 
   private latestRuntimes: {
-    [network: string]: BehaviorSubject<pst.Runtime | null>;
+    [network: string]: BehaviorSubject<types.Runtime | null>;
   } = {};
 
   private runtimes: {
@@ -66,13 +66,13 @@ export class RuntimeService {
       // TODO probably check if we are waiting for a response, if not, request again.
       return;
     } else {
-      this.latestRuntimes[network] = new BehaviorSubject<pst.Runtime | null>(null);
+      this.latestRuntimes[network] = new BehaviorSubject<types.Runtime | null>(null);
     }
 
     this.pa.run({observableResults: false}).getLatestRuntime().pipe(
       take(1)
     ).subscribe({
-      next: (runtime: pst.Runtime) => {
+      next: (runtime: types.Runtime) => {
         // First cache the runtime, then broadcast it. This order is important.
         this.cacheRuntime(network, runtime);
         this.latestRuntimes[network].next(runtime);
@@ -81,12 +81,12 @@ export class RuntimeService {
   }
 
 
-  cacheRuntime(network: string, runtime: pst.Runtime): void {
+  cacheRuntime(network: string, runtime: types.Runtime): void {
     const version = runtime.specVersion;
     const cache: RuntimeCacheMap = this.runtimes[network] = this.runtimes[network] || new Map();
 
     if (!cache.has(version)) {
-      cache.set(version, {runtime: new BehaviorSubject<pst.Runtime | null>(runtime)});
+      cache.set(version, {runtime: new BehaviorSubject<types.Runtime | null>(runtime)});
     } else {
       const versionCache = cache.get(version) as RuntimeCache;
       if (!versionCache.runtime.value) {
@@ -97,7 +97,7 @@ export class RuntimeService {
   }
 
 
-  getRuntime(network: string, specVersion?: number): BehaviorSubject<pst.Runtime | null> {
+  getRuntime(network: string, specVersion?: number): BehaviorSubject<types.Runtime | null> {
     if (!this.latestRuntimes[network]) {
       // We need the BehaviorSubject for the latest runtime, because it tells us which specName to use.
       this.initialize(network);
@@ -105,25 +105,25 @@ export class RuntimeService {
 
     if (typeof specVersion !== 'number' || specVersion < 0) {
       // Without given specVersion, return latest runtime.
-      return this.latestRuntimes[network] as BehaviorSubject<pst.Runtime | null>;
+      return this.latestRuntimes[network] as BehaviorSubject<types.Runtime | null>;
     }
 
     // Get or create cache entry for current network.
     const cache: RuntimeCacheMap = this.runtimes[network] = this.runtimes[network] || new Map();
-    let cachedRuntime: BehaviorSubject<pst.Runtime | null>;
+    let cachedRuntime: BehaviorSubject<types.Runtime | null>;
 
     if (cache.has(specVersion)) {
       // If it's already in cache, it's either currently loading or loaded, so return the cached BehaviorSubject.
       return (cache.get(specVersion) as RuntimeCache).runtime;
     } else {
       // Create a new BehaviorSubject in cache, so we can fill it with the loaded runtime later ons
-      cachedRuntime = new BehaviorSubject<pst.Runtime | null>(null);
+      cachedRuntime = new BehaviorSubject<types.Runtime | null>(null);
       cache.set(specVersion, {runtime: cachedRuntime});
 
       this.latestRuntimes[network]
         .pipe(
           filter(r => r !== null),
-          map((r: pst.Runtime | null): string => (r as pst.Runtime).specName),
+          map((r: types.Runtime | null): string => (r as types.Runtime).specName),
           take(1),
           switchMap((specName) =>
             this.pa.run({observableResults: false}).getRuntime(specName, specVersion).pipe(take(1))
@@ -145,26 +145,41 @@ export class RuntimeService {
   }
 
 
-  getRuntimes(network: string): BehaviorSubject<pst.Runtime[]> {
-    const bs = new BehaviorSubject<pst.Runtime[]>([]);
+  getRuntimes(network: string): BehaviorSubject<types.Runtime[]> {
+    const bs = new BehaviorSubject<types.Runtime[]>([]);
 
     if (this.runtimes[network]) {
       bs.next(
         [...this.runtimes[network].values()]
           .filter((r) => !!r.runtime.value)
-          .map((r) => r.runtime.value as pst.Runtime)
+          .map((r) => r.runtime.value as types.Runtime)
       );
     }
 
     this.pa.run({observableResults: false}).getRuntimes().pipe(
       take(1)
     ).subscribe({
-      next: (items) => {
+      next: (items: types.Runtime[]) => {
         if (items) {
           bs.next(items);
+          if (items.length > 0 && items[0].countPallets === undefined) {
+            combineLatest(items.map(
+              runtime => this.pa.run().getRuntime(runtime.specName, runtime.specVersion)
+            )).pipe(
+              switchMap(runtimes => merge(...runtimes.map(r => r.pipe(last())))),
+            ).subscribe((runtime: types.Runtime) => {
+              console.log(runtime);
+              bs.getValue().forEach(r => {
+                if (r.specName === runtime.specName && r.specVersion === runtime.specVersion) {
+                  Object.assign(r, runtime);
+                }
+              })
+              bs.next(bs.getValue());
+            });
+          }
         }
       },
-      error: (errorResponse) => {
+      error: (errorResponse: Error) => {
         console.error(errorResponse);
       }
     });
@@ -183,12 +198,12 @@ export class RuntimeService {
   }
 
 
-  getRuntimePallets(network: string, specVersion: number): BehaviorSubject<pst.RuntimePallet[]> {
+  getRuntimePallets(network: string, specVersion: number): BehaviorSubject<types.RuntimePallet[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimePallets')) {
-      const runtimePallets = cache.runtimePallets = new BehaviorSubject([] as pst.RuntimePallet[]);
-      this.pa.run({observableResults: false}).getRuntimePallets((cache.runtime.value as pst.Runtime).specName, specVersion).subscribe({
+      const runtimePallets = cache.runtimePallets = new BehaviorSubject([] as types.RuntimePallet[]);
+      this.pa.run({observableResults: false}).getRuntimePallets((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => runtimePallets.next(items),
         error: (e) => {
           console.error(e);
@@ -200,12 +215,12 @@ export class RuntimeService {
   }
 
 
-  getRuntimeEvents(network: string, specVersion: number): BehaviorSubject<pst.RuntimeEvent[]> {
+  getRuntimeEvents(network: string, specVersion: number): BehaviorSubject<types.RuntimeEvent[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeEvents')) {
-      const runtimeEvents = cache.runtimeEvents = new BehaviorSubject([] as pst.RuntimeEvent[]);
-      this.pa.run({observableResults: false}).getRuntimeEvents((cache.runtime.value as pst.Runtime).specName, specVersion).subscribe({
+      const runtimeEvents = cache.runtimeEvents = new BehaviorSubject([] as types.RuntimeEvent[]);
+      this.pa.run({observableResults: false}).getRuntimeEvents((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => runtimeEvents.next(items),
         error: (e) => {
           console.error(e);
@@ -218,7 +233,7 @@ export class RuntimeService {
   }
 
 
-  getRuntimeEventAttributes(network: string, specVersion: number, eventModule: string, eventName: string): BehaviorSubject<pst.RuntimeEventAttribute[]> {
+  getRuntimeEventAttributes(network: string, specVersion: number, eventModule: string, eventName: string): BehaviorSubject<types.RuntimeEventAttribute[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeEventAttributes')) {
@@ -229,10 +244,10 @@ export class RuntimeService {
     let attributesCache = cache.runtimeEventAttributes!.get(id);
 
     if (!attributesCache) {
-      attributesCache = new BehaviorSubject([] as pst.RuntimeEventAttribute[]);
+      attributesCache = new BehaviorSubject([] as types.RuntimeEventAttribute[]);
       cache.runtimeEventAttributes!.set(id, attributesCache);
 
-      this.pa.run().getRuntimeEventAttributes((cache.runtime.value as pst.Runtime).specName, specVersion, eventModule, eventName).pipe(
+      this.pa.run().getRuntimeEventAttributes((cache.runtime.value as types.Runtime).specName, specVersion, eventModule, eventName).pipe(
         switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
       ).subscribe({
         next: (items) => attributesCache!.next(items),
@@ -247,12 +262,12 @@ export class RuntimeService {
   }
 
 
-  getRuntimeCalls(network: string, specVersion: number): BehaviorSubject<pst.RuntimeCall[]> {
+  getRuntimeCalls(network: string, specVersion: number): BehaviorSubject<types.RuntimeCall[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeCalls')) {
-      const runtimeCalls = cache.runtimeCalls = new BehaviorSubject([] as pst.RuntimeCall[]);
-      this.pa.run({observableResults: false}).getRuntimeCalls((cache.runtime.value as pst.Runtime).specName, specVersion).subscribe({
+      const runtimeCalls = cache.runtimeCalls = new BehaviorSubject([] as types.RuntimeCall[]);
+      this.pa.run({observableResults: false}).getRuntimeCalls((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => runtimeCalls.next(items),
         error: (e) => {
           console.error(e);
@@ -265,12 +280,12 @@ export class RuntimeService {
   }
 
 
-  getRuntimeStorages(network: string, specVersion: number): BehaviorSubject<pst.RuntimeStorage[]> {
+  getRuntimeStorages(network: string, specVersion: number): BehaviorSubject<types.RuntimeStorage[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeStorages')) {
-      const runtimeStorages = cache.runtimeStorages = new BehaviorSubject([] as pst.RuntimeStorage[]);
-      this.pa.run({observableResults: false}).getRuntimeStorages((cache.runtime.value as pst.Runtime).specName, specVersion).subscribe({
+      const runtimeStorages = cache.runtimeStorages = new BehaviorSubject([] as types.RuntimeStorage[]);
+      this.pa.run({observableResults: false}).getRuntimeStorages((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => runtimeStorages.next(items),
         error: (e) => {
           console.error(e);
@@ -283,12 +298,12 @@ export class RuntimeService {
   }
 
 
-  getRuntimeConstants(network: string, specVersion: number): BehaviorSubject<pst.RuntimeConstant[]> {
+  getRuntimeConstants(network: string, specVersion: number): BehaviorSubject<types.RuntimeConstant[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeConstants')) {
-      const runtimeConstants = cache.runtimeConstants = new BehaviorSubject([] as pst.RuntimeConstant[]);
-      this.pa.run({observableResults: false}).getRuntimeConstants((cache.runtime.value as pst.Runtime).specName, specVersion).subscribe({
+      const runtimeConstants = cache.runtimeConstants = new BehaviorSubject([] as types.RuntimeConstant[]);
+      this.pa.run({observableResults: false}).getRuntimeConstants((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => runtimeConstants.next(items),
         error: (e) => {
           console.error(e);
@@ -301,12 +316,12 @@ export class RuntimeService {
   }
 
 
-  getRuntimeErrorMessages(network: string, specVersion: number): BehaviorSubject<pst.RuntimeErrorMessage[]> {
+  getRuntimeErrorMessages(network: string, specVersion: number): BehaviorSubject<types.RuntimeErrorMessage[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeErrorMessages')) {
-      const runtimeErrorMessages = cache.runtimeErrorMessages = new BehaviorSubject([] as pst.RuntimeErrorMessage[]);
-      this.pa.run({observableResults: false}).getRuntimeErrorMessages((cache.runtime.value as pst.Runtime).specName, specVersion).subscribe({
+      const runtimeErrorMessages = cache.runtimeErrorMessages = new BehaviorSubject([] as types.RuntimeErrorMessage[]);
+      this.pa.run({observableResults: false}).getRuntimeErrorMessages((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => runtimeErrorMessages.next(items),
         error: (e) => {
           console.error(e);
