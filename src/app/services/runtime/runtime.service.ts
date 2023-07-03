@@ -168,12 +168,11 @@ export class RuntimeService {
             )).pipe(
               switchMap(runtimes => merge(...runtimes.map(r => r.pipe(last())))),
             ).subscribe((runtime: types.Runtime) => {
-              console.log(runtime);
               bs.getValue().forEach(r => {
                 if (r.specName === runtime.specName && r.specVersion === runtime.specVersion) {
                   Object.assign(r, runtime);
                 }
-              })
+              });
               bs.next(bs.getValue());
             });
           }
