@@ -17,12 +17,23 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, Observable, of, Subject, tap } from 'rxjs';
+import {
+  BehaviorSubject,
+  combineAll,
+  combineLatest,
+  combineLatestAll,
+  Observable,
+  of,
+  Subject,
+  takeLast,
+  tap
+} from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { catchError, filter, first, map, shareReplay, switchMap, takeUntil } from 'rxjs/operators';
 import { types as pst } from '@polkadapt/core';
+import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 
 
 @Component({
@@ -33,7 +44,7 @@ import { types as pst } from '@polkadapt/core';
 })
 export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
   extrinsic: Observable<pst.Extrinsic | null>;
-  callArguments: Observable<string>;
+  callArguments: Observable<any>;
   events: Observable<pst.Event[]>;
   networkProperties = this.ns.currentNetworkProperties;
   fetchExtrinsicStatus: BehaviorSubject<any> = new BehaviorSubject(null);
@@ -47,7 +58,8 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
               private route: ActivatedRoute,
               private cd: ChangeDetectorRef,
               private pa: PolkadaptService,
-              private ns: NetworkService
+              private ns: NetworkService,
+              private rs: RuntimeService
   ) {
   }
 
@@ -101,9 +113,9 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
         const subject = new Subject<pst.Event[]>();
         this.pa.run().getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100)
           .pipe(
-          switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
-          takeUntil(this.destroyer)
-        ).subscribe({
+            switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
+            takeUntil(this.destroyer)
+          ).subscribe({
           next: (items) => {
             if (Array.isArray(items)) {
               subject.next(items);
@@ -127,12 +139,205 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
     );
 
     this.callArguments = this.extrinsic.pipe(
-      map((extrinsic) => {
-        if (extrinsic) {
-          return extrinsic.callArguments as string;
-        } else {
-          return '';
+      switchMap((extrinsic) => {
+        if (!extrinsic) {
+          return of('');
         }
+
+        if (!(extrinsic.specVersion && extrinsic.callModule && extrinsic.callName)) {
+          return of(extrinsic.callArguments);
+        }
+
+        return combineLatest([
+          of(extrinsic).pipe(
+            switchMap((extrinsic) => {
+              // Find defined types in data returned by subsquid. Fetch the runtimeCallArguments for these found types.
+              // Wait until all found runtimeCallArguments are available.
+
+              const foundTypes: Observable<any>[] = []
+              const findTypes = (item: any) => {
+                if (Object.prototype.toString.call(item) === '[object Object]') {
+                  if (item && item['__kind'] && item.value && item.value['__kind']) {
+                    foundTypes.push(
+                      this.rs.getRuntimeCallArguments(
+                        this.ns.currentNetwork.value,
+                        extrinsic.specVersion!,
+                        item['__kind'],
+                        item.value['__kind']).pipe(
+                        takeLast(1)
+                      )
+                    )
+                  } else {
+                    findTypes(Object.entries(item).map(([k, v]) => v));
+                  }
+                } else if (Array.isArray(item)) {
+                  item.forEach((v) => findTypes(v));
+                }
+              }
+              findTypes(extrinsic.callArguments)
+
+              if (foundTypes.length) {
+                return combineLatest(foundTypes).pipe(
+                  catchError(() => of(null)),
+                  switchMap(() => of(extrinsic))
+                )
+              }
+
+              return of(extrinsic)
+            })
+          ),
+          // Get extrinsic main call's call arguments.
+          this.rs.getRuntimeCallArguments(
+            this.ns.currentNetwork.value,
+            extrinsic.specVersion,
+            extrinsic.callModule,
+            extrinsic.callName
+          )
+        ]).pipe(
+          map<[pst.Extrinsic, pst.RuntimeCallArgument[]], [pst.Extrinsic, any, pst.RuntimeCallArgument[]]>(([extrinsic, callArgumentsMeta]) => {
+            // Parse callArguments JSON or copy callArguments.
+            let parsed: any = extrinsic.callArguments;
+            if (typeof parsed === 'string') {
+              parsed = JSON.parse(parsed);
+            } else if (parsed) {
+              parsed = JSON.parse(JSON.stringify(parsed)); // make a copy.
+            }
+            return [extrinsic, parsed, callArgumentsMeta];
+          }),
+          map(([extrinsic, callArguments, callArgumentsMeta]) => {
+
+            let attributesFromObject: any[] | undefined;
+            if (Array.isArray(callArguments)) {
+              attributesFromObject = callArguments;
+            } else if (Object.prototype.toString.call(callArguments) === '[object Object]') {
+              attributesFromObject = [];
+
+              // In case of subsquid data. Removes redundant '__kind' properties at the first level.
+              (Object.entries(callArguments) as [key: string, attr: any][]).forEach(([key, attr]) => {
+                if (attr && attr['__kind']) {
+                  if (attr.value && attr.value['__kind']) {
+                    // Sublevel type found. Leave as is.
+                    return;
+                  } else {
+                    callArguments[key] = attr.value || attr;
+                  }
+                }
+              })
+
+              // Loop through the call arguments metadata. These are indexed.
+              // Find values for each call argument and add it to the attributesFromObject array.
+              if (callArgumentsMeta) {
+                callArgumentsMeta.forEach((meta) => {
+
+                  if (meta.name) {
+                    const camelCaseKey = meta.name.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
+                    const snakeCaseKey = meta.name.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
+                    if (callArguments.hasOwnProperty(camelCaseKey) || callArguments.hasOwnProperty(snakeCaseKey)) {
+                      attributesFromObject!.push({
+                        name: meta.name,
+                        type: meta.scaleType,
+                        value: callArguments[meta.name]
+                      })
+                      // Value has been added to the array.
+                      // Remove it from the original object to prevent it being added a second time in a later stage.
+                      delete callArguments[meta.name];
+                    }
+                  }
+                })
+
+                // Add leftover values that have not been added while looping the call arguments.
+                Object.entries(callArguments).forEach(([key, attr]) => {
+                  attributesFromObject!.push({
+                    name: key,
+                    value: attr
+                  })
+                })
+              }
+            }
+
+            // The below code in the if statement is specifically to convert JSON that came from a subsquid archive node.
+            // Find values recursively in the attributes object to match with other (pallet) call arguments.
+            if (attributesFromObject) {
+              const convertSubquidTypedValues = (arrayOrObject: any) => {
+                if (Array.isArray(arrayOrObject)) {
+                  arrayOrObject.forEach((value, index) => {
+
+                    if (value['__kind'] && value.value && value.value['__kind']) {
+                      const subArgsMeta = this.rs.getRuntimeCallArguments(
+                        this.ns.currentNetwork.value,
+                        extrinsic.specVersion!,
+                        value['__kind'],
+                        value.value['__kind']).value;
+
+                      if (subArgsMeta) {
+                        const subCallArgs: any[] = [];
+                        const unknownSubCallArgs: any[] = [];
+
+                        Object.entries(value.value).forEach(([key, attr]) => {
+                          if (key === '__kind') {
+                            return;
+                          }
+
+                          let i: number | undefined;
+                          const subArgMeta = subArgsMeta.find((a, ii) => {
+                            const camelCaseKey = key.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
+                            const snakeCaseKey = key.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
+                            if (camelCaseKey === a.name || snakeCaseKey === a.name) {
+                              i = ii;
+                              return true;
+                            }
+                            return false;
+                          });
+
+                          if (subArgMeta) {
+                            subCallArgs[i!] = {
+                              name: subArgMeta.name,
+                              type: subArgMeta.scaleType,
+                              value: attr
+                            }
+                          } else {
+                            unknownSubCallArgs!.push({
+                              name: key,
+                              value: attr
+                            })
+                          }
+                        })
+
+                        // Add values that have not been added by an indexed call argument
+                        const resultSubCallArgs = [...subCallArgs.filter((a) => !!a), ...unknownSubCallArgs]
+                        convertSubquidTypedValues(resultSubCallArgs);
+
+                        arrayOrObject[index] = {
+                          'call_module': value['__kind'],
+                          'call_function': value.value['__kind'],
+                          'call_args': resultSubCallArgs
+                        }
+                      }
+                    } else if (value['__kind'] && value.value) {
+                      value[value['__kind']] = value.value;
+                      delete value['__kind'];
+                      convertSubquidTypedValues(value.value)
+                    } else if (value.value) {
+                      convertSubquidTypedValues(value.value);
+                    }
+                  })
+                } else if (Object.prototype.toString.call(arrayOrObject) === '[object Object]') {
+                  if (arrayOrObject['__kind'] && arrayOrObject.value) {
+                    if (!arrayOrObject.value['__kind']) {
+                      arrayOrObject[arrayOrObject['__kind']] = arrayOrObject.value;
+                      delete arrayOrObject['__kind'];
+                    }
+                  }
+                  Object.entries(arrayOrObject).forEach(([k, v]) => convertSubquidTypedValues(v))
+                }
+              }
+
+              convertSubquidTypedValues(attributesFromObject);
+            }
+
+            return attributesFromObject || extrinsic.callArguments;
+          })
+        )
       }),
       catchError((e) => {
         return of('');

@@ -203,7 +203,10 @@ export class RuntimeService {
     if (!cache.hasOwnProperty('runtimePallets')) {
       const runtimePallets = cache.runtimePallets = new BehaviorSubject([] as types.RuntimePallet[]);
       this.pa.run({observableResults: false}).getRuntimePallets((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
-        next: (items) => runtimePallets.next(items),
+        next: (items) => {
+          runtimePallets.next(items);
+          runtimePallets.complete();
+        },
         error: (e) => {
           console.error(e);
           delete cache.runtimePallets
@@ -220,7 +223,10 @@ export class RuntimeService {
     if (!cache.hasOwnProperty('runtimeEvents')) {
       const runtimeEvents = cache.runtimeEvents = new BehaviorSubject([] as types.RuntimeEvent[]);
       this.pa.run({observableResults: false}).getRuntimeEvents((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
-        next: (items) => runtimeEvents.next(items),
+        next: (items) => {
+          runtimeEvents.next(items);
+          runtimeEvents.complete();
+        },
         error: (e) => {
           console.error(e);
           delete cache.runtimeEvents
@@ -249,7 +255,10 @@ export class RuntimeService {
       this.pa.run().getRuntimeEventAttributes((cache.runtime.value as types.Runtime).specName, specVersion, eventModule, eventName).pipe(
         switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
       ).subscribe({
-        next: (items) => attributesCache!.next(items),
+        next: (items) => {
+          attributesCache!.next(items);
+          attributesCache!.complete();
+        },
         error: (e) => {
           console.error(e);
           cache.runtimeEventAttributes?.delete(id)
@@ -267,7 +276,10 @@ export class RuntimeService {
     if (!cache.hasOwnProperty('runtimeCalls')) {
       const runtimeCalls = cache.runtimeCalls = new BehaviorSubject([] as types.RuntimeCall[]);
       this.pa.run({observableResults: false}).getRuntimeCalls((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
-        next: (items) => runtimeCalls.next(items),
+        next: (items) => {
+          runtimeCalls.next(items);
+          runtimeCalls.complete();
+        },
         error: (e) => {
           console.error(e);
           delete cache.runtimeCalls
@@ -290,13 +302,16 @@ export class RuntimeService {
     let argumentsCache = cache.runtimeCallArguments!.get(id);
 
     if (!argumentsCache) {
-      argumentsCache = new BehaviorSubject([] as types.RuntimeCallArgument[]);
+      argumentsCache = new BehaviorSubject<types.RuntimeCallArgument[]>([]);
       cache.runtimeCallArguments!.set(id, argumentsCache);
 
       this.pa.run().getRuntimeCallArguments((cache.runtime.value as types.Runtime).specName, specVersion, callModule, callName).pipe(
         switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
       ).subscribe({
-        next: (items) => argumentsCache!.next(items),
+        next: (items) => {
+          argumentsCache?.next(items);
+          argumentsCache?.complete();
+        },
         error: (e) => {
           console.error(e);
           cache.runtimeCallArguments?.delete(id)
@@ -314,7 +329,10 @@ export class RuntimeService {
     if (!cache.hasOwnProperty('runtimeStorages')) {
       const runtimeStorages = cache.runtimeStorages = new BehaviorSubject([] as types.RuntimeStorage[]);
       this.pa.run({observableResults: false}).getRuntimeStorages((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
-        next: (items) => runtimeStorages.next(items),
+        next: (items) => {
+          runtimeStorages.next(items);
+          runtimeStorages.complete();
+        },
         error: (e) => {
           console.error(e);
           delete cache.runtimeStorages
@@ -332,7 +350,10 @@ export class RuntimeService {
     if (!cache.hasOwnProperty('runtimeConstants')) {
       const runtimeConstants = cache.runtimeConstants = new BehaviorSubject([] as types.RuntimeConstant[]);
       this.pa.run({observableResults: false}).getRuntimeConstants((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
-        next: (items) => runtimeConstants.next(items),
+        next: (items) => {
+          runtimeConstants.next(items);
+          runtimeConstants.complete();
+        },
         error: (e) => {
           console.error(e);
           delete cache.runtimeConstants
@@ -350,7 +371,10 @@ export class RuntimeService {
     if (!cache.hasOwnProperty('runtimeErrorMessages')) {
       const runtimeErrorMessages = cache.runtimeErrorMessages = new BehaviorSubject([] as types.RuntimeErrorMessage[]);
       this.pa.run({observableResults: false}).getRuntimeErrorMessages((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
-        next: (items) => runtimeErrorMessages.next(items),
+        next: (items) => {
+          runtimeErrorMessages.next(items);
+          runtimeErrorMessages.complete();
+        },
         error: (e) => {
           console.error(e);
           delete cache.runtimeErrorMessages

@@ -27,7 +27,7 @@ import {
 import { IconTheme } from '../identicon/identicon.types';
 import { Prefix } from '@polkadot/util-crypto/address/types';
 import { types as pst } from '@polkadapt/core';
-import { attributesConfig } from './attributes.config';
+import { attributesConfig as attrConfig} from './attributes.config';
 import { BehaviorSubject } from 'rxjs';
 
 @Component({
@@ -48,7 +48,7 @@ export class AttributesComponent implements OnChanges {
   isArray = new BehaviorSubject<boolean>(false);
 
   parsedAttributes: any[] = [];
-  attributesConfig = attributesConfig;
+  attributesConfig = attrConfig;
 
   constructor() {
   }
