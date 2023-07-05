@@ -87,7 +87,14 @@ export class AttributesComponent implements OnChanges {
             if (typeof value === 'object' && !Array.isArray(value)) {
               // This is an Object with (sub)attribute names and values.
               value = Object.entries(value).map(([subName, subValue]) => {
-                const eventAttribute = (this.runtimeEventAttributes as pst.RuntimeEventAttribute[]).find((ea) => ea.eventAttributeName === subName);
+                const camelCase = subName.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
+                const snakeCase = subName.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
+                const eventAttribute = (this.runtimeEventAttributes as pst.RuntimeEventAttribute[]).find(
+                  (ea) => ea.eventAttributeName === subName
+                    || ea.eventAttributeName === camelCase
+                    || ea.eventAttributeName === snakeCase
+                );
+
                 if (eventAttribute && eventAttribute.scaleType) {
                   return {
                     name: subName,
@@ -95,7 +102,11 @@ export class AttributesComponent implements OnChanges {
                     value: subValue
                   };
                 } else {
-                  return subValue;
+                  if (subName) {
+                    return {name: subName, value: subValue};
+                  } else {
+                    return subValue;
+                  }
                 }
               });
             }

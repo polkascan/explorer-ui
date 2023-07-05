@@ -21,7 +21,7 @@ import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { catchError, filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
-import { BehaviorSubject, combineLatest, Observable, of, Subject, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 
@@ -33,6 +33,7 @@ import { RuntimeService } from '../../../../../services/runtime/runtime.service'
 })
 export class EventDetailComponent implements OnInit, OnDestroy {
   event: Observable<pst.Event | null>;
+  eventAttributes: Observable<any[] | string | null>;
   runtimeEventAttributes: Observable<pst.RuntimeEventAttribute[] | null>
   networkProperties = this.ns.currentNetworkProperties;
   fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
@@ -90,6 +91,53 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         return of(null);
       })
     );
+
+    this.eventAttributes = this.event.pipe(
+      map((event) => {
+        let parsed: any | null = event && event.attributes || null;
+        if (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed);
+        } else if (parsed) {
+          parsed = JSON.parse(JSON.stringify(parsed)); // make a copy.
+        }
+        return parsed;
+      }),
+      map((attributes) => {
+        if (attributes) {
+          (Object.entries(attributes) as [key: string, attr: any][]).forEach(([key, attr]) => {
+            if (attr && attr['__kind']) {
+              if (attr.value && attr.value['__kind']) {
+                // Sublevel type found. Leave as is.
+                return;
+              } else {
+                attributes[key] = attr.value || attr;
+              }
+            }
+          })
+
+          const convertSubquidData = (item: any, parent?: any, keyOrIndex?: number | string) => {
+            if (Object.prototype.toString.call(item) === '[object Object]') {
+              if (item && item['__kind']) {
+                if (!(item.value && item.value['__kind'])) {
+                  if (parent && keyOrIndex) {
+                    parent[keyOrIndex] = item.value || item['__kind'] || item;
+                  }
+                }
+              } else {
+                Object.entries(item).forEach(([k, v]) => {
+                  convertSubquidData(v, item, k);
+                })
+              }
+            } else if (Array.isArray(item)) {
+              item.forEach((v, i) => convertSubquidData(v, item, i));
+            }
+          }
+          convertSubquidData(attributes)
+          return attributes;
+        }
+        return null;
+      })
+    )
 
     this.runtimeEventAttributes = this.event.pipe(
       switchMap((event) => {

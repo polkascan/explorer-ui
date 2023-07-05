@@ -31,6 +31,7 @@ export const attributesConfig: {[key: string]: string} = {
   'PropIndex': 'proposal',
   'ProposalIndex': 'proposal',
   'ReferendumIndex': 'referendum',
+  'RefIndex': 'referendum',
   'Compact<ReferendumIndex>': 'referendum',
   'SessionIndex': 'session',
   'BlockNumber': 'block',

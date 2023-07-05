@@ -154,18 +154,20 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
               // Find defined types in data returned by subsquid. Fetch the runtimeCallArguments for these found types.
               // Wait until all found runtimeCallArguments are available.
 
-              const foundTypes: Observable<any>[] = []
+              const foundTypes: [string, string, Observable<pst.RuntimeCallArgument[]>][] = []
               const findTypes = (item: any) => {
                 if (Object.prototype.toString.call(item) === '[object Object]') {
                   if (item && item['__kind'] && item.value && item.value['__kind']) {
-                    foundTypes.push(
+                    foundTypes.push([
+                      item['__kind'],
+                      item.value['__kind'],
                       this.rs.getRuntimeCallArguments(
                         this.ns.currentNetwork.value,
                         extrinsic.specVersion!,
                         item['__kind'],
                         item.value['__kind']).pipe(
                         takeLast(1)
-                      )
+                      )]
                     )
                   } else {
                     findTypes(Object.entries(item).map(([k, v]) => v));
@@ -177,13 +179,16 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
               findTypes(extrinsic.callArguments)
 
               if (foundTypes.length) {
-                return combineLatest(foundTypes).pipe(
-                  catchError(() => of(null)),
-                  switchMap(() => of(extrinsic))
-                )
+                return combineLatest(foundTypes.map((t) => t[2])).pipe(
+                  switchMap((types) => of([
+                    extrinsic,
+                    foundTypes.map((t, i) => [t[0], t[1], types[i]])
+                  ])),
+                  catchError(() => of([extrinsic, []]))
+                );
               }
 
-              return of(extrinsic)
+              return of([extrinsic, []])
             })
           ),
           // Get extrinsic main call's call arguments.
@@ -194,17 +199,17 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
             extrinsic.callName
           )
         ]).pipe(
-          map<[pst.Extrinsic, pst.RuntimeCallArgument[]], [pst.Extrinsic, any, pst.RuntimeCallArgument[]]>(([extrinsic, callArgumentsMeta]) => {
+          map(([[extrinsic, collectedCallArguments], callArgumentsMeta]) => {
             // Parse callArguments JSON or copy callArguments.
-            let parsed: any = extrinsic.callArguments;
+            let parsed: any = (extrinsic as pst.Extrinsic).callArguments;
             if (typeof parsed === 'string') {
               parsed = JSON.parse(parsed);
             } else if (parsed) {
               parsed = JSON.parse(JSON.stringify(parsed)); // make a copy.
             }
-            return [extrinsic, parsed, callArgumentsMeta];
+            return [extrinsic, parsed, collectedCallArguments, callArgumentsMeta] as [pst.Extrinsic, any, [string, string, pst.RuntimeCallArgument[]][], pst.RuntimeCallArgument[]];
           }),
-          map(([extrinsic, callArguments, callArgumentsMeta]) => {
+          map(([extrinsic, callArguments, collectedCallArguments, callArgumentsMeta]) => {
 
             let attributesFromObject: any[] | undefined;
             if (Array.isArray(callArguments)) {
@@ -263,11 +268,9 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
                   arrayOrObject.forEach((value, index) => {
 
                     if (value['__kind'] && value.value && value.value['__kind']) {
-                      const subArgsMeta = this.rs.getRuntimeCallArguments(
-                        this.ns.currentNetwork.value,
-                        extrinsic.specVersion!,
-                        value['__kind'],
-                        value.value['__kind']).value;
+                      const subArgsMeta = collectedCallArguments.find(
+                        (v) => v[0] === value['__kind'] && v[1] === value.value['__kind']
+                      );
 
                       if (subArgsMeta) {
                         const subCallArgs: any[] = [];
@@ -279,7 +282,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
                           }
 
                           let i: number | undefined;
-                          const subArgMeta = subArgsMeta.find((a, ii) => {
+                          const subArgMeta = subArgsMeta[2].find((a, ii) => {
                             const camelCaseKey = key.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
                             const snakeCaseKey = key.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
                             if (camelCaseKey === a.name || snakeCaseKey === a.name) {

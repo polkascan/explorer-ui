@@ -61,10 +61,10 @@
         <td><a [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion">{{event.specName + '-' + event.specVersion}}</a></td>
       </tr>
 
-      <tr *ngIf="event.attributes">
+      <tr *ngIf="(eventAttributes | async) as attributes">
         <td class="detail-table--label-cell">Attributes</td>
         <td>
-          <attributes [attributes]="event.attributes" [iconTheme]="props.iconTheme" [iconSize]="24"
+          <attributes [attributes]="attributes" [iconTheme]="props.iconTheme" [iconSize]="24"
                       [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
                       [ss58Prefix]="props.ss58Format" [runtimeEventAttributes]="runtimeEventAttributes | async"></attributes>
         </td>

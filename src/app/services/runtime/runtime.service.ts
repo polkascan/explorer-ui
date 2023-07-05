@@ -19,7 +19,7 @@
 import { Injectable } from '@angular/core';
 import { PolkadaptService } from '../polkadapt.service';
 import { types } from '@polkadapt/core';
-import { BehaviorSubject, combineLatest, last, merge, of, take } from 'rxjs';
+import { BehaviorSubject, combineLatest, last, merge, of, ReplaySubject, take } from 'rxjs';
 import { filter, map, switchMap } from 'rxjs/operators';
 
 type SpecVersion = number;
@@ -30,14 +30,14 @@ type RuntimeCache = {
 };
 
 type RuntimeCacheAttributes = {
-  runtimeCalls?: BehaviorSubject<types.RuntimeCall[]>;
-  runtimeCallArguments?: Map<string, BehaviorSubject<types.RuntimeCallArgument[]>>;
-  runtimeConstants?: BehaviorSubject<types.RuntimeConstant[]>;
-  runtimeErrorMessages?: BehaviorSubject<types.RuntimeErrorMessage[]>;
-  runtimeEvents?: BehaviorSubject<types.RuntimeEvent[]>;
-  runtimeEventAttributes?: Map<string, BehaviorSubject<types.RuntimeEventAttribute[]>>;
-  runtimePallets?: BehaviorSubject<types.RuntimePallet[]>;
-  runtimeStorages?: BehaviorSubject<types.RuntimeStorage[]>;
+  runtimeCalls?: ReplaySubject<types.RuntimeCall[]>;
+  runtimeCallArguments?: Map<string, ReplaySubject<types.RuntimeCallArgument[]>>;
+  runtimeConstants?: ReplaySubject<types.RuntimeConstant[]>;
+  runtimeErrorMessages?: ReplaySubject<types.RuntimeErrorMessage[]>;
+  runtimeEvents?: ReplaySubject<types.RuntimeEvent[]>;
+  runtimeEventAttributes?: Map<string, ReplaySubject<types.RuntimeEventAttribute[]>>;
+  runtimePallets?: ReplaySubject<types.RuntimePallet[]>;
+  runtimeStorages?: ReplaySubject<types.RuntimeStorage[]>;
 };
 
 type RuntimeCacheMap = Map<SpecVersion, RuntimeCache & RuntimeCacheAttributes>;
@@ -197,11 +197,11 @@ export class RuntimeService {
   }
 
 
-  getRuntimePallets(network: string, specVersion: number): BehaviorSubject<types.RuntimePallet[]> {
+  getRuntimePallets(network: string, specVersion: number): ReplaySubject<types.RuntimePallet[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimePallets')) {
-      const runtimePallets = cache.runtimePallets = new BehaviorSubject([] as types.RuntimePallet[]);
+      const runtimePallets = cache.runtimePallets = new ReplaySubject(1);
       this.pa.run({observableResults: false}).getRuntimePallets((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => {
           runtimePallets.next(items);
@@ -217,11 +217,11 @@ export class RuntimeService {
   }
 
 
-  getRuntimeEvents(network: string, specVersion: number): BehaviorSubject<types.RuntimeEvent[]> {
+  getRuntimeEvents(network: string, specVersion: number): ReplaySubject<types.RuntimeEvent[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeEvents')) {
-      const runtimeEvents = cache.runtimeEvents = new BehaviorSubject([] as types.RuntimeEvent[]);
+      const runtimeEvents = cache.runtimeEvents = new ReplaySubject(1);
       this.pa.run({observableResults: false}).getRuntimeEvents((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => {
           runtimeEvents.next(items);
@@ -238,7 +238,7 @@ export class RuntimeService {
   }
 
 
-  getRuntimeEventAttributes(network: string, specVersion: number, eventModule: string, eventName: string): BehaviorSubject<types.RuntimeEventAttribute[]> {
+  getRuntimeEventAttributes(network: string, specVersion: number, eventModule: string, eventName: string): ReplaySubject<types.RuntimeEventAttribute[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeEventAttributes')) {
@@ -249,7 +249,7 @@ export class RuntimeService {
     let attributesCache = cache.runtimeEventAttributes!.get(id);
 
     if (!attributesCache) {
-      attributesCache = new BehaviorSubject([] as types.RuntimeEventAttribute[]);
+      attributesCache = new ReplaySubject(1);
       cache.runtimeEventAttributes!.set(id, attributesCache);
 
       this.pa.run().getRuntimeEventAttributes((cache.runtime.value as types.Runtime).specName, specVersion, eventModule, eventName).pipe(
@@ -270,11 +270,11 @@ export class RuntimeService {
   }
 
 
-  getRuntimeCalls(network: string, specVersion: number): BehaviorSubject<types.RuntimeCall[]> {
+  getRuntimeCalls(network: string, specVersion: number): ReplaySubject<types.RuntimeCall[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeCalls')) {
-      const runtimeCalls = cache.runtimeCalls = new BehaviorSubject([] as types.RuntimeCall[]);
+      const runtimeCalls = cache.runtimeCalls = new ReplaySubject(1);
       this.pa.run({observableResults: false}).getRuntimeCalls((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => {
           runtimeCalls.next(items);
@@ -291,7 +291,7 @@ export class RuntimeService {
   }
 
 
-  getRuntimeCallArguments(network: string, specVersion: number, callModule: string, callName: string): BehaviorSubject<types.RuntimeCallArgument[]> {
+  getRuntimeCallArguments(network: string, specVersion: number, callModule: string, callName: string): ReplaySubject<types.RuntimeCallArgument[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeCallArguments')) {
@@ -302,7 +302,7 @@ export class RuntimeService {
     let argumentsCache = cache.runtimeCallArguments!.get(id);
 
     if (!argumentsCache) {
-      argumentsCache = new BehaviorSubject<types.RuntimeCallArgument[]>([]);
+      argumentsCache = new ReplaySubject<types.RuntimeCallArgument[]>(1);
       cache.runtimeCallArguments!.set(id, argumentsCache);
 
       this.pa.run().getRuntimeCallArguments((cache.runtime.value as types.Runtime).specName, specVersion, callModule, callName).pipe(
@@ -323,11 +323,11 @@ export class RuntimeService {
   }
 
 
-  getRuntimeStorages(network: string, specVersion: number): BehaviorSubject<types.RuntimeStorage[]> {
+  getRuntimeStorages(network: string, specVersion: number): ReplaySubject<types.RuntimeStorage[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeStorages')) {
-      const runtimeStorages = cache.runtimeStorages = new BehaviorSubject([] as types.RuntimeStorage[]);
+      const runtimeStorages = cache.runtimeStorages = new ReplaySubject(1);
       this.pa.run({observableResults: false}).getRuntimeStorages((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => {
           runtimeStorages.next(items);
@@ -344,11 +344,11 @@ export class RuntimeService {
   }
 
 
-  getRuntimeConstants(network: string, specVersion: number): BehaviorSubject<types.RuntimeConstant[]> {
+  getRuntimeConstants(network: string, specVersion: number): ReplaySubject<types.RuntimeConstant[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeConstants')) {
-      const runtimeConstants = cache.runtimeConstants = new BehaviorSubject([] as types.RuntimeConstant[]);
+      const runtimeConstants = cache.runtimeConstants = new ReplaySubject(1);
       this.pa.run({observableResults: false}).getRuntimeConstants((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => {
           runtimeConstants.next(items);
@@ -365,11 +365,11 @@ export class RuntimeService {
   }
 
 
-  getRuntimeErrorMessages(network: string, specVersion: number): BehaviorSubject<types.RuntimeErrorMessage[]> {
+  getRuntimeErrorMessages(network: string, specVersion: number): ReplaySubject<types.RuntimeErrorMessage[]> {
     const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeErrorMessages')) {
-      const runtimeErrorMessages = cache.runtimeErrorMessages = new BehaviorSubject([] as types.RuntimeErrorMessage[]);
+      const runtimeErrorMessages = cache.runtimeErrorMessages = new ReplaySubject(1);
       this.pa.run({observableResults: false}).getRuntimeErrorMessages((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
         next: (items) => {
           runtimeErrorMessages.next(items);

@@ -251,8 +251,7 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
           if (specVersion) {
             // If a runtime was set in the route, update the control.
             this.rs.getRuntime(network, specVersion).pipe(
-              takeUntil(this.destroyer),
-              first()
+              takeUntil(this.destroyer)
             ).subscribe({
               next: (runtime: pst.Runtime | null) => {
                 if (runtime && runtime.specVersion !== this.specVersionControl.value) {
