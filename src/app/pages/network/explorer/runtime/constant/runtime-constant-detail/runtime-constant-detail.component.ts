@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { ActivatedRoute } from '@angular/router';
@@ -43,6 +43,7 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private ns: NetworkService,
     private rs: RuntimeService,
+    private cd: ChangeDetectorRef
   ) {
   }
 
@@ -64,6 +65,7 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
         tap(([specName, specVersion, pallet]) => {
           this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
+          this.cd.markForCheck();
         })
       )),
       switchMap(([specName, specVersion, pallet, constantName]) =>
@@ -74,32 +76,34 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
     );
 
     this.constant = runtimeObservable.pipe(
-      tap(() => this.fetchConstantStatus.next(null)),
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchConstantStatus.next(null)
+      }),
       switchMap(([runtime, pallet, constantName]) => {
-        const subject = new BehaviorSubject<pst.RuntimeConstant | null>(null);
-        if (runtime) {
-          this.rs.getRuntimeConstants(runtime.specName, runtime.specVersion).pipe(
-            takeUntil(this.destroyer)
-          ).subscribe({
-            next: (constants) => {
-              const palletConstant: pst.RuntimeConstant = constants.filter(s =>
-                s.pallet === pallet && s.constantName === constantName
-              )[0];
-              if (palletConstant) {
-                subject.next(palletConstant);
-                if (palletConstant.scaleTypeComposition) {
-                  this.parsedComposition.next(JSON.parse(palletConstant.scaleTypeComposition));
-                }
-                this.fetchConstantStatus.next(null)
-              }
-            },
-            error: (e) => {
-              console.error(e);
-              subject.error(e);
-            }
-          });
+        if (!runtime) {
+          return of(null);
         }
-        return subject.pipe(takeUntil(this.destroyer));
+        return this.rs.getRuntimeConstants(runtime.specName, runtime.specVersion).pipe(
+          takeUntil(this.destroyer),
+          map((constants) => {
+            const palletConstant: pst.RuntimeConstant = constants.filter(s =>
+              s.pallet === pallet && s.constantName === constantName
+            )[0];
+            if (palletConstant) {
+              if (palletConstant.scaleTypeComposition) {
+                this.parsedComposition.next(
+                  typeof palletConstant.scaleTypeComposition === 'string'
+                    ? JSON.parse(palletConstant.scaleTypeComposition)
+                    : palletConstant.scaleTypeComposition
+                );
+              }
+              this.fetchConstantStatus.next(null)
+              return palletConstant;
+            }
+            return null;
+          })
+        )
       }),
       catchError((e) => {
         this.fetchConstantStatus.next('error');

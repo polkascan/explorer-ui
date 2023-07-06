@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { ActivatedRoute } from '@angular/router';
@@ -35,7 +35,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
   runtime: string;
   pallet: string;
   event: Observable<pst.RuntimeEvent | null>;
-  eventAttributes: Observable<pst.RuntimeEventAttribute[]>;
+  eventAttributes: Observable<(pst.RuntimeEventAttribute | never)[]>;
   fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
   fetchEventAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
@@ -47,7 +47,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private ns: NetworkService,
     private rs: RuntimeService,
-    private pa: PolkadaptService
+    private cd: ChangeDetectorRef
   ) {
   }
 
@@ -69,6 +69,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
         tap(([specName, specVersion, pallet]) => {
           this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
+          this.cd.markForCheck();
         })
       )),
       switchMap(([specName, specVersion, pallet, eventName]) =>
@@ -77,32 +78,31 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
           map(runtime => [runtime as pst.Runtime, pallet, eventName])
         )
       ),
-      shareReplay(1)
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      })
     );
 
     this.event = runtimeObservable.pipe(
-      tap(() => this.fetchEventStatus.next('loading')),
-      switchMap(([runtime, pallet, eventName]) => {
-        const subject = new BehaviorSubject<pst.RuntimeEvent | null>(null);
-        if (runtime) {
-          this.rs.getRuntimeEvents(runtime.specName, runtime.specVersion).pipe(
-            takeUntil(this.destroyer)
-          ).subscribe({
-            next: (events) => {
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchEventStatus.next('loading')
+      }),
+      switchMap(([runtime, pallet, eventName]) =>
+        runtime
+          ? this.rs.getRuntimeEvents(runtime.specName, runtime.specVersion).pipe(
+            map((events) => {
               const matchedEvent: pst.RuntimeEvent = events.filter(e => e.pallet === pallet && e.eventName === eventName)[0];
               if (matchedEvent) {
-                subject.next(matchedEvent);
                 this.fetchEventStatus.next(null);
+                return matchedEvent;
               }
-            },
-            error: (e) => {
-              console.error(e);
-              subject.error(e);
-            }
-          });
-        }
-        return subject.pipe(takeUntil(this.destroyer));
-      }),
+              return null;
+            })
+          )
+          : of(null)
+      ),
       catchError((e) => {
         this.fetchEventStatus.next('error');
         return of(null);
@@ -110,31 +110,31 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
     )
 
     this.eventAttributes = runtimeObservable.pipe(
-      tap(() => this.fetchEventAttributesStatus.next('loading')),
-      switchMap(([runtime, pallet, eventName]) => {
-        const subject = new BehaviorSubject<(pst.RuntimeEventAttribute & { parsedComposition?: any })[]>([]);
-        this.rs.getRuntimeEventAttributes(this.ns.currentNetwork.value, runtime.specVersion, pallet, eventName).pipe(
-          takeUntil(this.destroyer)
-        ).subscribe({
-          next: (items) => {
-            if (Array.isArray(items)) {
-              const objects: (pst.RuntimeEventAttribute & { parsedComposition?: any })[] = [...items];
-              for (let obj of objects) {
-                if (obj.scaleTypeComposition) {
-                  obj.parsedComposition = JSON.parse(obj.scaleTypeComposition);
-                }
-              }
-              subject.next(objects);
-              this.fetchEventAttributesStatus.next(null);
-            }
-          },
-          error: (e) => {
-            console.error(e);
-            subject.error(e);
-          }
-        });
-        return subject.pipe(takeUntil(this.destroyer));
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchEventAttributesStatus.next('loading')
       }),
+      switchMap(([runtime, pallet, eventName]) =>
+        runtime ?
+          this.rs.getRuntimeEventAttributes(this.ns.currentNetwork.value, runtime.specVersion, pallet, eventName).pipe(
+            map((items) => {
+              if (Array.isArray(items)) {
+                const objects: (pst.RuntimeEventAttribute & { parsedComposition?: any })[] = [...items];
+                for (let obj of objects) {
+                  if (obj.scaleTypeComposition) {
+                    obj.parsedComposition = typeof obj.scaleTypeComposition === 'string' ?
+                      JSON.parse(obj.scaleTypeComposition)
+                      : obj.scaleTypeComposition;
+                  }
+                }
+                this.fetchEventAttributesStatus.next(null);
+                return objects;
+              }
+              return [];
+            })
+          )
+          : of([])
+      ),
       catchError((e) => {
         this.fetchEventAttributesStatus.next('error');
         return of([]);

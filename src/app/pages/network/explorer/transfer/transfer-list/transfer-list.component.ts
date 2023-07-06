@@ -253,7 +253,9 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
 
   getAddressFromEvent(event: pst.AccountEvent, attrName: string): string {
     if (event.attributes) {
-      const data: any = JSON.parse(event.attributes);
+      const data: any = typeof event.attributes === 'string'
+        ? JSON.parse(event.attributes)
+        : event.attributes;
       return data[attrName];
     }
     return '';

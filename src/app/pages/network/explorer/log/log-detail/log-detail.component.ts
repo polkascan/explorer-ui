@@ -58,28 +58,21 @@ export class LogDetailComponent implements OnInit, OnDestroy {
     )
 
     this.log = paramsObservable.pipe(
-      tap(() => this.fetchLogStatus.next('loading')),
-      switchMap(([blockNr, logIdx]) => {
-        const subject = new Subject<pst.Log>();
-        this.pa.run().getLog(blockNr, logIdx).pipe(
-          switchMap((obs) => obs),
-          takeUntil(this.destroyer)
-        ).subscribe({
-          next: (log) => {
-            if (log) {
-              subject.next(log);
-              this.fetchLogStatus.next(null);
-            } else {
-              subject.error('Log not found.')
-            }
-          },
-          error: (e) => {
-            console.error(e);
-            subject.error(e);
-          }
-        });
-        return subject.pipe(takeUntil(this.destroyer));
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchLogStatus.next('loading')
       }),
+      switchMap(([blockNr, logIdx]) => this.pa.run().getLog(blockNr, logIdx).pipe(
+          switchMap((obs) => obs),
+          map((log) => {
+            if (log) {
+              this.fetchLogStatus.next(null);
+              return log;
+            }
+            throw new Error(`Log not found.`);
+          })
+        )
+      ),
       catchError((e) => {
         this.fetchLogStatus.next('error');
         return of(null);

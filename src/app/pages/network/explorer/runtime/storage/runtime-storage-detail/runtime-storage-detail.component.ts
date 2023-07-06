@@ -73,7 +73,9 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
     );
 
     this.storage = observable.pipe(
-      tap(() => this.fetchStorageStatus.next('loading')),
+      tap({
+        subscribe: () => this.fetchStorageStatus.next('loading')
+      }),
       switchMap(([specName, specVersion, pallet, storageName]) =>
         this.rs.getRuntime(specName, specVersion).pipe(
           takeUntil(this.destroyer),
@@ -82,28 +84,19 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
           map(runtime => [runtime as pst.Runtime, pallet, storageName])
         )
       ),
-      switchMap(([runtime, pallet, storageName]) => {
-        const subject = new BehaviorSubject<pst.RuntimeStorage | null>(null);
-        this.rs.getRuntimeStorages(runtime.specName, runtime.specVersion).pipe(
-          takeUntil(this.destroyer)
-        ).subscribe({
-          next: (storages) => {
-            const palletStorages: pst.RuntimeStorage[] = storages.filter(s =>
-              s.pallet === pallet && s.storageName === storageName
-            );
-            const storage = palletStorages[0];
-            if (storage) {
-              subject.next(storage);
-              this.fetchStorageStatus.next(null)
-            }
-          },
-          error: (e) => {
-            console.error(e);
-            subject.error(e);
+      switchMap(([runtime, pallet, storageName]) => this.rs.getRuntimeStorages(runtime.specName, runtime.specVersion).pipe(
+        map((storages) => {
+          const palletStorages: pst.RuntimeStorage[] = storages.filter(s =>
+            s.pallet === pallet && s.storageName === storageName
+          );
+          const storage = palletStorages[0];
+          if (storage) {
+            this.fetchStorageStatus.next(null)
+            return storage
           }
-        });
-        return subject.pipe(takeUntil(this.destroyer));
-      }),
+          return null;
+        })
+      )),
       catchError((e) => {
         this.fetchStorageStatus.next('error');
         return of(null);

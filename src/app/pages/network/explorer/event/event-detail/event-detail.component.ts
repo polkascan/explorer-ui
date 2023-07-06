@@ -21,7 +21,7 @@ import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { catchError, filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
-import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of, ReplaySubject, Subject, takeLast, tap } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 
@@ -37,6 +37,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
   runtimeEventAttributes: Observable<pst.RuntimeEventAttribute[] | null>
   networkProperties = this.ns.currentNetworkProperties;
   fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
+  fetchEventAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
   private destroyer = new Subject<void>();
   private onDestroyCalled = false;
@@ -64,35 +65,34 @@ export class EventDetailComponent implements OnInit, OnDestroy {
     )
 
     this.event = paramsObservable.pipe(
-      tap(() => this.fetchEventStatus.next('loading')),
-      switchMap(([blockNr, eventIdx]) => {
-        const subject = new BehaviorSubject<pst.Event | null>(null);
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchEventStatus.next('loading')
+      }),
+      switchMap(([blockNr, eventIdx]) =>
         this.pa.run().getEvent(blockNr, eventIdx).pipe(
           takeUntil(this.destroyer),
           switchMap((obs) => obs),
-        ).subscribe({
-          next: (event) => {
+          map((event) => {
             if (event) {
-              subject.next(event);
               this.fetchEventStatus.next(null);
-            } else {
-              subject.error('Event not found.');
+              return event;
             }
-          },
-          error: (e) => {
-            console.error(e);
-            subject.error(e);
-          }
-        });
-        return subject.pipe(takeUntil(this.destroyer))
-      }),
+            throw new Error('Event not found.')
+          })
+        )
+      ),
       catchError((e) => {
         this.fetchEventStatus.next('error');
         return of(null);
       })
-    );
+    )
+    ;
 
     this.eventAttributes = this.event.pipe(
+      tap({
+        subscribe: () => this.fetchEventAttributesStatus.next('loading')
+      }),
       map((event) => {
         let parsed: any | null = event && event.attributes || null;
         if (typeof parsed === 'string') {
@@ -136,16 +136,21 @@ export class EventDetailComponent implements OnInit, OnDestroy {
           return attributes;
         }
         return null;
+      }),
+      tap({
+        next: () => this.fetchEventAttributesStatus.next(null),
+        error: () => this.fetchEventAttributesStatus.next('error')
       })
     )
 
     this.runtimeEventAttributes = this.event.pipe(
       switchMap((event) => {
         if (event && event.specName && event.specVersion && event.eventModule && event.eventName) {
-          const subject: Subject<pst.RuntimeEventAttribute[]> = new Subject();
+          const subject = new ReplaySubject<pst.RuntimeEventAttribute[]>(1);
 
           this.rs.getRuntimeEventAttributes(this.ns.currentNetwork.value, event.specVersion, event.eventModule, event.eventName).pipe(
-            takeUntil(this.destroyer)
+            takeUntil(this.destroyer),
+            takeLast(1)
           ).subscribe({
             next: (items) => {
               if (Array.isArray(items)) {

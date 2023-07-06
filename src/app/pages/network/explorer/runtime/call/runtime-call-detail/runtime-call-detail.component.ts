@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { ActivatedRoute } from '@angular/router';
@@ -47,7 +47,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private ns: NetworkService,
     private rs: RuntimeService,
-    private pa: PolkadaptService
+    private cd: ChangeDetectorRef
   ) {
   }
 
@@ -69,6 +69,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
         tap(([specName, specVersion, pallet]) => {
           this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
+          this.cd.markForCheck();
         })
       )),
       switchMap(([specName, specVersion, pallet, callName]) =>
@@ -81,31 +82,27 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
     )
 
     this.call = runtimeObservable.pipe(
-      tap(() => this.fetchCallStatus.next('loading')),
-      switchMap(([runtime, pallet, callName]) => {
-        const subject = new BehaviorSubject<pst.RuntimeCall | null>(null);
-        if (runtime) {
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchCallStatus.next('loading')
+      }),
+      switchMap(([runtime, pallet, callName]) =>
+        runtime ?
           this.rs.getRuntimeCalls(runtime.specName, runtime.specVersion).pipe(
-            takeUntil(this.destroyer)
-          ).subscribe({
-            next: (calls) => {
+            map((calls) => {
               const palletCall: pst.RuntimeCall = calls.filter(c =>
                 c.pallet === pallet && c.callName === callName
               )[0];
 
               if (palletCall) {
-                subject.next(palletCall);
                 this.fetchCallStatus.next(null);
+                return palletCall;
               }
-            },
-            error: (e) => {
-              console.error(e);
-              subject.error(e);
-            }
-          });
-        }
-        return subject.pipe(takeUntil(this.destroyer));
-      }),
+              return null;
+            })
+          )
+          : of(null)
+      ),
       catchError((e) => {
         this.fetchCallStatus.next('error');
         return of(null);
@@ -125,7 +122,9 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
                 const objects: (pst.RuntimeCallArgument & { parsedComposition?: any })[] = [...items];
                 for (let obj of objects) {
                   if (obj.scaleTypeComposition) {
-                    obj.parsedComposition = JSON.parse(obj.scaleTypeComposition);
+                    obj.parsedComposition = typeof obj.scaleTypeComposition === 'string'
+                      ? JSON.parse(obj.scaleTypeComposition)
+                      : obj.scaleTypeComposition;
                   }
                 }
                 subject.next(objects);

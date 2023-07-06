@@ -48,26 +48,43 @@
 
       <tr>
         <td class="detail-table--label-cell">Pallet</td>
-        <td><a [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion + '/pallet/' + event.eventModule">{{event.eventModule}}</a></td>
+        <td><a
+          [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion + '/pallet/' + event.eventModule">{{event.eventModule}}</a>
+        </td>
       </tr>
 
       <tr>
         <td class="detail-table--label-cell">Event name</td>
-        <td><a [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion + '/pallet/' + event.eventModule + '/event/' + event.eventName">{{event.eventName}}</a></td>
+        <td><a
+          [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion + '/pallet/' + event.eventModule + '/event/' + event.eventName">{{event.eventName}}</a>
+        </td>
       </tr>
 
       <tr>
         <td class="detail-table--label-cell">Runtime</td>
-        <td><a [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion">{{event.specName + '-' + event.specVersion}}</a></td>
+        <td><a
+          [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion">{{event.specName + '-' + event.specVersion}}</a>
+        </td>
       </tr>
 
-      <tr *ngIf="(eventAttributes | async) as attributes">
+      <tr>
         <td class="detail-table--label-cell">Attributes</td>
-        <td>
-          <attributes [attributes]="attributes" [iconTheme]="props.iconTheme" [iconSize]="24"
-                      [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
-                      [ss58Prefix]="props.ss58Format" [runtimeEventAttributes]="runtimeEventAttributes | async"></attributes>
-        </td>
+        <ng-template #attributesLoadingOrError>
+          <ng-container [ngSwitch]="fetchEventAttributesStatus | async">
+            <td>
+              <ng-container *ngSwitchCase="'loading'">Loading attributes...</ng-container>
+              <ng-container *ngSwitchCase="'error'">Failed to load attributes.</ng-container>
+            </td>
+          </ng-container>
+        </ng-template>
+        <ng-container *ngIf="(eventAttributes | async) as attributes; else attributesLoadingOrError">
+          <td>
+            <attributes [attributes]="attributes" [iconTheme]="props.iconTheme" [iconSize]="24"
+                        [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                        [ss58Prefix]="props.ss58Format"
+                        [runtimeEventAttributes]="runtimeEventAttributes | async"></attributes>
+          </td>
+        </ng-container>
       </tr>
 
       </tbody>

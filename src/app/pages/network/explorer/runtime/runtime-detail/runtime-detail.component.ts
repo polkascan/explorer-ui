@@ -20,7 +20,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/
 import { catchError, filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { NetworkService } from '../../../../../services/network.service';
 import { ActivatedRoute } from '@angular/router';
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject, throwError } from 'rxjs';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { types as pst } from '@polkadapt/core';
 
@@ -54,7 +54,7 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
       takeUntil(this.destroyer),
       filter(network => network !== ''),
       first(),
-      switchMap(network => this.route.params.pipe(
+      switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
@@ -66,11 +66,11 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
     )
 
     this.runtime = observable.pipe(
+      takeUntil(this.destroyer),
       tap((runtime) => this.fetchRuntimeStatus.next('loading')),
       switchMap(([specName, specVersion]) => {
           return this.rs.getRuntime(specName as string, specVersion as number).pipe(
             tap(() => this.fetchRuntimeStatus.next(null)),
-            takeUntil(this.destroyer),
           )
         }
       ),
@@ -81,28 +81,20 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
     );
 
     this.pallets = this.runtime.pipe(
-      tap((runtime) => this.fetchPalletsStatus.next('loading')),
-      switchMap((runtime) => {
-        if (!runtime) {
-          throw new Error('Runtime not available');
-        }
-
-        const subject = new BehaviorSubject<pst.RuntimePallet[]>([]);
-
-        this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).pipe(
-          takeUntil(this.destroyer)
-        ).subscribe({
-          next: (pallets) => {
-            subject.next(pallets);
-            this.fetchPalletsStatus.next(null)
-          },
-          error: (e) => {
-            console.error(e);
-            subject.error(e);
-          }
-        });
-        return subject.pipe(takeUntil(this.destroyer));
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchPalletsStatus.next('loading')
       }),
+      switchMap((runtime) =>
+        runtime
+          ? this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).pipe(
+            map((pallets) => {
+              this.fetchPalletsStatus.next(null)
+              return pallets;
+            })
+          )
+          : throwError(() => new Error('Runtime not available'))
+      ),
       catchError((e) => {
         this.fetchPalletsStatus.next('error');
         return of([]);

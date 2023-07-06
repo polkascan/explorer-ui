@@ -49,6 +49,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
   networkProperties = this.ns.currentNetworkProperties;
   fetchExtrinsicStatus: BehaviorSubject<any> = new BehaviorSubject(null);
   fetchEventsStatus: BehaviorSubject<any> = new BehaviorSubject(null);
+  fetchAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
   visibleColumns = ['eventId', 'pallet', 'event', 'details']
 
   private destroyer = new Subject<void>();
@@ -78,29 +79,22 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
     )
 
     this.extrinsic = paramsObservable.pipe(
-      tap(() => this.fetchExtrinsicStatus.next('loading')),
-      switchMap(([blockNr, extrinsicIdx]) => {
-        const subject = new Subject<pst.Extrinsic>();
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchExtrinsicStatus.next('loading')
+      }),
+      switchMap(([blockNr, extrinsicIdx]) =>
         this.pa.run().getExtrinsic(blockNr, extrinsicIdx).pipe(
           switchMap((obs) => obs),
-          takeUntil(this.destroyer)
-        ).subscribe({
-          next: (inherent) => {
+          map((inherent) => {
             if (inherent) {
-              subject.next(inherent);
               this.fetchExtrinsicStatus.next(null);
-            } else {
-              subject.error('Extrinsic not found.');
+              return inherent;
             }
-          }
-          ,
-          error: (e) => {
-            console.error(e);
-            subject.error(e);
-          }
-        });
-        return subject.pipe(takeUntil(this.destroyer))
-      }),
+            throw new Error('Extrinsic not found.')
+          })
+        )
+      ),
       catchError((e) => {
         this.fetchExtrinsicStatus.next('error');
         return of(null);
@@ -108,37 +102,39 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
     );
 
     this.events = paramsObservable.pipe(
-      tap(() => this.fetchEventsStatus.next('loading')),
-      switchMap(([blockNr, extrinsicIdx]) => {
-        const subject = new Subject<pst.Event[]>();
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchEventsStatus.next('loading')
+      }),
+      switchMap(([blockNr, extrinsicIdx]) =>
         this.pa.run().getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100)
           .pipe(
             switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
-            takeUntil(this.destroyer)
-          ).subscribe({
-          next: (items) => {
-            if (Array.isArray(items)) {
-              subject.next(items);
-              this.fetchEventsStatus.next(null)
-            } else {
-              subject.error('Invalid response.')
-            }
-          }
-          ,
-          error: (e) => {
-            console.error(e);
-            subject.error(e)
-          }
-        });
-        return subject.pipe(shareReplay(1), takeUntil(this.destroyer));
-      }),
+            map((items) => {
+              if (Array.isArray(items)) {
+                this.fetchEventsStatus.next(null)
+                return items;
+              }
+              throw new Error('Invalid response.');
+            })
+          )
+      ),
       catchError((e) => {
         this.fetchEventsStatus.next('error');
         return of([]);
+      }),
+      shareReplay({
+        refCount: true,
+        bufferSize: 1
       })
     );
 
     this.callArguments = this.extrinsic.pipe(
+      tap({
+        subscribe: () => {
+          this.fetchAttributesStatus.next('loading')
+        }
+      }),
       switchMap((extrinsic) => {
         if (!extrinsic) {
           return of('');
@@ -147,7 +143,6 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
         if (!(extrinsic.specVersion && extrinsic.callModule && extrinsic.callName)) {
           return of(extrinsic.callArguments);
         }
-
         return combineLatest([
           of(extrinsic).pipe(
             switchMap((extrinsic) => {
@@ -166,6 +161,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
                         extrinsic.specVersion!,
                         item['__kind'],
                         item.value['__kind']).pipe(
+                        takeUntil(this.destroyer),
                         takeLast(1)
                       )]
                     )
@@ -197,6 +193,9 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
             extrinsic.specVersion,
             extrinsic.callModule,
             extrinsic.callName
+          ).pipe(
+            takeUntil(this.destroyer),
+            takeLast(1)
           )
         ]).pipe(
           map(([[extrinsic, collectedCallArguments], callArgumentsMeta]) => {
@@ -343,7 +342,11 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
         )
       }),
       catchError((e) => {
+        this.fetchAttributesStatus.next('error');
         return of('');
+      }),
+      tap({
+        next: () => this.fetchAttributesStatus.next(null)
       })
     )
   }

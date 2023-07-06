@@ -187,7 +187,9 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
 
   getAddressFromEvent(event: pst.AccountEvent): string {
     if (event.attributes) {
-      const data: any = JSON.parse(event.attributes);
+      const data: any = typeof event.attributes === 'string'
+        ? JSON.parse(event.attributes)
+        : event.attributes;
       let address: string = '';
       if (event.eventName === 'Transfer') {
         if (event.attributeName === 'from') {
