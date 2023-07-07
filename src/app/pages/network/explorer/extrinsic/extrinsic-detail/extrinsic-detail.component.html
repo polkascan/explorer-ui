@@ -20,11 +20,6 @@
 
 <h1>Extrinsic</h1>
 
-{{(extrinsic | async) | json}}}
-
-
-{{(networkProperties | async) | json}}
-
 <ng-container *ngIf="(extrinsic | async) as extrinsic; else loadingOrError">
   <ng-container *ngIf="(networkProperties | async) as props">
 
