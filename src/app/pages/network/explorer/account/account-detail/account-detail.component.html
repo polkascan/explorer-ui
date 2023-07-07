@@ -37,7 +37,7 @@
   </ng-template>
 
   <ng-template #hasAccount>
-    <ng-container *ngIf="(derivedAccountInfo | async) as dai">
+    <ng-container *ngIf="(accountInfo | async) as dai">
 
       <div class="account-address" *ngIf="(address | async) as address">
         <div class="account-address-identicon">
@@ -190,7 +190,7 @@
         <table class="detail-table">
           <tbody>
 
-          <ng-container *ngIf="derivedBalancesAll | async">
+          <ng-container *ngIf="AccountBalances | async">
             <tr>
               <td class="detail-table--label-cell">Total</td>
               <td>

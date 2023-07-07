@@ -21,7 +21,7 @@ import { BehaviorSubject, combineLatest, of, Subject, takeUntil } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
-import { u8aToHex } from "@polkadot/util";
+import { BN, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { NetworkService } from "../../../../../../services/network.service";
 import { TooltipsService } from "../../../../../../services/tooltips.service";
@@ -173,15 +173,25 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 
-  getAmountsFromAttributes(data: string): [string, number][] {
-    const attrNames = ['amount', 'actual_fee', 'tip'];
-    const amounts: [string, number][] = [];
-    for (let name of attrNames) {
-      const match = new RegExp(`"${name}": ?\"?(\\d+)\"?`).exec(data);
-      if (match) {
-        amounts.push([name, parseInt(match[1], 10)]);
+  getAmountsFromAttributes(data: string): [string, BN][] {
+    const attrNames = ['amount', 'actual_fee', 'actualFee', 'tip'];
+    const amounts: [string, BN][] = [];
+
+    if (typeof data === 'string') {
+      for (let name of attrNames) {
+        const match = new RegExp(`"${name}": ?\"?(\\d+)\"?`).exec(data);
+        if (match) {
+          amounts.push([name, new BN(match[1])]);
+        }
       }
+    } else if (Object.prototype.toString.call(data) == '[object Object]') {
+      attrNames.forEach((name) => {
+        if ((data as any).hasOwnProperty(name)) {
+          amounts.push([name, new BN(data[name])])
+        }
+      })
     }
+
     return amounts;
   }
 

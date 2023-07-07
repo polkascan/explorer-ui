@@ -120,7 +120,7 @@ export class IdenticonComponent implements AfterViewInit, OnChanges {
           return;
 
         } catch (e) {
-          console.error(e);
+          // Ignore
         }
       }
 
@@ -130,8 +130,10 @@ export class IdenticonComponent implements AfterViewInit, OnChanges {
         this.isEthereumAddress = true;
         return;
       } catch (e) {
-        console.error(e);
+        // Ignore
       }
+
+      console.error('Error encoding account id.')
     }
 
 

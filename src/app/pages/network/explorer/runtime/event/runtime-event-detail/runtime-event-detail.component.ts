@@ -69,8 +69,10 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
         tap(([specName, specVersion, pallet]) => {
           this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
-          this.cd.markForCheck();
-        })
+          setTimeout(() => {
+              this.cd.markForCheck();
+            })
+          })
       )),
       switchMap(([specName, specVersion, pallet, eventName]) =>
         this.rs.getRuntime(specName, specVersion).pipe(

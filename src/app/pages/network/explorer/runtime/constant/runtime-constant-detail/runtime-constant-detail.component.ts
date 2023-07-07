@@ -65,7 +65,9 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
         tap(([specName, specVersion, pallet]) => {
           this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
-          this.cd.markForCheck();
+          setTimeout(() => {
+            this.cd.markForCheck();
+          })
         })
       )),
       switchMap(([specName, specVersion, pallet, constantName]) =>

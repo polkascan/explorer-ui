@@ -68,14 +68,14 @@ export class AttributeAddressComponent implements OnChanges {
             ? encodeAddress(value, this.ss58Prefix)
             : (value || '');
         } catch (e) {
-          console.error(e);
+          // Ignore
         }
 
         if (!address) {
           try {
             address = ethereumEncode(value);
           } catch (e) {
-            console.error(e);
+            // Ignore
           }
         }
       }

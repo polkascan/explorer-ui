@@ -219,14 +219,14 @@ export class AccountIdCommonComponent implements OnInit, OnChanges, OnDestroy {
             ? encodeAddress(value, this.ss58Prefix)
             : (value || '');
         } catch (e) {
-          console.error(e);
+            // Ignore
         }
 
         if (!address) {
           try {
             address = ethereumEncode(value);
           } catch (e) {
-            console.error(e);
+            console.error('Error encoding account id.')
           }
         }
       }

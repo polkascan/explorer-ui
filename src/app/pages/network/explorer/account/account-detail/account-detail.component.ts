@@ -58,40 +58,6 @@ interface AccountBalance {
   unbonding: BN;
 }
 
-// From account.txs PolkadotJS apps Page-accounts
-function calcUnbonding(stakingInfo?: DeriveStakingAccount) {
-  if (!stakingInfo?.unlocking) {
-    return BN_ZERO;
-  }
-
-  const filtered = stakingInfo.unlocking
-    .filter(({remainingEras, value}) => value.gt(BN_ZERO) && remainingEras.gt(BN_ZERO))
-    .map((unlock) => unlock.value);
-  const total = filtered.reduce((total, value) => total.iadd(value), new BN(0));
-
-  return total;
-}
-
-
-// From address-info.txs PolkadotJS apps Page-accounts
-function calcBonded(stakingInfo?: DeriveStakingAccount, bonded?: boolean | BN[]): [BN, BN[]] {
-  let other: BN[] = [];
-  let own = BN_ZERO;
-
-  if (Array.isArray(bonded)) {
-    other = bonded
-      .filter((_, index) => index !== 0)
-      .filter((value) => value.gt(BN_ZERO));
-
-    own = bonded[0];
-  } else if (stakingInfo && stakingInfo.stakingLedger && stakingInfo.stakingLedger.active && stakingInfo.accountId.eq(stakingInfo.stashId)) {
-    own = stakingInfo.stakingLedger.active.unwrap();
-  }
-
-  return [own, other];
-}
-
-
 @Component({
   selector: 'app-account-detail',
   templateUrl: './account-detail.component.html',
@@ -112,10 +78,10 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   parentId: Observable<string | null>;
   parentIdentity: Observable<any>;
   parentSubsOf: Observable<string[]>;
-  derivedAccountInfo: Observable<pst.AccountInformation | null>;
-  derivedAccountFlags: Observable<pst.AccountFlags | null>;
-  derivedBalancesAll: Observable<any>; // TODO Fix Typing
-  stakingInfo: Observable<DeriveStakingAccount>;
+  accountInfo: Observable<pst.AccountInformation | null>;
+  accountFlags: Observable<pst.AccountFlags | null>;
+  AccountBalances: Observable<pst.AccountBalances | null>;
+  stakingInfo: Observable<pst.AccountStaking | null>;
   accountBalances: Observable<Partial<AccountBalance>>;
   accountJudgement: Observable<string>;
   errors = new BehaviorSubject<string | null>(null);
@@ -244,15 +210,17 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
             try {
               return encodeAddress(id, props.ss58Format);
             } catch (e) {
-              console.log(e);
+              // Ignore
             }
 
             try {
               return ethereumEncode(id);
             } catch (e) {
-              console.log(e);
+              // Ignore
             }
           }
+
+
           return id || '';
         }
       )
@@ -287,7 +255,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         : of([]))
     );
 
-    this.derivedAccountInfo = idObservable.pipe(
+    this.accountInfo = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountInformation(id).pipe(
           takeUntil(this.destroyer),
@@ -296,11 +264,11 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         : of(null))
     ) as Observable<pst.AccountInformation>;
 
-    this.identity = this.derivedAccountInfo.pipe(
+    this.identity = this.accountInfo.pipe(
       map((info) => info ? info.identity : null)
     );
 
-    this.derivedAccountFlags = idObservable.pipe(
+    this.accountFlags = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountFlags(id).pipe(
           takeUntil(this.destroyer),
@@ -309,7 +277,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         : of(null))
     );
 
-    this.derivedBalancesAll = idObservable.pipe(
+    this.AccountBalances = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountBalances(id).pipe(
           takeUntil(this.destroyer),
@@ -328,7 +296,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     );
 
     this.accountBalances = combineLatest(
-      this.derivedBalancesAll.pipe(
+      this.AccountBalances.pipe(
         catchError(() => {
           return of(undefined);
         })),
@@ -338,19 +306,19 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         }))
     ).pipe(
       takeUntil(this.destroyer),
-      map(([derivedBalancesAll, stakingInfo]) => {
+      map(([accountBalances, stakingInfo]) => {
         const balances: any = {};
-        if (derivedBalancesAll) {
-          balances.locked = derivedBalancesAll.lockedBalance;
-          balances.total = derivedBalancesAll.freeBalance.add(derivedBalancesAll.reservedBalance);
-          balances.transferable = derivedBalancesAll.availableBalance;
-          balances.free = derivedBalancesAll.freeBalance;
-          balances.reserved = derivedBalancesAll.reservedBalance;
+        if (accountBalances) {
+          balances.locked = accountBalances.lockedBalance;
+          balances.total = accountBalances.freeBalance.add(accountBalances.reservedBalance);
+          balances.transferable = accountBalances.availableBalance;
+          balances.free = accountBalances.freeBalance;
+          balances.reserved = accountBalances.reservedBalance;
         }
         if (stakingInfo) {
-          balances.bonded = stakingInfo.stakingLedger.active.unwrap() ?? BN_ZERO;
-          balances.redeemable = stakingInfo.redeemable ?? BN_ZERO;
-          balances.unbonding = calcUnbonding(stakingInfo);
+          balances.bonded = stakingInfo.bonded;
+          balances.redeemable = stakingInfo.redeemable;
+          balances.unbonding = stakingInfo.unbonding;
         }
         return balances;
       })
@@ -410,7 +378,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       })
     )
 
-    this.accountJudgement = this.derivedAccountInfo.pipe(
+    this.accountJudgement = this.accountInfo.pipe(
       map((dai) => {
         if (dai && dai.identity && dai.identity.judgements) {
           const judgements = dai.identity.judgements.map((j) => j[1].toString());
@@ -464,12 +432,13 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.pa.run({observableResults: false}).subscribeNewExtrinsic(
+    this.pa.run().subscribeNewExtrinsic(
       {
         signed: 1,
         multiAddressAccountId: idHex
       }).pipe(
-      takeUntil(this.destroyer)
+      takeUntil(this.destroyer),
+      switchMap((obs) => obs)
     ).subscribe({
       next: (extrinsic: pst.Extrinsic) => {
         const extrinsics = this.signedExtrinsics.value;
