@@ -45,7 +45,7 @@ import {
 import { DeriveStakingAccount } from '@polkadot/api-derive/types';
 import { BN, BN_ZERO, isHex, isU8a, u8aToHex } from '@polkadot/util';
 import { types as pst } from '@polkadapt/core';
-import { decodeAddress, encodeAddress, validateAddress } from '@polkadot/util-crypto';
+import { decodeAddress, encodeAddress, ethereumEncode, validateAddress } from '@polkadot/util-crypto';
 import { TooltipsService } from '../../../../../services/tooltips.service';
 
 
@@ -241,7 +241,17 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       combineLatestWith(this.networkProperties),
       map(([id, props]) => {
           if (id && props && (isU8a(id) || isHex(id))) {
-            return encodeAddress(id, props.ss58Format);
+            try {
+              return encodeAddress(id, props.ss58Format);
+            } catch (e) {
+              console.log(e);
+            }
+
+            try {
+              return ethereumEncode(id);
+            } catch (e) {
+              console.log(e);
+            }
           }
           return id || '';
         }
