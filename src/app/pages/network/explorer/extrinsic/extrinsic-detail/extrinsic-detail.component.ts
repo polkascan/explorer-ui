@@ -17,17 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import {
-  BehaviorSubject,
-  combineAll,
-  combineLatest,
-  combineLatestAll,
-  Observable,
-  of,
-  Subject,
-  takeLast,
-  tap
-} from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, Subject, takeLast, tap } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
@@ -149,7 +139,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
               // Find defined types in data returned by subsquid. Fetch the runtimeCallArguments for these found types.
               // Wait until all found runtimeCallArguments are available.
 
-              const foundTypes: [string, string, Observable<pst.RuntimeCallArgument[]>][] = []
+              const foundTypes: [string, string, Observable<pst.RuntimeCallArgument[] | null>][] = []
               const findTypes = (item: any) => {
                 if (Object.prototype.toString.call(item) === '[object Object]') {
                   if (item && item['__kind'] && item.value && item.value['__kind']) {
@@ -162,6 +152,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
                         item['__kind'],
                         item.value['__kind']).pipe(
                         takeUntil(this.destroyer),
+                        catchError(() => of(null)),
                         takeLast(1)
                       )]
                     )
@@ -178,7 +169,9 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
                 return combineLatest(foundTypes.map((t) => t[2])).pipe(
                   switchMap((types) => of([
                     extrinsic,
-                    foundTypes.map((t, i) => [t[0], t[1], types[i]])
+                    foundTypes
+                      .filter((t, i) => types[i] !== null)
+                      .map((t, i) => [t[0], t[1], types[i]])
                   ])),
                   catchError(() => of([extrinsic, []]))
                 );
@@ -292,6 +285,13 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
                           });
 
                           if (subArgMeta) {
+                            if ((attr as any)['__kind'] && (attr as any).value && !(attr as any).value['__kind']) {
+                              if (Object.keys((attr as any)).length === 2) {
+                                // The real value is one level deeper.
+                                attr = (attr as any).value;
+                              }
+                            }
+
                             subCallArgs[i!] = {
                               name: subArgMeta.name,
                               type: subArgMeta.scaleType,
@@ -324,10 +324,21 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
                     }
                   })
                 } else if (Object.prototype.toString.call(arrayOrObject) === '[object Object]') {
+
                   if (arrayOrObject['__kind'] && arrayOrObject.value) {
-                    if (!arrayOrObject.value['__kind']) {
+                    if (arrayOrObject.value['__kind']) {
+                      const subArgsMeta = collectedCallArguments.find(
+                        (v) => v[0] === arrayOrObject['__kind'] && v[1] === arrayOrObject.value['__kind']
+                      );
+                      if (!subArgsMeta) {
+                        arrayOrObject[arrayOrObject['__kind']] = arrayOrObject.value;
+                        delete arrayOrObject['__kind'];
+                        delete arrayOrObject.value;
+                      }
+                    } else {
                       arrayOrObject[arrayOrObject['__kind']] = arrayOrObject.value;
                       delete arrayOrObject['__kind'];
+                      delete arrayOrObject.value;
                     }
                   }
                   Object.entries(arrayOrObject).forEach(([k, v]) => convertSubquidTypedValues(v))

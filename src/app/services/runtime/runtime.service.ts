@@ -261,7 +261,8 @@ export class RuntimeService {
         },
         error: (e) => {
           console.error(e);
-          cache.runtimeEventAttributes?.delete(id)
+          attributesCache?.error(e);
+          cache.runtimeEventAttributes?.delete(id);
         }
       });
     }
@@ -282,7 +283,7 @@ export class RuntimeService {
         },
         error: (e) => {
           console.error(e);
-          delete cache.runtimeCalls
+          delete cache.runtimeCalls;
         }
       });
     }
@@ -314,7 +315,8 @@ export class RuntimeService {
         },
         error: (e) => {
           console.error(e);
-          cache.runtimeCallArguments?.delete(id)
+          argumentsCache?.error(e);
+          cache.runtimeCallArguments?.delete(id);
         }
       });
     }
