@@ -25,7 +25,7 @@ import * as subsquid from '@polkadapt/subsquid';
 import { AppConfig } from '../app-config';
 import { BehaviorSubject, Subject, Subscription, throttleTime } from 'rxjs';
 
-export type AugmentedApi = substrate.Api & explorer.Api & coingecko.Api;
+export type AugmentedApi = substrate.Api & explorer.Api & coingecko.Api & subsquid.Api;
 
 type AdapterName = 'substrateRpc' | 'explorerApi' | 'coingeckoApi';
 
