@@ -229,15 +229,17 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
                   if (meta.name) {
                     const camelCaseKey = meta.name.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
                     const snakeCaseKey = meta.name.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
+
                     if (callArguments.hasOwnProperty(camelCaseKey) || callArguments.hasOwnProperty(snakeCaseKey)) {
                       attributesFromObject!.push({
                         name: meta.name,
                         type: meta.scaleType,
-                        value: callArguments[meta.name]
+                        value: callArguments[camelCaseKey] || callArguments[snakeCaseKey]
                       })
                       // Value has been added to the array.
                       // Remove it from the original object to prevent it being added a second time in a later stage.
-                      delete callArguments[meta.name];
+                      delete callArguments[camelCaseKey];
+                      delete callArguments[snakeCaseKey];
                     }
                   }
                 })
@@ -256,12 +258,20 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
             // Find values recursively in the attributes object to match with other (pallet) call arguments.
             if (attributesFromObject) {
               const convertSubquidTypedValues = (arrayOrObject: any) => {
+
                 if (Array.isArray(arrayOrObject)) {
                   arrayOrObject.forEach((value, index) => {
 
                     if (value['__kind'] && value.value && value.value['__kind']) {
                       const subArgsMeta = collectedCallArguments.find(
-                        (v) => v[0] === value['__kind'] && v[1] === value.value['__kind']
+                        (v) => {
+                          const camelCaseParentKey = (value['__kind'] as string).replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
+                          const snakeCaseParentKey = (value['__kind'] as string).replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
+                          const camelCaseSubKey = (value.value['__kind'] as string).replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
+                          const snakeCaseSubKey = (value.value['__kind'] as string).replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
+                          return (v[0] === camelCaseParentKey || v[0] === snakeCaseParentKey)
+                            && (v[1] === camelCaseSubKey || v[1] === snakeCaseSubKey)
+                        }
                       );
 
                       if (subArgsMeta) {
@@ -328,7 +338,14 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
                   if (arrayOrObject['__kind'] && arrayOrObject.value) {
                     if (arrayOrObject.value['__kind']) {
                       const subArgsMeta = collectedCallArguments.find(
-                        (v) => v[0] === arrayOrObject['__kind'] && v[1] === arrayOrObject.value['__kind']
+                        (v) => {
+                          const camelCaseParentKey = (arrayOrObject['__kind'] as string).replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
+                          const snakeCaseParentKey = (arrayOrObject['__kind'] as string).replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
+                          const camelCaseSubKey = (arrayOrObject.value['__kind'] as string).replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
+                          const snakeCaseSubKey = (arrayOrObject.value['__kind'] as string).replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
+                          return (v[0] === camelCaseParentKey || v[0] === snakeCaseParentKey)
+                            && (v[1] === camelCaseSubKey || v[1] === snakeCaseSubKey)
+                        }
                       );
                       if (!subArgsMeta) {
                         arrayOrObject[arrayOrObject['__kind']] = arrayOrObject.value;
