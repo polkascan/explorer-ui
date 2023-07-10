@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,9 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/
 import { catchError, filter, first, map, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { NetworkService } from '../../../../../services/network.service';
 import { ActivatedRoute } from '@angular/router';
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject, throwError } from 'rxjs';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 
 @Component({
   selector: 'app-runtime-detail',
@@ -36,7 +36,7 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
   fetchRuntimeStatus = new BehaviorSubject<any>(null);
   fetchPalletsStatus = new BehaviorSubject<any>(null);
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   visibleColumns = {
     pallets: ['icon', 'name', 'events', 'calls', 'storage', 'constants', 'details']
@@ -54,23 +54,23 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
       takeUntil(this.destroyer),
       filter(network => network !== ''),
       first(),
-      switchMap(network => this.route.params.pipe(
+      switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
-          const specVersion = params['runtime'].substring(lastIndex);
+          const specVersion = params['runtime'].substring(lastIndex + 1);
           return [specName, parseInt(specVersion, 10)];
         })
       ))
     )
 
     this.runtime = observable.pipe(
+      takeUntil(this.destroyer),
       tap((runtime) => this.fetchRuntimeStatus.next('loading')),
       switchMap(([specName, specVersion]) => {
           return this.rs.getRuntime(specName as string, specVersion as number).pipe(
             tap(() => this.fetchRuntimeStatus.next(null)),
-            takeUntil(this.destroyer),
           )
         }
       ),
@@ -81,24 +81,20 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
     );
 
     this.pallets = this.runtime.pipe(
-      tap((runtime) => this.fetchPalletsStatus.next('loading')),
-      switchMap((runtime) => {
-        if (!runtime) {
-          throw new Error('Runtime not available');
-        }
-
-        const subject = new Subject<pst.RuntimePallet[]>();
-
-        this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).then(
-          (pallets) => {
-            subject.next(pallets);
-            this.fetchPalletsStatus.next(null)
-          },
-          (e) => {
-            subject.error(e)
-          })
-        return subject.pipe(takeUntil(this.destroyer));
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchPalletsStatus.next('loading')
       }),
+      switchMap((runtime) =>
+        runtime
+          ? this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).pipe(
+            map((pallets) => {
+              this.fetchPalletsStatus.next(null)
+              return pallets;
+            })
+          )
+          : throwError(() => new Error('Runtime not available'))
+      ),
       catchError((e) => {
         this.fetchPalletsStatus.next('error');
         return of([]);
@@ -107,7 +103,7 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

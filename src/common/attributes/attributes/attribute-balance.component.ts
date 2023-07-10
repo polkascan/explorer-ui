@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ import { ChangeDetectionStrategy, Component, Input, OnChanges, SimpleChanges, Vi
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AttributeBalanceComponent implements OnChanges {
-  @Input() attribute: { type: string, value: number };
+  @Input() attribute: { type: string, value: number | string};
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
 
@@ -48,7 +48,7 @@ export class AttributeBalanceComponent implements OnChanges {
       let converted: number | null;
 
       try {
-        converted = Math.max(0, this.attribute.value) / Math.pow(10, this.decimals);
+        converted = Math.max(0, parseInt(this.attribute.value as string, 10)) / Math.pow(10, this.decimals);
       } catch (e) {
         converted = null;
       }

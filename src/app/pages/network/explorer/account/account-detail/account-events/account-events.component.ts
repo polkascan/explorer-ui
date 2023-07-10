@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,14 +17,15 @@
  */
 
 import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-import { BehaviorSubject, Subject } from 'rxjs';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { BehaviorSubject, combineLatest, of, Subject, takeUntil } from 'rxjs';
+import { types as pst } from '@polkadapt/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
-import { u8aToHex } from "@polkadot/util";
+import { BN, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { NetworkService } from "../../../../../../services/network.service";
 import { TooltipsService } from "../../../../../../services/tooltips.service";
+import { switchMap, tap } from 'rxjs/operators';
 
 
 @Component({
@@ -63,8 +64,8 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
 
   loading = new BehaviorSubject<boolean>(false);
 
-  private unsubscribeFns: Map<string, (() => void)> = new Map();
-  private destroyer: Subject<undefined> = new Subject();
+  private reset: Subject<void> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(private pa: PolkadaptService,
               private ns: NetworkService,
@@ -72,16 +73,18 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.unsubscribeFns.forEach(unsub => unsub());
-    this.unsubscribeFns.clear();
-    this.destroyer.next(undefined);
+    this.reset.complete()
+    this.destroyer.next();
     this.destroyer.complete();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     const address: string = changes.address.currentValue;
     this.events.next([]);
+    this.reset.next();
+
     this.fetchAndSubscribeEvents(address);
+
     const queryParams: { [p: string]: string } = {'address': address};
     if (this.eventTypes) {
       for (let pallet of Object.keys(this.eventTypes)) {
@@ -102,93 +105,101 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   }
 
   async fetchAndSubscribeEvents(address: string): Promise<void> {
-    const existingUnsubscribe = this.unsubscribeFns.get('eventsUnsubscribeFn');
-    if (existingUnsubscribe) {
-      existingUnsubscribe();
-    }
-
-    this.loading.next(true);
-
     const idHex: string = u8aToHex(decodeAddress(address));
     const filterParams: any = {eventTypes: this.eventTypes};
 
     let events: pst.AccountEvent[] = [];
     const listSize = this.listSize || 50;
-    let pageNext: string | undefined = undefined
-    let blockLimitOffset: number | undefined = undefined;
-    let blockLimitCount: number | undefined = undefined;
 
-    while (events.length < listSize) {
-      const response: pst.ListResponse<pst.AccountEvent> = await this.pa.run().polkascan.chain.getEventsByAccount(idHex, filterParams, listSize, pageNext, blockLimitOffset);
-
-      pageNext = response.pageInfo ? response.pageInfo.pageNext || undefined : undefined;
-      blockLimitCount = response.pageInfo ? response.pageInfo.blockLimitCount || undefined : undefined;
-      blockLimitOffset = response.pageInfo ? response.pageInfo.blockLimitOffset || undefined : undefined;
-
-      if (response.objects && response.objects.length > 0) {
-        events = [...events, ...response.objects];
-      }
-
-      if (events.length > listSize) {
-        // List size has been reached. List is done, limit to listsize.
-        events.length = listSize;
-        break;
-      }
-
-      if (pageNext) {
-        // There is a next page, continue while loop.
-      } else if (blockLimitOffset && blockLimitCount) {
-        const nextBlockLimitOffset = Math.max(0, blockLimitOffset - blockLimitCount);
-        if (nextBlockLimitOffset === 0) {
-          // Genesis has been reached. Stop the while loop.
-          break;
-        } else {
-          // No more pages left in current block offset, move to the next offset.
-          blockLimitOffset = nextBlockLimitOffset;
+    const subscription = this.pa.run().getEventsByAccount(idHex, filterParams, listSize).pipe(
+      takeUntil(this.reset),
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => {
+          this.loading.next(true);
+        },
+        finalize: () => {
+          this.loading.next(false);
         }
-      } else {
-        // No more items to be expected.
-        break;
+      }),
+      switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+    ).subscribe({
+      next: (items) => {
+        const merged = [...events, ...items.filter((event) => {
+          const isDuplicate = events.some((item) =>
+            event.blockNumber === item.blockNumber
+            && event.eventIdx === item.eventIdx
+            && event.attributeName === item.attributeName
+          );
+          return !isDuplicate;
+        })];
+        merged.sort((a, b) => (b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx));
+
+
+        if (events.length > listSize) {
+          // List size has been reached. List is done, limit to listsize.
+          events.length = listSize;
+          subscription.unsubscribe();
+        }
+
+        this.events.next(merged);
       }
-    }
+    });
 
-    this.events.next(events);
-    this.loading.next(false);
-
-    const eventsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewEventByAccount(idHex,
-      filterParams,
-      (event: pst.AccountEvent) => {
+    this.pa.run({observableResults: false}).subscribeNewEventByAccount(idHex, filterParams).pipe(
+      takeUntil(this.reset),
+      takeUntil(this.destroyer)
+    ).subscribe({
+      next: (event: pst.AccountEvent) => {
         const events = this.events.value;
-        if (events && !events.some((e) => e.blockNumber === event.blockNumber && e.eventIdx === event.eventIdx)) {
+        if (events && !events.some((e) =>
+          e.blockNumber === event.blockNumber
+          && e.eventIdx === event.eventIdx
+          && e.attributeName === event.attributeName)) {
           const merged = [event, ...events];
           merged.sort((a, b) => (b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx));
-          merged.length = this.listSize;
+
+          if (merged.length > listSize) {
+            merged.length = listSize;
+          }
+
           this.events.next(merged);
         }
-      });
-
-    this.unsubscribeFns.set('eventsUnsubscribeFn', eventsUnsubscribeFn);
+      }
+    })
   }
 
   eventTrackBy(i: any, event: pst.AccountEvent): string {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 
-  getAmountsFromAttributes(data: string): [string, number][] {
-    const attrNames = ['amount', 'actual_fee', 'tip'];
-    const amounts: [string, number][] = [];
-    for (let name of attrNames) {
-      const match = new RegExp(`"${name}": (\\d+)`).exec(data);
-      if (match) {
-        amounts.push([name, parseInt(match[1], 10)]);
+  getAmountsFromAttributes(data: string): [string, BN][] {
+    const attrNames = ['amount', 'actual_fee', 'actualFee', 'tip'];
+    const amounts: [string, BN][] = [];
+
+    if (typeof data === 'string') {
+      for (let name of attrNames) {
+        const match = new RegExp(`"${name}": ?\"?(\\d+)\"?`).exec(data);
+        if (match) {
+          amounts.push([name, new BN(match[1])]);
+        }
       }
+    } else if (Object.prototype.toString.call(data) == '[object Object]') {
+      attrNames.forEach((name) => {
+        if ((data as any).hasOwnProperty(name)) {
+          amounts.push([name, new BN(data[name])])
+        }
+      })
     }
+
     return amounts;
   }
 
   getAddressFromEvent(event: pst.AccountEvent): string {
     if (event.attributes) {
-      const data: any = JSON.parse(event.attributes);
+      const data: any = typeof event.attributes === 'string'
+        ? JSON.parse(event.attributes)
+        : event.attributes;
       let address: string = '';
       if (event.eventName === 'Transfer') {
         if (event.attributeName === 'from') {

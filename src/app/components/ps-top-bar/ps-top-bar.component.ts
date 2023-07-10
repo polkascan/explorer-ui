@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
   networks: string[];
   networkLabel = new BehaviorSubject('');
 
-  private destroyer = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(private host: ElementRef,
               private renderer: Renderer2,
@@ -67,17 +67,19 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
         takeUntil(this.destroyer),
         distinctUntilChanged()
       )
-      .subscribe((network) => {
-        if (network) {
-          this.networkLabel.next('Network');
-        } else {
-          this.networkLabel.next(network);
+      .subscribe({
+        next: (network) => {
+          if (network) {
+            this.networkLabel.next('Network');
+          } else {
+            this.networkLabel.next(network);
+          }
         }
       });
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
   }
 
   setNetwork(network: string): void {

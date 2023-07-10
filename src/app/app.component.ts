@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,12 +29,12 @@ import { VariablesService } from './services/variables.service';
 })
 export class AppComponent implements OnDestroy {
   title = 'explorer-ui';
-  private destroyer = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(public vars: VariablesService) {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
   }
 }

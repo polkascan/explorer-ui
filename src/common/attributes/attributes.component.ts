@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@ import {
 } from '@angular/core';
 import { IconTheme } from '../identicon/identicon.types';
 import { Prefix } from '@polkadot/util-crypto/address/types';
-import { types as pst } from '@polkadapt/polkascan-explorer';
-import { attributesConfig } from './attributes.config';
+import { types as pst } from '@polkadapt/core';
+import { attributesConfig as attrConfig} from './attributes.config';
 import { BehaviorSubject } from 'rxjs';
 
 @Component({
@@ -48,7 +48,7 @@ export class AttributesComponent implements OnChanges {
   isArray = new BehaviorSubject<boolean>(false);
 
   parsedAttributes: any[] = [];
-  attributesConfig = attributesConfig;
+  attributesConfig = attrConfig;
 
   constructor() {
   }
@@ -87,7 +87,14 @@ export class AttributesComponent implements OnChanges {
             if (typeof value === 'object' && !Array.isArray(value)) {
               // This is an Object with (sub)attribute names and values.
               value = Object.entries(value).map(([subName, subValue]) => {
-                const eventAttribute = (this.runtimeEventAttributes as pst.RuntimeEventAttribute[]).find((ea) => ea.eventAttributeName === subName);
+                const camelCase = subName.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
+                const snakeCase = subName.replace(/[A-Z]/g, (m) => '_' + m.toLowerCase());
+                const eventAttribute = (this.runtimeEventAttributes as pst.RuntimeEventAttribute[]).find(
+                  (ea) => ea.eventAttributeName === subName
+                    || ea.eventAttributeName === camelCase
+                    || ea.eventAttributeName === snakeCase
+                );
+
                 if (eventAttribute && eventAttribute.scaleType) {
                   return {
                     name: subName,
@@ -95,7 +102,11 @@ export class AttributesComponent implements OnChanges {
                     value: subValue
                   };
                 } else {
-                  return subValue;
+                  if (subName) {
+                    return {name: subName, value: subValue};
+                  } else {
+                    return subValue;
+                  }
                 }
               });
             }

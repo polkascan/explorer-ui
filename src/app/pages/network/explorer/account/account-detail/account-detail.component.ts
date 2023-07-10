@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,22 +21,31 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import {
-  catchError, distinctUntilChanged, filter, first, map, shareReplay, startWith, switchMap, takeUntil, tap
+  distinctUntilChanged,
+  filter,
+  first,
+  map,
+  shareReplay,
+  startWith,
+  switchMap,
+  takeUntil,
+  tap
 } from 'rxjs/operators';
-import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
 import {
-  DeriveAccountFlags,
-  DeriveAccountInfo,
-  DeriveBalancesAll,
-  DeriveStakingAccount
-} from '@polkadot/api-derive/types';
-import { BN, BN_ZERO, u8aToHex, u8aToString } from '@polkadot/util';
-import { types as pst } from '@polkadapt/polkascan-explorer';
-import { AccountId, AccountIndex } from '@polkadot/types/interfaces';
-import { Codec } from '@polkadot/types/types';
-import { decodeAddress, validateAddress } from '@polkadot/util-crypto';
-import { AccountInfo } from '@polkadot/types/interfaces/system/types';
-import { asObservable } from '../../../../../../common/polkadapt-rxjs';
+  BehaviorSubject,
+  catchError,
+  combineLatest,
+  combineLatestWith,
+  EMPTY,
+  Observable,
+  of,
+  Subject,
+  take
+} from 'rxjs';
+import { DeriveStakingAccount } from '@polkadot/api-derive/types';
+import { BN, BN_ZERO, isHex, isU8a, u8aToHex } from '@polkadot/util';
+import { types as pst } from '@polkadapt/core';
+import { decodeAddress, encodeAddress, ethereumEncode, validateAddress } from '@polkadot/util-crypto';
 import { TooltipsService } from '../../../../../services/tooltips.service';
 
 
@@ -49,40 +58,6 @@ interface AccountBalance {
   unbonding: BN;
 }
 
-// From account.txs PolkadotJS apps Page-accounts
-function calcUnbonding(stakingInfo?: DeriveStakingAccount) {
-  if (!stakingInfo?.unlocking) {
-    return BN_ZERO;
-  }
-
-  const filtered = stakingInfo.unlocking
-    .filter(({remainingEras, value}) => value.gt(BN_ZERO) && remainingEras.gt(BN_ZERO))
-    .map((unlock) => unlock.value);
-  const total = filtered.reduce((total, value) => total.iadd(value), new BN(0));
-
-  return total;
-}
-
-
-// From address-info.txs PolkadotJS apps Page-accounts
-function calcBonded(stakingInfo?: DeriveStakingAccount, bonded?: boolean | BN[]): [BN, BN[]] {
-  let other: BN[] = [];
-  let own = BN_ZERO;
-
-  if (Array.isArray(bonded)) {
-    other = bonded
-      .filter((_, index) => index !== 0)
-      .filter((value) => value.gt(BN_ZERO));
-
-    own = bonded[0];
-  } else if (stakingInfo && stakingInfo.stakingLedger && stakingInfo.stakingLedger.active && stakingInfo.accountId.eq(stakingInfo.stashId)) {
-    own = stakingInfo.stakingLedger.active.unwrap();
-  }
-
-  return [own, other];
-}
-
-
 @Component({
   selector: 'app-account-detail',
   templateUrl: './account-detail.component.html',
@@ -91,24 +66,22 @@ function calcBonded(stakingInfo?: DeriveStakingAccount, bonded?: boolean | BN[])
 })
 export class AccountDetailComponent implements OnInit, OnDestroy {
   id: Observable<string | null>;
-  validAddress = new BehaviorSubject<string | null>(null);
-  account: Observable<AccountInfo>;
+  accountAsHex = new BehaviorSubject<string | null>(null);
+  account: Observable<pst.Account | null>;
+  address: Observable<string>;
   subs: Observable<any>;
-  identity: Observable<any>;
-  indices: Observable<any[]>;
-  accountIndex: Observable<AccountIndex | undefined>;
-  accountId: Observable<AccountId | undefined>;
-  accountNonce: Observable<number | undefined>
-  superOf: Observable<Codec | undefined>;
-  subsOf: Observable<any>;
+  identity: Observable<pst.AccountIdentity | null>;
+  accountIndex: Observable<number | null>;
+  accountNonce: Observable<number | null>
+  subsOf: Observable<string[]>;
   subsNames: Observable<string[]>;
-  parent: Observable<any>;
+  parentId: Observable<string | null>;
   parentIdentity: Observable<any>;
-  parentSubsOf: Observable<any>;
-  derivedAccountInfo: Observable<DeriveAccountInfo>;
-  derivedAccountFlags: Observable<DeriveAccountFlags>;
-  derivedBalancesAll: Observable<DeriveBalancesAll>;
-  stakingInfo: Observable<DeriveStakingAccount>;
+  parentSubsOf: Observable<string[]>;
+  accountInfo: Observable<pst.AccountInformation | null>;
+  accountFlags: Observable<pst.AccountFlags | null>;
+  AccountBalances: Observable<pst.AccountBalances | null>;
+  stakingInfo: Observable<pst.AccountStaking | null>;
   accountBalances: Observable<Partial<AccountBalance>>;
   accountJudgement: Observable<string>;
   errors = new BehaviorSubject<string | null>(null);
@@ -119,16 +92,15 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   signedExtrinsicsLoading = new BehaviorSubject<boolean>(false);
 
   fetchAccountInfoStatus = new BehaviorSubject<any>(null);
-  polkascanAccountInfo = new BehaviorSubject<pst.TaggedAccount| null>(null);
+  polkascanAccountInfo = new BehaviorSubject<pst.TaggedAccount | null>(null);
 
   balanceTransferColumns = ['icon', 'block', 'from', 'to', 'value', 'details']
   signedExtrinsicsColumns = ['icon', 'extrinsicID', 'block', 'pallet', 'call', 'details'];
 
   listsSize = 50;
-  loadedTabs: {[index: number]: boolean} = {0: true};
+  loadedTabs: { [index: number]: boolean } = {0: true};
 
-  private unsubscribeFns: Map<string, (() => void)> = new Map();
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
@@ -157,41 +129,20 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       switchMap((id: string) => {
         const n = parseInt(id, 10);
         if (id === n.toString() && Number.isInteger(n)) {
-          return asObservable(this.pa.run().query.indices.accounts, n).pipe(
-            takeUntil(this.destroyer),
-            map((indices) => {
-              if (indices && indices.isSome) {
-                indices = indices.toJSON();
-                if (indices && indices[0]) {
-                  return indices[0] as string; // This is the ss58.
-                }
-              }
-              return null;
-            })
-          )
+          // id is an index
+          return this.pa.run({observableResults: false}).getAccountIdFromIndex(n).pipe(take(1));
         } else {
           return of(id);
         }
       }),
-      shareReplay(1)
-    );
-
-    // Remove all active subscriptions when id changes.
-    idObservable.subscribe((id) => {
-      this.loadedTabs = {0: true};
-      this.errors.next(null);
-      // Try to create the hex for accountId manually.
-      this.unsubscribeFns.forEach((unsub) => unsub());
-      this.unsubscribeFns.clear();
-
-      this.signedExtrinsics.next([]);
-
-      if (id) {
-        let validAddress: boolean;
-        try {
-          validAddress = validateAddress(id);
-        } catch (e) {
-          validAddress = false;
+      map((id) => {
+        let validAddress: boolean | undefined;
+        if (id) {
+          try {
+            validAddress = validateAddress(id);
+          } catch (e) {
+            validAddress = false;
+          }
         }
         if (validAddress) {
           // Check if address belongs to this network/chain.
@@ -202,82 +153,150 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           }
         }
         if (validAddress) {
+          const accountIdHex = u8aToHex(decodeAddress(id));
+          this.accountAsHex.next(accountIdHex);
+          return id;
+        }
+
+        this.accountAsHex.next(null);
+        return null;
+      }),
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      })
+    ) as Observable<string | null>;
+
+    // Remove all active subscriptions when id changes.
+    idObservable.subscribe({
+      next: (id) => {
+        this.loadedTabs = {0: true};
+        this.errors.next(null);
+
+        this.signedExtrinsics.next([]);
+
+        if (id) {
           try {
-            const accountIdHex = u8aToHex(decodeAddress(id));
-            this.validAddress.next(accountIdHex);
-            this.fetchAndSubscribeExtrinsics(accountIdHex);
-            this.fetchTaggedAccounts(accountIdHex);
+            // Try to create the hex for accountId manually.
+            const hex = this.accountAsHex.value;
+            if (hex) {
+              this.fetchAndSubscribeExtrinsics(hex);
+              this.fetchTaggedAccounts(hex);
+            }
           } catch (e) {
           }
         } else {
           // Not a valid address.
-          this.validAddress.next(null);
-          this.errors.next('Not a valid address.');
+          this.errors.next('Unknown or invalid address.');
         }
-      } else {
-        // Account not found.
-        this.validAddress.next(null);
-        this.errors.next('Account not found.');
       }
     });
 
     this.account = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().query.system.account, id).pipe(startWith(undefined), takeUntil(this.destroyer))),
-      map((account) => account ? account : undefined)
+      switchMap((id) =>
+        id
+          ? this.pa.run({observableResults: false}).getAccount(id).pipe(
+            takeUntil(this.destroyer),
+            startWith(null),
+            map((account) => account ? account : null)
+          )
+          : of(null))
     );
 
-    const idAndIndexObservable = idObservable.pipe(
-      switchMap((id) => asObservable(this.pa.run().derive.accounts.idAndIndex, id).pipe(takeUntil(this.destroyer)))
-    );
+    this.address = idObservable.pipe(
+      combineLatestWith(this.networkProperties),
+      map(([id, props]) => {
+          if (id && props && (isU8a(id) || isHex(id))) {
+            try {
+              return encodeAddress(id, props.ss58Format);
+            } catch (e) {
+              // Ignore
+            }
 
-    this.accountId = idAndIndexObservable.pipe(
-      map((val) => val && val[0] ? val[0] : undefined)
-    );
+            try {
+              return ethereumEncode(id);
+            } catch (e) {
+              // Ignore
+            }
+          }
 
-    this.accountIndex = idAndIndexObservable.pipe(
-      map((val) => val && val[1] ? val[1] : undefined)
-    );
 
-    this.accountNonce = this.account.pipe(
-      map((account: AccountInfo) => account && account.nonce ? account.nonce.toNumber() : undefined)
-    );
-
-    this.indices = this.accountIndex.pipe(
-      switchMap((accountIndex) => accountIndex
-        ? asObservable(this.pa.run().query.indices.accounts, accountIndex.toNumber()).pipe(takeUntil(this.destroyer))
-        : of(undefined)),
+          return id || '';
+        }
+      )
     )
 
-    this.superOf = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().query.identity.superOf, id).pipe(takeUntil(this.destroyer)) : of(null))
-    );
+    this.accountIndex = idObservable.pipe(
+      switchMap((id) =>
+        id
+          ? this.pa.run({observableResults: false}).getIndexFromAccountId(id).pipe(
+            takeUntil(this.destroyer),
+            startWith(null)
+          )
+          : of(null)
+      )
+    )
 
-    this.identity = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().query.identity.identityOf, id).pipe(takeUntil(this.destroyer)): of(null))
+    this.accountNonce = this.account.pipe(
+      map((account) => {
+        if (account && Number.isInteger(account.nonce)) {
+          return account.nonce as number;
+        }
+        return null;
+      })
     );
 
     this.subsOf = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().query.identity.subsOf, id).pipe(takeUntil(this.destroyer)) : of(null))
+      switchMap((id) => id
+        ? this.pa.run({observableResults: false}).getAccountChildrenIds(id).pipe(
+          takeUntil(this.destroyer),
+          startWith([])
+        )
+        : of([]))
     );
 
-    this.derivedAccountInfo = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().derive.accounts.info, id).pipe(takeUntil(this.destroyer)) : of(null))
+    this.accountInfo = idObservable.pipe(
+      switchMap((id) => id
+        ? this.pa.run({observableResults: false}).getAccountInformation(id).pipe(
+          takeUntil(this.destroyer),
+          startWith(null)
+        )
+        : of(null))
+    ) as Observable<pst.AccountInformation>;
+
+    this.identity = this.accountInfo.pipe(
+      map((info) => info ? info.identity : null)
     );
 
-    this.derivedAccountFlags = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().derive.accounts.flags, id).pipe(takeUntil(this.destroyer)) : of(null))
+    this.accountFlags = idObservable.pipe(
+      switchMap((id) => id
+        ? this.pa.run({observableResults: false}).getAccountFlags(id).pipe(
+          takeUntil(this.destroyer),
+          startWith(null)
+        )
+        : of(null))
     );
 
-    this.derivedBalancesAll = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().derive.balances.all, id).pipe(takeUntil(this.destroyer)) : of(null))
+    this.AccountBalances = idObservable.pipe(
+      switchMap((id) => id
+        ? this.pa.run({observableResults: false}).getAccountBalances(id).pipe(
+          takeUntil(this.destroyer),
+          startWith(null)
+        )
+        : of(null))
     );
 
     this.stakingInfo = idObservable.pipe(
-      switchMap((id) => id ? asObservable(this.pa.run().derive.staking.account, id).pipe(takeUntil(this.destroyer)) : of(null))
+      switchMap((id) => id
+        ? this.pa.run({observableResults: false}).getAccountStaking(id).pipe(
+          takeUntil(this.destroyer),
+          startWith(null)
+        )
+        : of(null))
     );
 
     this.accountBalances = combineLatest(
-      this.derivedBalancesAll.pipe(
+      this.AccountBalances.pipe(
         catchError(() => {
           return of(undefined);
         })),
@@ -287,76 +306,55 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         }))
     ).pipe(
       takeUntil(this.destroyer),
-      map(([derivedBalancesAll, stakingInfo]) => {
+      map(([accountBalances, stakingInfo]) => {
         const balances: any = {};
-        if (derivedBalancesAll) {
-          balances.locked = derivedBalancesAll.lockedBalance;
-          balances.total = derivedBalancesAll.freeBalance.add(derivedBalancesAll.reservedBalance);
-          balances.transferable = derivedBalancesAll.availableBalance;
-          balances.free = derivedBalancesAll.freeBalance;
-          balances.reserved = derivedBalancesAll.reservedBalance;
+        if (accountBalances) {
+          balances.locked = accountBalances.lockedBalance;
+          balances.total = accountBalances.freeBalance.add(accountBalances.reservedBalance);
+          balances.transferable = accountBalances.availableBalance;
+          balances.free = accountBalances.freeBalance;
+          balances.reserved = accountBalances.reservedBalance;
         }
         if (stakingInfo) {
-          balances.bonded = stakingInfo.stakingLedger.active.unwrap() ?? BN_ZERO;
-          balances.redeemable = stakingInfo.redeemable ?? BN_ZERO;
-          balances.unbonding = calcUnbonding(stakingInfo);
+          balances.bonded = stakingInfo.bonded;
+          balances.redeemable = stakingInfo.redeemable;
+          balances.unbonding = stakingInfo.unbonding;
         }
         return balances;
       })
     );
 
-    this.parent = this.superOf.pipe(
-      switchMap((val: any) => {
-        return val && val.value && val.value[0]
-          ? asObservable(this.pa.run().query.system.account, val.value[0]).pipe(takeUntil(this.destroyer))
-          : of(undefined)
-      })
+    this.parentId = idObservable.pipe(
+      switchMap((id) => id
+        ? this.pa.run({observableResults: false}).getAccountParentId(id)
+        : of(null)
+      )
+    );
+
+    this.parentIdentity = this.parentId.pipe(
+      switchMap((id) => id
+        ? this.pa.run({observableResults: false}).getIdentity(id)
+        : of(null))
     )
 
-    this.parentIdentity = this.superOf.pipe(
-      switchMap((val: any) => val && val.value && val.value[0]
-        ? asObservable(this.pa.run().query.identity.identityOf, val.value[0]).pipe(takeUntil(this.destroyer))
-        : of(undefined)),
-    )
-
-    this.parentSubsOf = this.superOf.pipe(
-      switchMap((val: any) => val && val.value && val.value[0]
-        ? asObservable(this.pa.run().query.identity.subsOf, val.value[0]).pipe(takeUntil(this.destroyer))
-        : of(undefined))
+    this.parentSubsOf = this.parentId.pipe(
+      switchMap((parentId: any) => parentId
+        ? this.pa.run({observableResults: false}).getAccountChildrenIds(parentId)
+        : of([]))
     )
 
     this.subsNames = combineLatest(
-      this.subsOf.pipe(
-        map((subsOf: any) => subsOf && subsOf[1] || [])
-      ),
-      this.parentSubsOf.pipe(
-        map((parentSubsOf: any) => parentSubsOf && parentSubsOf[1] || [])
-      )
+      this.subsOf,
+      this.parentSubsOf
     ).pipe(
       takeUntil(this.destroyer),
-      switchMap(([subsOf, parentSubsOf]) => {
-        const subs = subsOf && subsOf.length ? subsOf : parentSubsOf && parentSubsOf.length ? parentSubsOf : [];
-        const observables: Observable<any>[] = subs.map((sub: any) => asObservable(this.pa.run().query.identity.superOf, sub).pipe(takeUntil(this.destroyer)))
+      switchMap(([subsOfIds, parentSubsOfIds]) => {
+        const subs = subsOfIds && subsOfIds.length ? subsOfIds : parentSubsOfIds && parentSubsOfIds.length ? parentSubsOfIds : [];
+        const observables: Observable<any>[] = subs.map((subId: any) =>
+          this.pa.run({observableResults: false}).getChildAccountName(subId)
+        )
 
-        if (observables.length > 0) {
-          return combineLatest(observables);
-        } else {
-          return of([]);
-        }
-      }),
-      map((subsSuperOf: any[]) => {
-        return subsSuperOf.map((subSuperOf: any) => {
-          if (subSuperOf && subSuperOf.value && subSuperOf.value[1]) {
-            const value = subSuperOf.value[1];
-            return value.isRaw
-              ? u8aToString(value.asRaw.toU8a(true))
-              : value.isNone
-                ? undefined
-                : value.toHex();
-          } else {
-            return '';
-          }
-        });
+        return observables.length ? combineLatest(observables) : of([]);
       })
     );
 
@@ -380,7 +378,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       })
     )
 
-    this.accountJudgement = this.derivedAccountInfo.pipe(
+    this.accountJudgement = this.accountInfo.pipe(
       map((dai) => {
         if (dai && dai.identity && dai.identity.judgements) {
           const judgements = dai.identity.judgements.map((j) => j[1].toString());
@@ -402,59 +400,47 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   async fetchAndSubscribeExtrinsics(idHex: string): Promise<void> {
     let extrinsics: pst.Extrinsic[] = [];
     const listSize = this.listsSize || 50;
-    let pageNext: string | undefined = undefined
-    let blockLimitOffset: number | undefined = undefined;
-    let blockLimitCount: number | undefined = undefined;
 
-    this.signedExtrinsicsLoading.next(true);
-
-    while (extrinsics.length < listSize) {
-      const response: pst.ListResponse<pst.Extrinsic> = await await this.pa.run().polkascan.chain.getExtrinsics(
-      {
-        signed: 1,
-        multiAddressAccountId: idHex
-      }, listSize, pageNext, blockLimitOffset);
-
-      pageNext = response.pageInfo ? response.pageInfo.pageNext || undefined : undefined;
-      blockLimitCount = response.pageInfo ? response.pageInfo.blockLimitCount || undefined : undefined;
-      blockLimitOffset = response.pageInfo ? response.pageInfo.blockLimitOffset || undefined : undefined;
-
-      if (response.objects && response.objects.length > 0) {
-        extrinsics = [...extrinsics, ...response.objects];
-      }
-
-      if (extrinsics.length > listSize) {
-        // List size has been reached. List is done, limit to listsize.
-        extrinsics.length = listSize;
-        break;
-      }
-
-      if (pageNext) {
-        // There is a next page, continue while loop.
-      } else if (blockLimitOffset && blockLimitCount) {
-        const nextBlockLimitOffset = Math.max(0, blockLimitOffset - blockLimitCount)
-        if (nextBlockLimitOffset <= 0) {
-          // Genesis has been reached. Stop the while loop.
-          break;
-        } else {
-          // No more pages left in current block offset, move to the next offset.
-          blockLimitOffset = nextBlockLimitOffset;
+    const subscription = this.pa.run().getExtrinsics({
+      signed: 1,
+      multiAddressAccountId: idHex
+    }, listSize).pipe(
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => {
+          this.signedExtrinsicsLoading.next(true);
+        },
+        finalize: () => {
+          this.signedExtrinsicsLoading.next(false);
         }
-      } else {
-        // No more items to be expected.
-        break;
+      }),
+      switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+    ).subscribe({
+      next: (items) => {
+        extrinsics = [
+          ...extrinsics,
+          ...items.filter((extrinsic) => extrinsics.some((e) => e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx) === false)
+        ];
+
+        if (extrinsics.length > listSize) {
+          // List size has been reached. List is done, limit to listsize.
+          extrinsics.length = listSize;
+          subscription.unsubscribe();
+        }
+
+        this.signedExtrinsics.next(extrinsics);
       }
-    }
+    });
 
-    this.signedExtrinsicsLoading.next(false);
-    this.signedExtrinsics.next(extrinsics);
-
-    const signedExtrinsicsUnsubscribeFn = await this.pa.run().polkascan.chain.subscribeNewExtrinsic(
+    this.pa.run().subscribeNewExtrinsic(
       {
         signed: 1,
         multiAddressAccountId: idHex
-      },
-      (extrinsic: pst.Extrinsic) => {
+      }).pipe(
+      takeUntil(this.destroyer),
+      switchMap((obs) => obs)
+    ).subscribe({
+      next: (extrinsic: pst.Extrinsic) => {
         const extrinsics = this.signedExtrinsics.value;
         if (extrinsics && extrinsics.some((e) => e.blockNumber === extrinsic.blockNumber && e.extrinsicIdx === extrinsic.extrinsicIdx) === false) {
           const merged = [extrinsic, ...extrinsics];
@@ -464,21 +450,21 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           merged.length = this.listsSize;
           this.signedExtrinsics.next([extrinsic].concat(extrinsics));
         }
-      });
-
-    this.unsubscribeFns.set('signedExtrinsicsUnsubscribeFn', signedExtrinsicsUnsubscribeFn);
+      }
+    });
   }
 
   fetchTaggedAccounts(accountIdHex: string): void {
-    this.pa.run().polkascan.state.getTaggedAccount(accountIdHex).then(
-      (account) => this.polkascanAccountInfo.next(account)
-    );
+    this.pa.run().getTaggedAccount(accountIdHex).pipe(
+      takeUntil(this.destroyer),
+      switchMap((obs) => obs ? obs : EMPTY),
+    ).subscribe({
+      next: (account: pst.TaggedAccount) => this.polkascanAccountInfo.next(account)
+    });
   }
 
   ngOnDestroy(): void {
-    this.unsubscribeFns.forEach((unsub) => unsub());
-    this.unsubscribeFns.clear();
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

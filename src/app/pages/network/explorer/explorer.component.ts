@@ -1,7 +1,6 @@
-
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,7 +75,7 @@ const blockContentAnimation = trigger('blockContentAnimation', [
   animations: [blocksAnimation, blockContentAnimation]
 })
 export class ExplorerComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
   blockListSize = 10;
   latestBlockNumber = new BehaviorSubject<number>(0);
   blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
@@ -91,7 +90,8 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     private config: AppConfig,
     private router: Router,
     private route: ActivatedRoute
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     // Watch for changes to network, the latest block number and last block data.
@@ -132,12 +132,14 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       switchMap(nr => this.ns.blockHarvester.blocks[nr].pipe(
         takeUntil(this.destroyer))
       )
-    ).subscribe(block => {
-      const newBlockCount: number = block.number - this.latestBlockNumber.value;
-      if (newBlockCount > 0) {
-        this.latestBlockNumber.next(block.number);
-        // Add new blocks to the beginning (while removing same amount at the end) of the Array.
-        this.spliceBlocks(Math.min(newBlockCount, this.blockListSize));
+    ).subscribe({
+      next: (block) => {
+        const newBlockCount: number = block.number - this.latestBlockNumber.value;
+        if (newBlockCount > 0) {
+          this.latestBlockNumber.next(block.number);
+          // Add new blocks to the beginning (while removing same amount at the end) of the Array.
+          this.spliceBlocks(Math.min(newBlockCount, this.blockListSize));
+        }
       }
     });
 
@@ -147,15 +149,17 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       takeUntil(this.destroyer),
       filter(network => !!network),
       distinctUntilChanged()
-    ).subscribe(() => {
-      this.latestBlockNumber.next(0);
-      this.blocks.next([]);
-      this.searchForm.controls['search'].setValue('');
+    ).subscribe({
+      next: () => {
+        this.latestBlockNumber.next(0);
+        this.blocks.next([]);
+        this.searchForm.controls['search'].setValue('');
+      }
     });
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
 import { debounceTime, distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import {u8aToHex} from "@polkadot/util";
-import {decodeAddress} from "@polkadot/util-crypto";
+import { BN, u8aToHex } from "@polkadot/util";
+import { decodeAddress } from "@polkadot/util-crypto";
+import { Observable } from 'rxjs';
 
 
 @Component({
@@ -35,8 +36,9 @@ import {decodeAddress} from "@polkadot/util-crypto";
   styleUrls: ['./transfer-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TransferListComponent extends PaginatedListComponentBase<pst.Event | pst.AccountEvent> implements OnInit {
+export class TransferListComponent extends PaginatedListComponentBase<pst.Event | pst.AccountEvent> implements OnInit, OnDestroy {
   listSize = 100;
+  blockNumberIdentifier = 'blockNumber';
 
   dateRangeBeginControl = new FormControl<Date | ''>('');
   dateRangeEndControl = new FormControl<Date | ''>('');
@@ -74,23 +76,25 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
         parseInt(params.get('blockRangeEnd') as string, 10) || '',
         params.get('address') as string || ''
       ] as [Date | '', Date | '', number | '', number | '', string])
-    ).subscribe(([dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd, address]) => {
-      const oldDateStart = this.dateRangeBeginControl.value;
-      if ((dateRangeBegin && dateRangeBegin.getTime() || '') !== (oldDateStart && oldDateStart.getTime() || '')) {
-        this.dateRangeBeginControl.setValue(dateRangeBegin);
-      }
-      const oldDateEnd = this.dateRangeEndControl.value;
-      if ((dateRangeEnd && dateRangeEnd.getTime() || '') !== (oldDateEnd && oldDateEnd.getTime() || '')) {
-        this.dateRangeEndControl.setValue(dateRangeEnd);
-      }
-      if (blockRangeBegin !== this.blockRangeBeginControl.value) {
-        this.blockRangeBeginControl.setValue(blockRangeBegin);
-      }
-      if (blockRangeEnd !== this.blockRangeEndControl.value) {
-        this.blockRangeEndControl.setValue(blockRangeEnd);
-      }
-      if (address !== this.addressControl.value) {
-        this.addressControl.setValue(address);
+    ).subscribe({
+      next: ([dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd, address]) => {
+        const oldDateStart = this.dateRangeBeginControl.value;
+        if ((dateRangeBegin && dateRangeBegin.getTime() || '') !== (oldDateStart && oldDateStart.getTime() || '')) {
+          this.dateRangeBeginControl.setValue(dateRangeBegin);
+        }
+        const oldDateEnd = this.dateRangeEndControl.value;
+        if ((dateRangeEnd && dateRangeEnd.getTime() || '') !== (oldDateEnd && oldDateEnd.getTime() || '')) {
+          this.dateRangeEndControl.setValue(dateRangeEnd);
+        }
+        if (blockRangeBegin !== this.blockRangeBeginControl.value) {
+          this.blockRangeBeginControl.setValue(blockRangeBegin);
+        }
+        if (blockRangeEnd !== this.blockRangeEndControl.value) {
+          this.blockRangeEndControl.setValue(blockRangeEnd);
+        }
+        if (address !== this.addressControl.value) {
+          this.addressControl.setValue(address);
+        }
       }
     });
 
@@ -99,34 +103,36 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
         debounceTime(100),  // To make sure eventNameControl reset has taken place
         takeUntil(this.destroyer)
       )
-      .subscribe((values) => {
-        this.items = [];
-        this.subscribeNewItem();
-        this.getItems();
+      .subscribe({
+        next: (values) => {
+          this.itemsObservable.next([]);
+          this.subscribeNewItem();
+          this.getItems();
 
-        const queryParams: Params = {};
-        if (values.dateRangeBegin) {
-          const d = new Date(values.dateRangeBegin.getTime() - values.dateRangeBegin.getTimezoneOffset() * 60000)
-          queryParams.dateRangeBegin = d.toISOString().substring(0, 10);
-        }
-        if (values.dateRangeEnd) {
-          const d = new Date(values.dateRangeEnd.getTime() - values.dateRangeEnd.getTimezoneOffset() * 60000)
-          queryParams.dateRangeEnd = d.toISOString().substring(0, 10);
-        }
-        if (values.blockRangeBegin) {
-          queryParams.blockRangeBegin = values.blockRangeBegin;
-        }
-        if (values.blockRangeEnd) {
-          queryParams.blockRangeEnd = values.blockRangeEnd;
-        }
-        if (values.address) {
-          queryParams.address = values.address;
-        }
+          const queryParams: Params = {};
+          if (values.dateRangeBegin) {
+            const d = new Date(values.dateRangeBegin.getTime() - values.dateRangeBegin.getTimezoneOffset() * 60000)
+            queryParams.dateRangeBegin = d.toISOString().substring(0, 10);
+          }
+          if (values.dateRangeEnd) {
+            const d = new Date(values.dateRangeEnd.getTime() - values.dateRangeEnd.getTimezoneOffset() * 60000)
+            queryParams.dateRangeEnd = d.toISOString().substring(0, 10);
+          }
+          if (values.blockRangeBegin) {
+            queryParams.blockRangeBegin = values.blockRangeBegin;
+          }
+          if (values.blockRangeEnd) {
+            queryParams.blockRangeEnd = values.blockRangeEnd;
+          }
+          if (values.address) {
+            queryParams.address = values.address;
+          }
 
-        this.router.navigate(['.'], {
-          relativeTo: this.route,
-          queryParams
-        });
+          this.router.navigate(['.'], {
+            relativeTo: this.route,
+            queryParams
+          });
+        }
       });
 
     super.ngOnInit();
@@ -157,37 +163,36 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
   }
 
 
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Event | pst.AccountEvent>> {
+  createGetItemsRequest(untilBlockNumber?: number): Observable<Observable<(pst.Event | pst.AccountEvent)>[]> {
+    const filters = this.filters;
+    if (untilBlockNumber) {
+      filters.blockRangeEnd = untilBlockNumber;
+    }
+
     if (this.addressControl.value) {
-      return this.pa.run(this.network).polkascan.chain.getEventsByAccount(
+      return this.pa.run(this.network).getEventsByAccount(
         u8aToHex(decodeAddress(this.addressControl.value)),
-        this.filters,
-        this.listSize,
-        pageKey,
-        blockLimitOffset
+        filters,
+        this.listSize
       );
     } else {
-      return this.pa.run(this.network).polkascan.chain.getEvents(
-        this.filters,
-        this.listSize,
-        pageKey,
-        blockLimitOffset
+      return this.pa.run(this.network).getEvents(
+        filters,
+        this.listSize
       );
     }
   }
 
 
-  createNewItemSubscription(handleItemFn: (item: pst.Event | pst.AccountEvent) => void): Promise<() => void> {
+  createNewItemSubscription(): Observable<Observable<pst.Event | pst.AccountEvent>> {
     if (this.addressControl.value) {
-      return this.pa.run(this.network).polkascan.chain.subscribeNewEventByAccount(
+      return this.pa.run(this.network).subscribeNewEventByAccount(
         u8aToHex(decodeAddress(this.addressControl.value)),
-        this.filters,
-        handleItemFn
+        this.filters
       );
     } else {
-      return this.pa.run(this.network).polkascan.chain.subscribeNewEvent(
-        this.filters,
-        handleItemFn
+      return this.pa.run(this.network).subscribeNewEvent(
+        this.filters
       );
     }
   }
@@ -233,22 +238,34 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
   }
 
 
-  getAmountsFromAttributes(data: string): [string, number][] {
-    const attrNames = ['amount', 'actual_fee', 'tip'];
-    const amounts: [string, number][] = [];
-    for (let name of attrNames) {
-      const match = new RegExp(`"${name}": (\\d+)`).exec(data);
-      if (match) {
-        amounts.push([name, parseInt(match[1], 10)]);
+    getAmountsFromAttributes(data: string): [string, BN][] {
+    const attrNames = ['amount', 'actual_fee', 'actualFee', 'tip'];
+    const amounts: [string, BN][] = [];
+
+    if (typeof data === 'string') {
+      for (let name of attrNames) {
+        const match = new RegExp(`"${name}": ?\"?(\\d+)\"?`).exec(data);
+        if (match) {
+          amounts.push([name, new BN(match[1])]);
+        }
       }
+    } else if (Object.prototype.toString.call(data) == '[object Object]') {
+      attrNames.forEach((name) => {
+        if ((data as any).hasOwnProperty(name)) {
+          amounts.push([name, new BN(data[name])])
+        }
+      })
     }
+
     return amounts;
   }
 
 
   getAddressFromEvent(event: pst.AccountEvent, attrName: string): string {
     if (event.attributes) {
-      const data: any = JSON.parse(event.attributes);
+      const data: any = typeof event.attributes === 'string'
+        ? JSON.parse(event.attributes)
+        : event.attributes;
       return data[attrName];
     }
     return '';

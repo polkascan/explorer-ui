@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,13 +19,11 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
-import { BehaviorSubject, combineLatest, Observable, of, Subject, take } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, Subject, take, timer } from 'rxjs';
 import { Block } from '../../../../../services/block/block.harvester';
-import { catchError, filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
+import { catchError, filter, first, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { types as pst } from '@polkadapt/polkascan-explorer';
-import { asObservable } from '../../../../../../common/polkadapt-rxjs';
-import { Header } from '@polkadot/types/interfaces';
+import { types as pst } from '@polkadapt/core';
 
 @Component({
   selector: 'app-block-detail',
@@ -34,7 +32,7 @@ import { Header } from '@polkadot/types/interfaces';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BlockDetailComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
   block = new BehaviorSubject<Block | null>(null);
   extrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
   events = new BehaviorSubject<pst.Event[]>([]);
@@ -63,36 +61,22 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
       tap(() => {
         this.invalidHash.next(false);
       }),
-      switchMap<Params, Observable<number>>(((params) => {
-        const id = parseInt(params['idOrHash'], 10);
-        if (String(id) === params['idOrHash']) {
-          // Id is a blockNumber.
-          return of(id);
-        } else {
-          return asObservable(this.pa.run().rpc.chain.getHeader, params['idOrHash']).pipe(
-            take(1),
-            map((header: Header) => header.number.toJSON() as number),
-            catchError((err) => {
-              this.invalidHash.next(true);
-              throw new Error(`Block detail could not be fetched. The header maybe invalid or does not exist. ${err}`);
-            })
-          );
-        }
+      switchMap<Params, Observable<pst.Header>>(((params) => {
+        const idOrHash = params['idOrHash'];
+        return this.pa.run({observableResults: false}).getHeader(idOrHash).pipe(
+          take(1)
+        );
       })),
-      switchMap((blockNr) => combineLatest(
+      catchError((err) => {
+        this.invalidHash.next(true);
+        throw new Error(`Block detail could not be fetched. The header maybe invalid or does not exist. ${err}`);
+      }),
+      switchMap((header) => combineLatest([
         // Update block when block data changes.
-        this.ns.blockHarvester.blocks[blockNr].pipe(
-          tap(block => {
-            this.block.next(block);
-            if (block.finalized) {
-              this.pa.run().polkascan.chain.getExtrinsics({blockNumber: blockNr}, 100)
-                .then((result: pst.ListResponse<pst.Extrinsic>) => {
-                  this.extrinsics.next(result.objects);
-                });
-              this.pa.run().polkascan.chain.getEvents({blockNumber: blockNr}, 100)
-                .then((result: pst.ListResponse<pst.Event>) => {
-                  this.events.next(result.objects);
-                });
+        this.ns.blockHarvester.blocks[header.number].pipe(
+          tap({
+            next: (block) => {
+              this.block.next(block);
             }
           })
         ),
@@ -103,16 +87,58 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
             this.headNumber.next(nr);
           })
         )
-      ).pipe(
+      ]).pipe(
         takeUntil(this.destroyer),
         // Stop watching when this block is finalized.
         takeWhile(result => !result[0].finalized),
       ))
     ).subscribe();
+
+
+    this.block.pipe(
+      filter((block): block is Block => Boolean(block && block.finalized === true)),
+      take(1)
+    ).subscribe({
+      next: (block) => {
+        this.extrinsics.next([]);
+        if (block.countExtrinsics) {
+          timer(0, 1000).pipe(
+            take(10),  // Try it for 10 seconds.
+            switchMap(() => this.pa.run().getExtrinsics({
+              blockNumber: block.number,
+              blockRangeBegin: block.number,
+              blockRangeEnd: block.number
+            }, 300)),
+            takeUntil(this.destroyer),
+            takeWhile((extrinsics) => block.countExtrinsics! > extrinsics.length, true),
+            switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+          ).subscribe({
+            next: (extrinsics: pst.Extrinsic[]) => this.extrinsics.next(extrinsics)
+          });
+        }
+
+        this.events.next([]);
+        if (block.countEvents) {
+          timer(0, 1000).pipe(
+            take(10),  // Try it for 10 seconds.
+            switchMap(() => this.pa.run().getEvents({
+              blockNumber: block.number,
+              blockRangeBegin: block.number,
+              blockRangeEnd: block.number
+            }, 300)),
+            takeUntil(this.destroyer),
+            takeWhile((events) => block.countEvents! > events.length, true),
+            switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+          ).subscribe({
+            next: (events: pst.Event[]) => this.events.next(events)
+          });
+        }
+      }
+    })
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 }

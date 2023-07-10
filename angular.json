@@ -8,7 +8,6 @@
       "path": ".cache",
       "environment": "all"
     },
-    "defaultCollection": "@angular-eslint/schematics",
     "analytics": false
   },
   "projects": {
@@ -128,6 +127,5 @@
         }
       }
     }
-  },
-  "defaultProject": "explorer-ui"
+  }
 }

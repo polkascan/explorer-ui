@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ import { VariablesService } from '../../services/variables.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NetworkComponent implements OnInit, OnDestroy {
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(private route: ActivatedRoute,
               private ns: NetworkService,
@@ -45,10 +45,12 @@ export class NetworkComponent implements OnInit, OnDestroy {
         map((p) => p['network']),
         distinctUntilChanged()
       )
-      .subscribe((network: string) => {
-        const noAwait = this.ns.setNetwork(network);
-        this.vars.network.next(network);
-        this.vars.blockNumber.next(0);
+      .subscribe({
+        next: (network: string) => {
+          this.ns.setNetwork(network);
+          this.vars.network.next(network);
+          this.vars.blockNumber.next(0);
+        }
       });
 
     // Pass the last loaded number to the variables service, so other parts of the application can pick it up.
@@ -65,13 +67,15 @@ export class NetworkComponent implements OnInit, OnDestroy {
         // Only continue if new block number is larger than 0.
         filter(nr => nr > 0)
       ))
-    ).subscribe(nr => {
-      this.vars.blockNumber.next(nr);
-    })
+    ).subscribe({
+      next: (nr) => {
+        this.vars.blockNumber.next(nr);
+      }
+    });
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
     this.ns.destroy();
     this.vars.network.next('none');

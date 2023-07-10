@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,35 +16,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { BehaviorSubject, combineLatest, defer } from 'rxjs';
+import { BehaviorSubject, combineLatest, defer, EMPTY, merge, Observable, Subject, Subscription, take } from 'rxjs';
 import { AugmentedApi } from '../polkadapt.service';
-import { Polkadapt } from '@polkadapt/core';
-import { Header } from '@polkadot/types/interfaces';
-import { types as pst } from '@polkadapt/polkascan-explorer';
-import { filter, finalize, first } from 'rxjs/operators';
+import { Polkadapt, types } from '@polkadapt/core';
+import { filter, finalize, first, switchMap, takeUntil } from 'rxjs/operators';
 
-export type Block = Partial<pst.Block> & {
+export type Block = Partial<types.Block> & {
   status: 'new' | 'loading' | 'loaded',
   number: number,
   finalized: boolean,
-  extrinsics: (pst.Extrinsic | undefined)[],
-  events: (pst.Event | undefined)[]
+  extrinsics: (types.Extrinsic | undefined)[],
+  events: (types.Event | undefined)[]
 };
 
 export type BlockSubject = BehaviorSubject<Block>;
 
-type BlockCache = {[nr: string]: BlockSubject};
+type BlockCache = { [nr: string]: BlockSubject };
 
 export class BlockHarvester {
-  private unsubscribeNewHeads: (() => void) | null;
-  private unsubscribeNewBlocks: (() => void) | null;
+  private newBlockSubscription: Subscription | null;
+  private newFinalizedBlocksSubscription: Subscription | null;
   private readonly cache: BlockCache = {};
   headNumber = new BehaviorSubject<number>(0);
   finalizedNumber = new BehaviorSubject<number>(0);
   loadedNumber = new BehaviorSubject<number>(0);
   blocks: BlockCache;
-  observedBlocks: {[nr: string]: number} = {};
+  observedBlocks: { [nr: string]: number } = {};
   paused = false;
+  untilBlocksObservable: Observable<types.Block[]>;
 
   constructor(public polkadapt: Polkadapt<AugmentedApi>, public network: string) {
     // Create a block cache where data is lazy loaded when you get an item.
@@ -87,37 +86,43 @@ export class BlockHarvester {
   }
 
   private async subscribeNewBlocks(): Promise<void> {
-    if (!this.unsubscribeNewHeads) {
+    if (!this.newBlockSubscription) {
       // Subscribe to new blocks *without finality*.
-      this.unsubscribeNewHeads = await this.polkadapt.run({chain: this.network, adapters: ['substrate-rpc']}).rpc.chain.subscribeNewHeads(
-        (header: Header) => this.newHeadHandler(header)
-      );
-    }
+      this.newBlockSubscription = this.polkadapt.run().subscribeNewBlock().subscribe({
+        next: (block) => {
+          const done = new Subject<void>();
 
-    if (!this.unsubscribeNewBlocks) {
-      // Subscribe to new finalized blocks from Polkascan.
-      this.unsubscribeNewBlocks = await this.polkadapt.run(this.network)
-        .polkascan.chain.subscribeNewBlock((block: pst.Block) => this.finalizedBlockHandler(block));
+          // Subscribe to the block observable to catch the latest response from an adapter.
+          block.pipe(
+            takeUntil(done)
+          ).subscribe((block) => {
+            if (block.complete) {
+              this.finalizedBlockHandler(block);
+              // A finalized block has been retrieved and processed. Unsubscribe the observable.
+              done.next();
+              done.complete();
+            } else {
+              this.newBlockHandler(block);
+            }
+          })
+        }
+      });
     }
   }
 
-  private newHeadHandler(header: Header): void {
-    const newNumber = header.number.toNumber();
+  private newBlockHandler(block: types.Block): void {
+    const newNumber = block.number;
     // Only update the head number if the new number is greater.
     if (newNumber > this.headNumber.value) {
       this.headNumber.next(newNumber);
       // Preload block data.
-      const block: Block = Object.assign({}, this.cache[newNumber].value);
-      block.hash = header.hash.toString();
-      block.parentHash = header.parentHash.toString();
-      block.extrinsicsRoot = header.extrinsicsRoot.toString();
-      block.stateRoot = header.stateRoot.toString();
-      this.cache[newNumber].next(block);
+      const blockMerged: Block = Object.assign({}, this.cache[newNumber].value, block);
+      this.cache[newNumber].next(blockMerged);
       this.loadBlock(newNumber);
     }
   }
 
-  private finalizedBlockHandler(block: pst.Block): void {
+  private finalizedBlockHandler(block: types.Block): void {
     if (!block || !block.number) {
       return;
     }
@@ -155,85 +160,70 @@ export class BlockHarvester {
     combineLatest(this.headNumber, this.finalizedNumber).pipe(
       filter(([hn, fn]) => hn > 0 || fn > 0),
       first()  // So it stops right after we get one of the two numbers.
-    ).subscribe(async ([headNumber, finalizedNumber]) => {
-      let block = Object.assign({}, cached.value);
-      if (
-        block.status === 'loading' || // It's already loading this block.
-        nr > headNumber ||  // Block doesn't exist, yet.
-        nr > finalizedNumber && block.status === 'loaded' ||  // Block can't load finalized data, yet.
-        block.finalized  // Block is already finalized.
-      ) {
-        // Do nothing.
-        return;
-      }
-      // Otherwise, raise the loading flag.
-      const oldStatus: 'new' | 'loaded' = block.status;
-      block.status = 'loading';
-      cached.next(block);
-
-      if (block.number <= finalizedNumber) {
-        // Load finalized data from Polkascan.
-        let loaded;
-        try {
-          loaded = await this.polkadapt.run(this.network).polkascan.chain.getBlock(block.number);
+    ).subscribe({
+      next: ([headNumber, finalizedNumber]) => {
+        let block = Object.assign({}, cached.value);
+        if (
+          block.status === 'loading' || // It's already loading this block.
+          nr > headNumber ||  // Block doesn't exist, yet.
+          nr > finalizedNumber && block.status === 'loaded' ||  // Block can't load finalized data, yet.
+          block.finalized  // Block is already finalized.
+        ) {
+          // Do nothing.
+          return;
         }
-        catch (e) {
-          block.status = oldStatus;
-          throw new Error('Error loading block from Polkascan, will try again when possible and if necessary.');
-        }
-        block = Object.assign(block, loaded);
-        block.finalized = true;
-        block.extrinsics = new Array(block.countExtrinsics);
-        block.events = new Array(block.countEvents);
-        block.status = 'loaded';
+        // Otherwise, raise the loading flag.
+        const oldStatus: 'new' | 'loaded' = block.status;
+        block.status = 'loading';
         cached.next(block);
-      } else {
-        // Load data from substrate rpc.
-        const runOnRpc = {chain: this.network, adapters: ['substrate-rpc']};
-        if (!block.hash) {
-          block.hash = (await this.polkadapt.run(runOnRpc).rpc.chain.getBlockHash(block.number)).toString();
-        }
-        let signedBlock, allEvents, timestamp;
-        try {
-          [signedBlock, allEvents, timestamp] = await Promise.all([
-            this.polkadapt.run(runOnRpc).rpc.chain.getBlock(block.hash),
-            this.polkadapt.run(runOnRpc).query.system.events.at(block.hash),
-            this.polkadapt.run(runOnRpc).query.timestamp.now.at(block.hash)
-          ]);
-        } catch (e) {
-          block.status = oldStatus;
-          throw new Error('Error loading block from SubstrateRPC, will try again when possible and if necessary.');
-        }
-        // If data is already loaded into this block, ignore data from rpc node.
-        if (cached.value.status !== 'loaded') {
-          block.parentHash = signedBlock.block.header.parentHash.toString();
-          block.extrinsicsRoot = signedBlock.block.header.extrinsicsRoot.toString();
-          block.stateRoot = signedBlock.block.header.stateRoot.toString();
-          block.datetime = new Date(parseInt(timestamp.toString(), 10)).toISOString();
-          block.extrinsics = new Array(signedBlock.block.extrinsics.length);
-          block.events = new Array((allEvents as any).length);  // temporary 'as any' fix until polkadot-js types are fixed.
-          block.status = 'loaded';
-          cached.next(block);
-          // If this block can be finalized already, do it now.
-          if (nr <= this.finalizedNumber.value) {
-            this.loadBlock(nr);
+
+        if (block.number <= finalizedNumber) {
+          // Load finalized data from Polkascan.
+          this.polkadapt.run().getBlock(block.number).pipe(
+            switchMap(obs => obs),
+            filter(block => Boolean(block.complete)),
+            take(1)
+          ).subscribe({
+            next: response => {
+              block = Object.assign(block, response);
+              block.finalized = true;
+              block.extrinsics = new Array(block.countExtrinsics);
+              block.events = new Array(block.countEvents);
+              block.status = 'loaded';
+              cached.next(block);
+            },
+            error: err => {
+              block.status = oldStatus;
+              cached.next(block);
+              console.error(err);
+              throw new Error('Error loading block, will try again when possible and if necessary.');
+            }
+          });
+        } else {
+          if (cached.value.status !== 'loaded') {
+            block.status = 'loaded';
+            cached.next(block);
+            // If this block can be finalized already, do it now.
+            if (nr <= this.finalizedNumber.value) {
+              this.loadBlock(nr);
+            }
           }
         }
-      }
-      if (nr > this.loadedNumber.value) {
-        this.loadedNumber.next(nr);
+        if (nr > this.loadedNumber.value) {
+          this.loadedNumber.next(nr);
+        }
       }
     });
   }
 
   private unsubscribeHeads(): void {
-    if (this.unsubscribeNewHeads) {
-      this.unsubscribeNewHeads();
-      this.unsubscribeNewHeads = null;
+    if (this.newBlockSubscription) {
+      this.newBlockSubscription.unsubscribe();
+      this.newBlockSubscription = null;
     }
-    if (this.unsubscribeNewBlocks) {
-      this.unsubscribeNewBlocks();
-      this.unsubscribeNewBlocks = null;
+    if (this.newFinalizedBlocksSubscription) {
+      this.newFinalizedBlocksSubscription.unsubscribe();
+      this.newFinalizedBlocksSubscription = null;
     }
   }
 
@@ -263,27 +253,24 @@ export class BlockHarvester {
 
     if (loadBlocks) {
       // Then, await the result from Polkascan and update our cached block data.
-      const data: pst.ListResponse<pst.Block> =
-        await this.polkadapt.run(this.network).polkascan.chain.getBlocksUntil(untilNumber, pageSize, undefined, untilNumber);
-
-      if (data.objects) {
-        for (const obj of data.objects) {
+      this.polkadapt.run().getBlocksUntil(untilNumber, pageSize).pipe(
+        switchMap((obs) => obs.length ? merge(...obs) : EMPTY)
+      ).subscribe({
+        next: (obj) => {
           const blockNr: number = obj.number;
           const cached: BehaviorSubject<Block> = this.cache[blockNr];
-          if (!cached.value.finalized || cached.value.status !== 'loaded') {
-            const block: Block = Object.assign({}, cached.value, obj, {
-              status: 'loaded',
-              finalized: true,
-              extrinsics: new Array(obj.countExtrinsics),
-              events: new Array(obj.countEvents)
-            });
-            cached.next(block);
-          }
+          const block: Block = Object.assign({}, cached.value, obj, {
+            status: 'loaded',
+            finalized: true,
+            extrinsics: new Array(obj.countExtrinsics),
+            events: new Array(obj.countEvents)
+          });
+          cached.next(block);
           if (blockNr > this.loadedNumber.value) {
             this.loadedNumber.next(blockNr);
           }
         }
-      }
+      });
     }
   }
 

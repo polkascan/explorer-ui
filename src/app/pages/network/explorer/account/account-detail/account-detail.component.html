@@ -1,3 +1,21 @@
+<!--
+  ~ Polkascan Explorer UI
+  ~ Copyright (C) 2018-2023 Polkascan Foundation (NL)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
 <h1>Account</h1>
 
 <ng-container *ngIf="(networkProperties | async) as props">
@@ -7,8 +25,8 @@
   </ng-container>
 
   <ng-template #noAccount>
-    <div *ngIf="(id | async) as address">
-      <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
+    <div *ngIf="(address | async) as address">
+      <div class="account-address">
         <div class="account-address-identicon">
           <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format"
                      (copied)="copied($event)"></identicon>
@@ -19,9 +37,9 @@
   </ng-template>
 
   <ng-template #hasAccount>
-    <ng-container *ngIf="(derivedAccountInfo | async) as dai">
+    <ng-container *ngIf="(accountInfo | async) as dai">
 
-      <div class="account-address" *ngIf="(accountId | async)?.toHuman() as address">
+      <div class="account-address" *ngIf="(address | async) as address">
         <div class="account-address-identicon">
           <identicon [value]="address" [theme]="props.iconTheme" [size]="64" [prefix]="props.ss58Format"
                      (copied)="copied($event)"></identicon>
@@ -172,7 +190,7 @@
         <table class="detail-table">
           <tbody>
 
-          <ng-container *ngIf="derivedBalancesAll | async">
+          <ng-container *ngIf="AccountBalances | async">
             <tr>
               <td class="detail-table--label-cell">Total</td>
               <td>
@@ -367,7 +385,7 @@
 
     <mat-tab label="Transfers">
       <ng-container *ngIf="loadedTabs[1]">
-        <ng-container *ngIf="id | async as address">
+        <ng-container *ngIf="(id | async) as address">
           <app-account-events [address]="address" [listSize]="listsSize"
                               [eventTypes]="{'Balances': ['Transfer']}"
                               [columns]="['icon', 'referencedTransaction', 'age', 'direction', 'address', 'amount', 'detailsExtrinsic']"></app-account-events>
@@ -377,7 +395,7 @@
 
     <mat-tab label="Staking">
       <ng-container *ngIf="loadedTabs[2]">
-        <ng-container *ngIf="id | async as address">
+        <ng-container *ngIf="(id | async) as address">
           <app-account-events [address]="address" [listSize]="listsSize"
                               [eventTypes]="{'Staking': ['Bonded', 'Chilled', 'Kicked', 'Rewarded', 'Slashed', 'Unbonded', 'Withdrawn']}"
                               [columns]="['icon', 'age', 'event', 'amount', 'details']"></app-account-events>
@@ -385,15 +403,15 @@
       </ng-container>
     </mat-tab>
 
-    <mat-tab label="Balance History" *ngIf="accountId">
+    <mat-tab label="Balance History" *ngIf="(id | async) as accountId">
       <ng-container *ngIf="loadedTabs[3]">
-        <app-historical-balance [accountId]="accountId | async"></app-historical-balance>
+        <app-historical-balance [accountId]="accountId" [accountHex]="accountAsHex | async"></app-historical-balance>
       </ng-container>
     </mat-tab>
 
     <mat-tab label="Events">
       <ng-container *ngIf="loadedTabs[4]">
-        <ng-container *ngIf="id | async as address">
+        <ng-container *ngIf="(id | async) as address">
           <app-account-events [address]="address" [listSize]="listsSize"></app-account-events>
         </ng-container>
       </ng-container>

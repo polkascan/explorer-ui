@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,15 +28,15 @@ import {
 } from '@angular/core';
 import { IconTheme } from '../identicon/identicon.types';
 import { Prefix } from '@polkadot/util-crypto/address/types';
-import { encodeAddress } from '@polkadot/util-crypto';
+import { encodeAddress, ethereumEncode } from '@polkadot/util-crypto';
 import { HexString } from '@polkadot/util/types';
 import { isHex, isU8a } from '@polkadot/util';
 import { ActivatedRoute } from '@angular/router';
 import { TooltipsService } from '../../app/services/tooltips.service';
-import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
-import { asObservable } from '../polkadapt-rxjs';
+import { catchError, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { ApiPromiseAsObservableFn } from '../polkadapt-rxjs';
 import { PolkadaptService } from '../../app/services/polkadapt.service';
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
+import { BehaviorSubject, from, Observable, of, Subject } from 'rxjs';
 import { DeriveAccountInfo } from '@polkadot/api-derive/types';
 
 @Component({
@@ -156,7 +156,7 @@ export class AccountIdCommonComponent implements OnInit, OnChanges, OnDestroy {
   @Input() iconSize?: number;
   @Input() ss58Prefix?: Prefix;
 
-  derivedAccountInfo: Observable<DeriveAccountInfo>;
+  derivedAccountInfo: Observable<DeriveAccountInfo | null>;
   accountJudgement: Observable<string>;
 
   relativeToRoute: ActivatedRoute | undefined;
@@ -177,10 +177,16 @@ export class AccountIdCommonComponent implements OnInit, OnChanges, OnDestroy {
 
     this.derivedAccountInfo = this.encoded.pipe(
       switchMap((address: string) => {
-        if (!address) {
+        if (!address || !this.pa.availableAdapters[network as string].substrateRpc) {
           return of(null);
         }
-        return asObservable(this.pa.run().derive.accounts.info, address).pipe(takeUntil(this.destroyer));
+        const apiPromise = this.pa.availableAdapters[network as string].substrateRpc!.apiPromise;
+        return from(apiPromise).pipe(
+          takeUntil(this.destroyer),
+          switchMap((api) => api.derive.accounts.info(address).pipe(
+              takeUntil(this.destroyer)
+            ) as Observable<DeriveAccountInfo>
+          ));
       })
     );
 
@@ -208,12 +214,24 @@ export class AccountIdCommonComponent implements OnInit, OnChanges, OnDestroy {
       let address = '';
 
       if (value) {
-        address = isU8a(value) || isHex(value)
-          ? encodeAddress(value, this.ss58Prefix)
-          : (value || '');
+        try {
+          address = isU8a(value) || isHex(value)
+            ? encodeAddress(value, this.ss58Prefix)
+            : (value || '');
+        } catch (e) {
+            // Ignore
+        }
+
+        if (!address) {
+          try {
+            address = ethereumEncode(value);
+          } catch (e) {
+            console.error('Error encoding account id.')
+          }
+        }
       }
 
-      this.encoded.next(address);
+      this.encoded.next(address || value);
     }
   }
 

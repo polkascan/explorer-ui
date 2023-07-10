@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,10 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-log-list',
@@ -30,7 +32,9 @@ import { PaginatedListComponentBase } from '../../../../../../common/list-base/p
 })
 export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
   listSize = 100;
+  blockNumberIdentifier = 'blockNumber'
   visibleColumns = ['icon', 'logID', 'age', 'block', 'type', 'details'];
+  logsNotAvailable = new BehaviorSubject<boolean>(false);
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService) {
@@ -38,19 +42,19 @@ export class LogListComponent extends PaginatedListComponentBase<pst.Log> {
   }
 
 
-  createGetItemsRequest(pageKey?: string, blockLimitOffset?: number): Promise<pst.ListResponse<pst.Log>> {
-    return this.pa.run(this.network).polkascan.chain.getLogs(
-      this.listSize,
-      pageKey,
-      blockLimitOffset
+  createGetItemsRequest(untilBlockNumber?: number): Observable<Observable<pst.Log>[]> {
+    const filters = untilBlockNumber ? { blockRangeEnd: untilBlockNumber } : undefined;
+    return this.pa.run(this.network).getLogs(filters, this.listSize).pipe(
+      catchError((e) => {
+        this.logsNotAvailable.next(true);
+        return throwError(e)
+      })
     );
   }
 
 
-  createNewItemSubscription(handleItemFn: (item: pst.Log) => void): Promise<() => void> {
-    return this.pa.run(this.network).polkascan.chain.subscribeNewLog(
-      handleItemFn
-    );
+  createNewItemSubscription(): Observable<Observable<pst.Log>> {
+    return this.pa.run(this.network).subscribeNewLog();
   }
 
 

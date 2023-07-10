@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
+import { types as pst } from '@polkadapt/core';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
@@ -41,13 +41,13 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
 
   visibleColumns = ['icon', 'name', 'type', 'typeComposition'];
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
     private ns: NetworkService,
     private rs: RuntimeService,
-    private pa: PolkadaptService
+    private cd: ChangeDetectorRef
   ) {
   }
 
@@ -63,12 +63,15 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
-          const specVersion = params['runtime'].substring(lastIndex);
+          const specVersion = params['runtime'].substring(lastIndex + 1);
           return [specName, parseInt(specVersion, 10), params['pallet'], params['callName']];
         }),
         tap(([specName, specVersion, pallet]) => {
           this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
+          setTimeout(() => {
+            this.cd.markForCheck();
+          })
         })
       )),
       switchMap(([specName, specVersion, pallet, callName]) =>
@@ -81,29 +84,27 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
     )
 
     this.call = runtimeObservable.pipe(
-      tap(() => this.fetchCallStatus.next('loading')),
-      switchMap(([runtime, pallet, callName]) => {
-        const subject: Subject<pst.RuntimeCall | null> = new Subject();
-        if (runtime) {
-          this.rs.getRuntimeCalls(runtime.specName, runtime.specVersion).then(
-            (calls) => {
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchCallStatus.next('loading')
+      }),
+      switchMap(([runtime, pallet, callName]) =>
+        runtime ?
+          this.rs.getRuntimeCalls(runtime.specName, runtime.specVersion).pipe(
+            map((calls) => {
               const palletCall: pst.RuntimeCall = calls.filter(c =>
                 c.pallet === pallet && c.callName === callName
               )[0];
 
               if (palletCall) {
-                subject.next(palletCall);
                 this.fetchCallStatus.next(null);
-              } else {
-                subject.error('Runtime call not found.');
+                return palletCall;
               }
-            },
-            (e) => {
-              subject.error(e);
-            });
-        }
-        return subject.pipe(takeUntil(this.destroyer));
-      }),
+              return null;
+            })
+          )
+          : of(null)
+      ),
       catchError((e) => {
         this.fetchCallStatus.next('error');
         return of(null);
@@ -113,26 +114,30 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
     this.callArguments = runtimeObservable.pipe(
       tap(() => this.fetchCallAttributesStatus.next('loading')),
       switchMap(([runtime, pallet, callName]) => {
-        const subject: Subject<(pst.RuntimeCallArgument & {parsedComposition?: any})[]> = new Subject();
+        const subject = new BehaviorSubject<(pst.RuntimeCallArgument & { parsedComposition?: any })[]>([]);
         if (runtime) {
-          this.pa.run().polkascan.state.getRuntimeCallArguments(runtime.specName, runtime.specVersion, pallet, callName).then(
-            (response) => {
-              if (Array.isArray(response.objects)) {
-                const objects: (pst.RuntimeCallArgument & {parsedComposition?: any})[] = [...response.objects];
+          this.rs.getRuntimeCallArguments(runtime.specName, runtime.specVersion, pallet, callName).pipe(
+            takeUntil(this.destroyer)
+          ).subscribe({
+            next: (items) => {
+              if (Array.isArray(items)) {
+                const objects: (pst.RuntimeCallArgument & { parsedComposition?: any })[] = [...items];
                 for (let obj of objects) {
                   if (obj.scaleTypeComposition) {
-                    obj.parsedComposition = JSON.parse(obj.scaleTypeComposition);
+                    obj.parsedComposition = typeof obj.scaleTypeComposition === 'string'
+                      ? JSON.parse(obj.scaleTypeComposition)
+                      : obj.scaleTypeComposition;
                   }
                 }
                 subject.next(objects);
                 this.fetchCallAttributesStatus.next(null);
-              } else {
-                subject.error('Invalid response.')
               }
             },
-            (e) => {
+            error: (e) => {
+              console.error(e);
               subject.error(e);
-            });
+            }
+          });
         }
         return subject.pipe(takeUntil(this.destroyer));
       }),
@@ -144,7 +149,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

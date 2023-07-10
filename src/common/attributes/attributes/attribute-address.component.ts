@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import {
 } from '@angular/core';
 import { IconTheme } from '../../identicon/identicon.types';
 import { Prefix } from '@polkadot/util-crypto/address/types';
-import { encodeAddress } from '@polkadot/util-crypto';
+import { encodeAddress, ethereumEncode } from '@polkadot/util-crypto';
 import { HexString } from '@polkadot/util/types';
 import { isHex, isU8a } from '@polkadot/util';
 import { ActivatedRoute } from '@angular/router';
@@ -63,12 +63,24 @@ export class AttributeAddressComponent implements OnChanges {
       let address = '';
 
       if (value) {
-        address = isU8a(value) || isHex(value)
-          ? encodeAddress(value, this.ss58Prefix)
-          : (value || '');
+        try {
+          address = isU8a(value) || isHex(value)
+            ? encodeAddress(value, this.ss58Prefix)
+            : (value || '');
+        } catch (e) {
+          // Ignore
+        }
+
+        if (!address) {
+          try {
+            address = ethereumEncode(value);
+          } catch (e) {
+            // Ignore
+          }
+        }
       }
 
-      this.encoded = address;
+      this.encoded = address || value;
     }
   }
 }

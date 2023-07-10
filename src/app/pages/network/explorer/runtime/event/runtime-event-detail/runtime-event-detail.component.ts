@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
+import { types as pst } from '@polkadapt/core';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
@@ -35,19 +35,19 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
   runtime: string;
   pallet: string;
   event: Observable<pst.RuntimeEvent | null>;
-  eventAttributes: Observable<pst.RuntimeEventAttribute[]>;
+  eventAttributes: Observable<(pst.RuntimeEventAttribute | never)[]>;
   fetchEventStatus: BehaviorSubject<any> = new BehaviorSubject(null);
   fetchEventAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-  visibleColumns = ['icon', 'type', 'typeComposition'];
+  visibleColumns = ['icon', 'eventAttributeName', 'type', 'typeComposition'];
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
     private ns: NetworkService,
     private rs: RuntimeService,
-    private pa: PolkadaptService
+    private cd: ChangeDetectorRef
   ) {
   }
 
@@ -63,13 +63,16 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
-          const specVersion = params['runtime'].substring(lastIndex);
+          const specVersion = params['runtime'].substring(lastIndex + 1);
           return [specName, parseInt(specVersion, 10), params['pallet'], params['eventName']];
         }),
         tap(([specName, specVersion, pallet]) => {
           this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
-        })
+          setTimeout(() => {
+              this.cd.markForCheck();
+            })
+          })
       )),
       switchMap(([specName, specVersion, pallet, eventName]) =>
         this.rs.getRuntime(specName, specVersion).pipe(
@@ -77,30 +80,31 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
           map(runtime => [runtime as pst.Runtime, pallet, eventName])
         )
       ),
-      shareReplay(1)
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      })
     );
 
     this.event = runtimeObservable.pipe(
-      tap(() => this.fetchEventStatus.next('loading')),
-      switchMap(([runtime, pallet, eventName]) => {
-        const subject: Subject<pst.RuntimeEvent | null> = new Subject();
-        if (runtime) {
-          this.rs.getRuntimeEvents(runtime.specName, runtime.specVersion).then(
-            (events) => {
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchEventStatus.next('loading')
+      }),
+      switchMap(([runtime, pallet, eventName]) =>
+        runtime
+          ? this.rs.getRuntimeEvents(runtime.specName, runtime.specVersion).pipe(
+            map((events) => {
               const matchedEvent: pst.RuntimeEvent = events.filter(e => e.pallet === pallet && e.eventName === eventName)[0];
               if (matchedEvent) {
-                subject.next(matchedEvent);
                 this.fetchEventStatus.next(null);
-              } else {
-                subject.error('Runtime event not found.');
+                return matchedEvent;
               }
-            },
-            (e) => {
-              subject.error(e);
-            });
-        }
-        return subject.pipe(takeUntil(this.destroyer));
-      }),
+              return null;
+            })
+          )
+          : of(null)
+      ),
       catchError((e) => {
         this.fetchEventStatus.next('error');
         return of(null);
@@ -108,29 +112,31 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
     )
 
     this.eventAttributes = runtimeObservable.pipe(
-      tap(() => this.fetchEventAttributesStatus.next('loading')),
-      switchMap(([runtime, pallet, eventName]) => {
-        const subject: Subject<(pst.RuntimeEventAttribute & {parsedComposition?: any})[]> = new Subject();
-        this.pa.run().polkascan.state.getRuntimeEventAttributes(runtime.specName, runtime.specVersion, pallet, eventName).then(
-          (response) => {
-            if (Array.isArray(response.objects)) {
-              const objects: (pst.RuntimeEventAttribute & {parsedComposition?: any})[] = [...response.objects];
-              for (let obj of objects) {
-                if (obj.scaleTypeComposition) {
-                  obj.parsedComposition = JSON.parse(obj.scaleTypeComposition);
-                }
-              }
-              subject.next(objects);
-              this.fetchEventAttributesStatus.next(null);
-            } else {
-              subject.error('Invalid response.')
-            }
-          },
-          (e) => {
-            subject.error(e);
-          });
-        return subject.pipe(takeUntil(this.destroyer));
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchEventAttributesStatus.next('loading')
       }),
+      switchMap(([runtime, pallet, eventName]) =>
+        runtime ?
+          this.rs.getRuntimeEventAttributes(this.ns.currentNetwork.value, runtime.specVersion, pallet, eventName).pipe(
+            map((items) => {
+              if (Array.isArray(items)) {
+                const objects: (pst.RuntimeEventAttribute & { parsedComposition?: any })[] = [...items];
+                for (let obj of objects) {
+                  if (obj.scaleTypeComposition) {
+                    obj.parsedComposition = typeof obj.scaleTypeComposition === 'string' ?
+                      JSON.parse(obj.scaleTypeComposition)
+                      : obj.scaleTypeComposition;
+                  }
+                }
+                this.fetchEventAttributesStatus.next(null);
+                return objects;
+              }
+              return [];
+            })
+          )
+          : of([])
+      ),
       catchError((e) => {
         this.fetchEventAttributesStatus.next('error');
         return of([]);
@@ -139,7 +145,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 

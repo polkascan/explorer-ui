@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,9 +27,11 @@ export const attributesConfig: {[key: string]: string} = {
   'LookupSource': 'address',
   'T::LookupSource': 'address',
   'AccountIdLookupOf' : 'address',
+  'AccountIdLookupOf<T>': 'address',
   'PropIndex': 'proposal',
   'ProposalIndex': 'proposal',
   'ReferendumIndex': 'referendum',
+  'RefIndex': 'referendum',
   'Compact<ReferendumIndex>': 'referendum',
   'SessionIndex': 'session',
   'BlockNumber': 'block',

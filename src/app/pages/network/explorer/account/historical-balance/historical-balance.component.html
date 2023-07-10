@@ -1,12 +1,30 @@
+<!--
+  ~ Polkascan Explorer UI
+  ~ Copyright (C) 2018-2023 Polkascan Foundation (NL)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
 <ng-container *ngIf="(networkProperties | async) as props">
   <mat-tab-group dynamicHeight animationDuration="0ms">
     <mat-tab label="Chart">
-      <ng-container [ngSwitch]="(loadingObservable | async) || (chartLoadingObservable | async)">
-        <p *ngSwitchCase="true">Loading chart...</p>
+      <div *ngIf="(chartDataObservable | async) as chartOptions" class="historical-balance-chart">
 
-        <ng-container *ngSwitchDefault>
-          <div *ngIf="(chartDataObservable | async) as chartOptions"
-               class="historical-balance-chart">
+        <ng-container [ngSwitch]="(loadingObservable | async) || (chartLoadingObservable | async)">
+          <p *ngSwitchCase="true">Loading chart...</p>
+
+          <ng-container *ngSwitchDefault>
             <highcharts-chart class="historical-balance-highcharts-chart"
                               [Highcharts]="Highcharts"
 
@@ -19,9 +37,9 @@
 
                               style="width: 1220px; height: 300px; display: block; max-width: 100%;">
             </highcharts-chart>
-          </div>
+          </ng-container>
         </ng-container>
-      </ng-container>
+      </div>
     </mat-tab>
 
     <mat-tab label="Table">
@@ -99,26 +117,10 @@
     <mat-progress-bar mode="indeterminate"></mat-progress-bar>
   </div>
 
-  <div>
-    <ng-container *ngIf="(hasNextPageObservable | async)">
-      <button [disabled]="(loadingObservable | async)" mat-stroked-button aria-label="Next"
-              (click)="loadMoreItems()">
-        <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
-          <ng-template #showMore>Show More</ng-template>
-          <ng-container *ngIf="searchInfo.endOfBlockRange; else showMore">
-            Increase search range
-          </ng-container>
-        </ng-container>
-        <mat-icon>expand_more</mat-icon>
-      </button>
-    </ng-container>
 
-    <ng-container class="list-block-range" *ngIf="(pageLiveObservable | async) === false">
-      <ng-container *ngIf="(searchInfoObservable | async) as searchInfo">
-        <span class="list-block-range" *ngIf="searchInfo.fromBlock">
-          Search range: Blocks {{ searchInfo.fromBlock }} - {{ searchInfo.toBlock }}
-        </span>
-      </ng-container>
-    </ng-container>
-  </div>
+  <button *ngIf="(listAtEnd | async) === false" [disabled]="(loadingObservable | async) === true" mat-stroked-button aria-label="Next"
+          (click)="loadMoreItems()">
+    Show More
+  </button>
+
 </ng-container>

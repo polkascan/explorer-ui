@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,26 +18,26 @@
 
 import { Injectable } from '@angular/core';
 import { PolkadaptService } from '../polkadapt.service';
-import { types as pst } from '@polkadapt/polkascan-explorer';
-import { BehaviorSubject } from 'rxjs';
-import { filter, first, map } from 'rxjs/operators';
+import { types } from '@polkadapt/core';
+import { BehaviorSubject, combineLatest, last, merge, of, ReplaySubject, take } from 'rxjs';
+import { filter, map, switchMap } from 'rxjs/operators';
 
 type SpecVersion = number;
 
 
 type RuntimeCache = {
-  runtime: BehaviorSubject<pst.Runtime | null>;
+  runtime: BehaviorSubject<types.Runtime | null>;
 };
 
 type RuntimeCacheAttributes = {
-  runtimeCalls?: pst.RuntimeCall[];
-  runtimeCallArguments?: pst.RuntimeCallArgument[];
-  runtimeConstants?: pst.RuntimeConstant[];
-  runtimeErrorMessages?: pst.RuntimeErrorMessage[];
-  runtimeEvents?: pst.RuntimeEvent[];
-  runtimeEventAttributes?: pst.RuntimeEventAttribute[];
-  runtimePallets?: pst.RuntimePallet[];
-  runtimeStorages?: pst.RuntimeStorage[];
+  runtimeCalls?: ReplaySubject<types.RuntimeCall[]>;
+  runtimeCallArguments?: Map<string, ReplaySubject<types.RuntimeCallArgument[]>>;
+  runtimeConstants?: ReplaySubject<types.RuntimeConstant[]>;
+  runtimeErrorMessages?: ReplaySubject<types.RuntimeErrorMessage[]>;
+  runtimeEvents?: ReplaySubject<types.RuntimeEvent[]>;
+  runtimeEventAttributes?: Map<string, ReplaySubject<types.RuntimeEventAttribute[]>>;
+  runtimePallets?: ReplaySubject<types.RuntimePallet[]>;
+  runtimeStorages?: ReplaySubject<types.RuntimeStorage[]>;
 };
 
 type RuntimeCacheMap = Map<SpecVersion, RuntimeCache & RuntimeCacheAttributes>;
@@ -47,7 +47,7 @@ type RuntimeCacheMap = Map<SpecVersion, RuntimeCache & RuntimeCacheAttributes>;
 export class RuntimeService {
 
   private latestRuntimes: {
-    [network: string]: BehaviorSubject<pst.Runtime | null>;
+    [network: string]: BehaviorSubject<types.Runtime | null>;
   } = {};
 
   private runtimes: {
@@ -57,7 +57,7 @@ export class RuntimeService {
   constructor(private pa: PolkadaptService) {
   }
 
-  async initialize(network: string): Promise<void> {
+  initialize(network: string): void {
     if (!network) {
       throw new Error(`[RuntimeService] initialize: network was not provided.`);
     }
@@ -66,24 +66,27 @@ export class RuntimeService {
       // TODO probably check if we are waiting for a response, if not, request again.
       return;
     } else {
-      this.latestRuntimes[network] = new BehaviorSubject<pst.Runtime | null>(null);
+      this.latestRuntimes[network] = new BehaviorSubject<types.Runtime | null>(null);
     }
 
-    const runtime = await this.pa.run().polkascan.state.getLatestRuntime();
-
-    // First cache the runtime, then broadcast it. This order is important.
-    this.cacheRuntime(network, runtime);
-    this.latestRuntimes[network].next(runtime);
-    // TODO what more to prefetch?
+    this.pa.run({observableResults: false}).getLatestRuntime().pipe(
+      take(1)
+    ).subscribe({
+      next: (runtime: types.Runtime) => {
+        // First cache the runtime, then broadcast it. This order is important.
+        this.cacheRuntime(network, runtime);
+        this.latestRuntimes[network].next(runtime);
+      }
+    });
   }
 
 
-  cacheRuntime(network: string, runtime: pst.Runtime): void {
+  cacheRuntime(network: string, runtime: types.Runtime): void {
     const version = runtime.specVersion;
     const cache: RuntimeCacheMap = this.runtimes[network] = this.runtimes[network] || new Map();
 
     if (!cache.has(version)) {
-      cache.set(version, {runtime: new BehaviorSubject<pst.Runtime | null>(runtime)});
+      cache.set(version, {runtime: new BehaviorSubject<types.Runtime | null>(runtime)});
     } else {
       const versionCache = cache.get(version) as RuntimeCache;
       if (!versionCache.runtime.value) {
@@ -94,43 +97,46 @@ export class RuntimeService {
   }
 
 
-  getRuntime(network: string, specVersion?: number): BehaviorSubject<pst.Runtime | null> {
+  getRuntime(network: string, specVersion?: number): BehaviorSubject<types.Runtime | null> {
     if (!this.latestRuntimes[network]) {
       // We need the BehaviorSubject for the latest runtime, because it tells us which specName to use.
-      this.initialize(network).then();
+      this.initialize(network);
     }
 
     if (typeof specVersion !== 'number' || specVersion < 0) {
       // Without given specVersion, return latest runtime.
-      return this.latestRuntimes[network] as BehaviorSubject<pst.Runtime | null>;
+      return this.latestRuntimes[network] as BehaviorSubject<types.Runtime | null>;
     }
 
     // Get or create cache entry for current network.
     const cache: RuntimeCacheMap = this.runtimes[network] = this.runtimes[network] || new Map();
-    let cachedRuntime: BehaviorSubject<pst.Runtime | null>;
+    let cachedRuntime: BehaviorSubject<types.Runtime | null>;
 
     if (cache.has(specVersion)) {
       // If it's already in cache, it's either currently loading or loaded, so return the cached BehaviorSubject.
       return (cache.get(specVersion) as RuntimeCache).runtime;
     } else {
       // Create a new BehaviorSubject in cache, so we can fill it with the loaded runtime later ons
-      cachedRuntime = new BehaviorSubject<pst.Runtime | null>(null);
+      cachedRuntime = new BehaviorSubject<types.Runtime | null>(null);
       cache.set(specVersion, {runtime: cachedRuntime});
 
       this.latestRuntimes[network]
-      .pipe(
-        filter(r => r !== null),
-        map((r: pst.Runtime | null): string => (r as pst.Runtime).specName),
-        first()
-      ).subscribe(async (specName) => {
-        try {
-          const runtime = await this.pa.run().polkascan.state.getRuntime(specName, specVersion);
+        .pipe(
+          filter(r => r !== null),
+          map((r: types.Runtime | null): string => (r as types.Runtime).specName),
+          take(1),
+          switchMap((specName) =>
+            this.pa.run({observableResults: false}).getRuntime(specName, specVersion).pipe(take(1))
+          )
+        ).subscribe({
+        next: (runtime) => {
           if (!cachedRuntime.value) {
             // Only update cache if it's still empty.
             cachedRuntime.next(runtime);
           }
-        } catch (e) {
-          cachedRuntime.error(e);
+        },
+        error: (errorResponse) => {
+          cachedRuntime.error(errorResponse);
         }
       });
 
@@ -139,28 +145,49 @@ export class RuntimeService {
   }
 
 
-  getRuntimes(network: string): BehaviorSubject<pst.Runtime[]> {
-    const bs = new BehaviorSubject<pst.Runtime[]>([]);
+  getRuntimes(network: string): BehaviorSubject<types.Runtime[]> {
+    const bs = new BehaviorSubject<types.Runtime[]>([]);
 
     if (this.runtimes[network]) {
-      bs.next([...this.runtimes[network].values()]
-        .filter((r) => !!r.runtime.value)
-        .map((r) => r.runtime.value as pst.Runtime));
+      bs.next(
+        [...this.runtimes[network].values()]
+          .filter((r) => !!r.runtime.value)
+          .map((r) => r.runtime.value as types.Runtime)
+      );
     }
 
-    this.pa.run().polkascan.state.getRuntimes(100000).then(
-      (response: pst.ListResponse<pst.Runtime>) => {
-        bs.next(response.objects);
+    this.pa.run({observableResults: false}).getRuntimes().pipe(
+      take(1)
+    ).subscribe({
+      next: (items: types.Runtime[]) => {
+        if (items) {
+          bs.next(items);
+          if (items.length > 0 && items[0].countPallets === undefined) {
+            combineLatest(items.map(
+              runtime => this.pa.run().getRuntime(runtime.specName, runtime.specVersion)
+            )).pipe(
+              switchMap(runtimes => merge(...runtimes.map(r => r.pipe(last())))),
+            ).subscribe((runtime: types.Runtime) => {
+              bs.getValue().forEach(r => {
+                if (r.specName === runtime.specName && r.specVersion === runtime.specVersion) {
+                  Object.assign(r, runtime);
+                }
+              });
+              bs.next(bs.getValue());
+            });
+          }
+        }
       },
-      (errorResponse: any) => {
+      error: (errorResponse: Error) => {
         console.error(errorResponse);
-      });
+      }
+    });
 
     return bs;
   }
 
 
-  private async getRuntimeCache(network: string, specVersion: number): Promise<RuntimeCache & RuntimeCacheAttributes> {
+  private getRuntimeCache(network: string, specVersion: number): RuntimeCache & RuntimeCacheAttributes {
     if (!this.runtimes[network]
       || !this.runtimes[network].has(specVersion)
       || !(this.runtimes[network].get(specVersion) as RuntimeCache & RuntimeCacheAttributes).runtime.value) {
@@ -170,80 +197,193 @@ export class RuntimeService {
   }
 
 
-  async getRuntimePallets(network: string, specVersion: number): Promise<pst.RuntimePallet[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimePallets(network: string, specVersion: number): ReplaySubject<types.RuntimePallet[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimePallets')) {
-      const response = await this.pa.run().polkascan.state.getRuntimePallets(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimePallets = response.objects;
+      const runtimePallets = cache.runtimePallets = new ReplaySubject(1);
+      this.pa.run({observableResults: false}).getRuntimePallets((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
+        next: (items) => {
+          runtimePallets.next(items);
+          runtimePallets.complete();
+        },
+        error: (e) => {
+          console.error(e);
+          delete cache.runtimePallets
+        }
+      });
     }
-
-    return cache.runtimePallets as pst.RuntimePallet[];
+    return cache.runtimePallets!;
   }
 
 
-  async getRuntimeEvents(network: string, specVersion: number): Promise<pst.RuntimeEvent[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimeEvents(network: string, specVersion: number): ReplaySubject<types.RuntimeEvent[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeEvents')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeEvents(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeEvents = response.objects;
+      const runtimeEvents = cache.runtimeEvents = new ReplaySubject(1);
+      this.pa.run({observableResults: false}).getRuntimeEvents((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
+        next: (items) => {
+          runtimeEvents.next(items);
+          runtimeEvents.complete();
+        },
+        error: (e) => {
+          console.error(e);
+          delete cache.runtimeEvents
+        }
+      });
     }
 
-    return cache.runtimeEvents as pst.RuntimeEvent[];
+    return cache.runtimeEvents!;
   }
 
 
-  async getRuntimeCalls(network: string, specVersion: number): Promise<pst.RuntimeCall[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimeEventAttributes(network: string, specVersion: number, eventModule: string, eventName: string): ReplaySubject<types.RuntimeEventAttribute[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
+
+    if (!cache.hasOwnProperty('runtimeEventAttributes')) {
+      cache.runtimeEventAttributes = new Map();
+    }
+
+    const id = `${eventModule}-${eventName}`;
+    let attributesCache = cache.runtimeEventAttributes!.get(id);
+
+    if (!attributesCache) {
+      attributesCache = new ReplaySubject(1);
+      cache.runtimeEventAttributes!.set(id, attributesCache);
+
+      this.pa.run().getRuntimeEventAttributes((cache.runtime.value as types.Runtime).specName, specVersion, eventModule, eventName).pipe(
+        switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+      ).subscribe({
+        next: (items) => {
+          attributesCache!.next(items);
+          attributesCache!.complete();
+        },
+        error: (e) => {
+          console.error(e);
+          attributesCache?.error(e);
+          cache.runtimeEventAttributes?.delete(id);
+        }
+      });
+    }
+
+    return attributesCache;
+  }
+
+
+  getRuntimeCalls(network: string, specVersion: number): ReplaySubject<types.RuntimeCall[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeCalls')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeCalls(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeCalls = response.objects;
+      const runtimeCalls = cache.runtimeCalls = new ReplaySubject(1);
+      this.pa.run({observableResults: false}).getRuntimeCalls((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
+        next: (items) => {
+          runtimeCalls.next(items);
+          runtimeCalls.complete();
+        },
+        error: (e) => {
+          console.error(e);
+          delete cache.runtimeCalls;
+        }
+      });
     }
 
-    return cache.runtimeCalls as pst.RuntimeCall[];
+    return cache.runtimeCalls!;
   }
 
 
-  async getRuntimeStorages(network: string, specVersion: number): Promise<pst.RuntimeStorage[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimeCallArguments(network: string, specVersion: number, callModule: string, callName: string): ReplaySubject<types.RuntimeCallArgument[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
-    if (!cache.hasOwnProperty('runtimeStorage')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeStorages(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeStorages = response.objects;
+    if (!cache.hasOwnProperty('runtimeCallArguments')) {
+      cache.runtimeCallArguments = new Map();
     }
 
-    return cache.runtimeStorages as pst.RuntimeStorage[];
+    const id = `${callModule}-${callName}`;
+    let argumentsCache = cache.runtimeCallArguments!.get(id);
+
+    if (!argumentsCache) {
+      argumentsCache = new ReplaySubject<types.RuntimeCallArgument[]>(1);
+      cache.runtimeCallArguments!.set(id, argumentsCache);
+
+      this.pa.run().getRuntimeCallArguments((cache.runtime.value as types.Runtime).specName, specVersion, callModule, callName).pipe(
+        switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+      ).subscribe({
+        next: (items) => {
+          argumentsCache?.next(items);
+          argumentsCache?.complete();
+        },
+        error: (e) => {
+          console.error(e);
+          argumentsCache?.error(e);
+          cache.runtimeCallArguments?.delete(id);
+        }
+      });
+    }
+
+    return argumentsCache;
   }
 
 
-  async getRuntimeConstants(network: string, specVersion: number): Promise<pst.RuntimeConstant[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimeStorages(network: string, specVersion: number): ReplaySubject<types.RuntimeStorage[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
-    if (!cache.hasOwnProperty('runtimeConstant')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeConstants(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeConstants = response.objects;
+    if (!cache.hasOwnProperty('runtimeStorages')) {
+      const runtimeStorages = cache.runtimeStorages = new ReplaySubject(1);
+      this.pa.run({observableResults: false}).getRuntimeStorages((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
+        next: (items) => {
+          runtimeStorages.next(items);
+          runtimeStorages.complete();
+        },
+        error: (e) => {
+          console.error(e);
+          delete cache.runtimeStorages
+        }
+      });
     }
 
-    return cache.runtimeConstants as pst.RuntimeConstant[];
+    return cache.runtimeStorages!;
   }
 
 
-  async getRuntimeErrorMessages(network: string, specVersion: number): Promise<pst.RuntimeErrorMessage[]> {
-    const cache = await this.getRuntimeCache(network, specVersion);
+  getRuntimeConstants(network: string, specVersion: number): ReplaySubject<types.RuntimeConstant[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
+
+    if (!cache.hasOwnProperty('runtimeConstants')) {
+      const runtimeConstants = cache.runtimeConstants = new ReplaySubject(1);
+      this.pa.run({observableResults: false}).getRuntimeConstants((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
+        next: (items) => {
+          runtimeConstants.next(items);
+          runtimeConstants.complete();
+        },
+        error: (e) => {
+          console.error(e);
+          delete cache.runtimeConstants
+        }
+      });
+    }
+
+    return cache.runtimeConstants!;
+  }
+
+
+  getRuntimeErrorMessages(network: string, specVersion: number): ReplaySubject<types.RuntimeErrorMessage[]> {
+    const cache = this.getRuntimeCache(network, specVersion);
 
     if (!cache.hasOwnProperty('runtimeErrorMessages')) {
-      const response = await this.pa.run().polkascan.state.getRuntimeErrorMessages(
-        (cache.runtime.value as pst.Runtime).specName, specVersion);
-      cache.runtimeErrorMessages = response.objects;
+      const runtimeErrorMessages = cache.runtimeErrorMessages = new ReplaySubject(1);
+      this.pa.run({observableResults: false}).getRuntimeErrorMessages((cache.runtime.value as types.Runtime).specName, specVersion).subscribe({
+        next: (items) => {
+          runtimeErrorMessages.next(items);
+          runtimeErrorMessages.complete();
+        },
+        error: (e) => {
+          console.error(e);
+          delete cache.runtimeErrorMessages
+        }
+      });
     }
 
-    return cache.runtimeErrorMessages as pst.RuntimeErrorMessage[];
+    return cache.runtimeErrorMessages!;
   }
 }

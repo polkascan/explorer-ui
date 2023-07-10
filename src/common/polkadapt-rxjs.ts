@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,8 @@ import { defer, Observable, ReplaySubject } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 
 
-export function asObservable(fn: (...args: any[]) => Promise<() => void>, ...args: any[]) {
+
+export function ApiPromiseAsObservableFn(apiPromise: Promise<any>, callPath: string, ...args: any[]) {
   let unsubscribeFn: (() => void) | null = null;
   let finalized = false;
   let subject: ReplaySubject<any>;
@@ -53,8 +54,18 @@ export function asObservable(fn: (...args: any[]) => Promise<() => void>, ...arg
         })
       }
 
+      apiPromise.then((promise) => {
+        let fn: any;
+        callPath.split('.').forEach((arg, i) => {
+          if (i === 0) {
+            fn = promise[arg];
+          } else {
+            fn = fn[arg];
+          }
+        })
+
       fn(...args).then(
-        (response) => {
+        (response: any) => {
           if (typeof response === 'function') {
             unsubscribeFn = () => {
               response();
@@ -74,10 +85,11 @@ export function asObservable(fn: (...args: any[]) => Promise<() => void>, ...arg
             subject.complete();
           }
         },
-        (e) => {
+        (e: any) => {
           subject.error(e);
           subject.complete();
         });
+      })
     }
     counter++;
     return subject;

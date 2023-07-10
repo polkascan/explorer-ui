@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,6 +73,7 @@ export class IdenticonComponent implements AfterViewInit, OnChanges {
 
   private address: string;
   private publicKey: string;
+  private isEthereumAddress = false;
   private identiconElement: HTMLDivElement | HTMLImageElement | SVGElement | undefined;
 
   constructor(private host: ElementRef,
@@ -107,26 +108,34 @@ export class IdenticonComponent implements AfterViewInit, OnChanges {
 
   private parseValue(value: string): void {
     if (value) {
-      if (this.theme === 'ethereum') {
-        this.address = (isU8a(value) ? ethereumEncode(value) : value) || '';
-        this.publicKey = '';
-        return;
+      if (this.theme !== 'ethereum') {
+        try {
+          const address = isU8a(value) || isHex(value)
+            ? encodeAddress(value, this.prefix)
+            : (value || '');
+          const publicKey = u8aToHex(decodeAddress(address, false, this.prefix));
+
+          this.address = address;
+          this.publicKey = publicKey;
+          return;
+
+        } catch (e) {
+          // Ignore
+        }
       }
 
       try {
-        const address = isU8a(value) || isHex(value)
-          ? encodeAddress(value, this.prefix)
-          : (value || '');
-        const publicKey = u8aToHex(decodeAddress(address, false, this.prefix));
-
-        this.address = address;
-        this.publicKey = publicKey;
+        this.address = (isU8a(value) ? ethereumEncode(value) : value) || '';
+        this.publicKey = '';
+        this.isEthereumAddress = true;
         return;
-
       } catch (e) {
-        console.error(e);
+        // Ignore
       }
+
+      console.error('Error encoding account id.')
     }
+
 
     this.address = '';
     this.publicKey = '0x';
@@ -136,7 +145,13 @@ export class IdenticonComponent implements AfterViewInit, OnChanges {
     if (this.host) {
       const identicon = !this.address
         ? identicons.empty
-        : this.customIdenticon || (this.theme ? identicons[this.theme] : undefined) || fallbackIdenticon;
+        : this.customIdenticon
+        || this.isEthereumAddress
+          ? identicons['ethereum'] as any
+          : this.theme
+            ? identicons[this.theme]
+            : undefined
+            || fallbackIdenticon;
 
       const identiconElement = new identicon({
         address: this.address,

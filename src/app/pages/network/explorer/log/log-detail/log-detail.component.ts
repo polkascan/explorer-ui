@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
@@ -35,8 +35,7 @@ export class LogDetailComponent implements OnInit, OnDestroy {
   log: Observable<pst.Log | null>;
   fetchLogStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(private route: ActivatedRoute,
               private cd: ChangeDetectorRef,
@@ -59,24 +58,21 @@ export class LogDetailComponent implements OnInit, OnDestroy {
     )
 
     this.log = paramsObservable.pipe(
-      tap(() => this.fetchLogStatus.next('loading')),
-      switchMap(([blockNr, logIdx]) => {
-        const subject = new Subject<pst.Log>();
-        this.pa.run().polkascan.chain.getLog(blockNr, logIdx).then(
-          (log) => {
-            if (log) {
-              subject.next(log);
-              this.fetchLogStatus.next(null);
-            } else {
-              subject.error('Log not found.')
-            }
-          },
-          (e) => {
-            subject.error(e);
-          }
-        );
-        return subject.pipe(takeUntil(this.destroyer));
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchLogStatus.next('loading')
       }),
+      switchMap(([blockNr, logIdx]) => this.pa.run().getLog(blockNr, logIdx).pipe(
+          switchMap((obs) => obs),
+          map((log) => {
+            if (log) {
+              this.fetchLogStatus.next(null);
+              return log;
+            }
+            throw new Error(`Log not found.`);
+          })
+        )
+      ),
       catchError((e) => {
         this.fetchLogStatus.next('error');
         return of(null);
@@ -85,7 +81,7 @@ export class LogDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 }

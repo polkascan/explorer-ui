@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { types as pst } from '@polkadapt/core';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
@@ -36,7 +36,7 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
   storage: Observable<pst.RuntimeStorage | null>;
   fetchStorageStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
@@ -57,7 +57,7 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
           map(params => {
             const lastIndex = params['runtime'].lastIndexOf('-');
             const specName = params['runtime'].substring(0, lastIndex);
-            const specVersion = params['runtime'].substring(lastIndex);
+            const specVersion = params['runtime'].substring(lastIndex + 1);
             return [specName, parseInt(specVersion, 10), params['pallet'], params['storageName']];
           })
         )
@@ -73,7 +73,9 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
     );
 
     this.storage = observable.pipe(
-      tap(() => this.fetchStorageStatus.next('loading')),
+      tap({
+        subscribe: () => this.fetchStorageStatus.next('loading')
+      }),
       switchMap(([specName, specVersion, pallet, storageName]) =>
         this.rs.getRuntime(specName, specVersion).pipe(
           takeUntil(this.destroyer),
@@ -82,26 +84,19 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
           map(runtime => [runtime as pst.Runtime, pallet, storageName])
         )
       ),
-      switchMap(([runtime, pallet, storageName]) => {
-        const subject = new Subject<pst.RuntimeStorage>();
-        this.rs.getRuntimeStorages(runtime.specName, runtime.specVersion).then(
-          (storages) => {
-            const palletStorages: pst.RuntimeStorage[] = storages.filter(s =>
-              s.pallet === pallet && s.storageName === storageName
-            );
-            const storage = palletStorages[0];
-            if (storage) {
-              subject.next(storage);
-              this.fetchStorageStatus.next(null)
-            } else {
-              subject.error('Storage function not found.');
-            }
-          },
-          (e) => {
-            subject.error(e);
-          });
-        return subject.pipe(takeUntil(this.destroyer));
-      }),
+      switchMap(([runtime, pallet, storageName]) => this.rs.getRuntimeStorages(runtime.specName, runtime.specVersion).pipe(
+        map((storages) => {
+          const palletStorages: pst.RuntimeStorage[] = storages.filter(s =>
+            s.pallet === pallet && s.storageName === storageName
+          );
+          const storage = palletStorages[0];
+          if (storage) {
+            this.fetchStorageStatus.next(null)
+            return storage
+          }
+          return null;
+        })
+      )),
       catchError((e) => {
         this.fetchStorageStatus.next('error');
         return of(null);
@@ -110,7 +105,7 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 }

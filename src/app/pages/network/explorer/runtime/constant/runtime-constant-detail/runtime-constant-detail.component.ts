@@ -1,6 +1,6 @@
 /*
  * Polkascan Explorer UI
- * Copyright (C) 2018-2022 Polkascan Foundation (NL)
+ * Copyright (C) 2018-2023 Polkascan Foundation (NL)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,9 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Observable, of, Subject } from 'rxjs';
-import { types as pst } from '@polkadapt/polkascan-explorer';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { BehaviorSubject, combineLatest, Observable, of, Subject } from 'rxjs';
+import { types as pst } from '@polkadapt/core';
 import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../../services/network.service';
 import { RuntimeService } from '../../../../../../services/runtime/runtime.service';
@@ -37,12 +37,13 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
   parsedComposition = new BehaviorSubject<any>(null);
   fetchConstantStatus: BehaviorSubject<any> = new BehaviorSubject(null);
 
-  private destroyer: Subject<undefined> = new Subject();
+  private destroyer = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
     private ns: NetworkService,
     private rs: RuntimeService,
+    private cd: ChangeDetectorRef
   ) {
   }
 
@@ -58,12 +59,15 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
-          const specVersion = params['runtime'].substring(lastIndex);
+          const specVersion = params['runtime'].substring(lastIndex + 1);
           return [specName, parseInt(specVersion, 10), params['pallet'], params['constantName']];
         }),
         tap(([specName, specVersion, pallet]) => {
           this.runtime = `${specName}-${specVersion}`;
           this.pallet = pallet;
+          setTimeout(() => {
+            this.cd.markForCheck();
+          })
         })
       )),
       switchMap(([specName, specVersion, pallet, constantName]) =>
@@ -74,30 +78,34 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
     );
 
     this.constant = runtimeObservable.pipe(
-      tap(() => this.fetchConstantStatus.next(null)),
+      takeUntil(this.destroyer),
+      tap({
+        subscribe: () => this.fetchConstantStatus.next(null)
+      }),
       switchMap(([runtime, pallet, constantName]) => {
-        const subject: Subject<pst.RuntimeConstant | null> = new Subject();
-        if (runtime) {
-          this.rs.getRuntimeConstants(runtime.specName, runtime.specVersion).then(
-            (constants) => {
-              const palletConstant: pst.RuntimeConstant = constants.filter(s =>
-                s.pallet === pallet && s.constantName === constantName
-              )[0];
-              if (palletConstant) {
-                subject.next(palletConstant);
-                if (palletConstant.scaleTypeComposition) {
-                  this.parsedComposition.next(JSON.parse(palletConstant.scaleTypeComposition));
-                }
-                this.fetchConstantStatus.next(null)
-              } else {
-                subject.error('Runtime constant not found.')
-              }
-            },
-            (e) => {
-              subject.error(e);
-          });
+        if (!runtime) {
+          return of(null);
         }
-        return subject.pipe(takeUntil(this.destroyer));
+        return this.rs.getRuntimeConstants(runtime.specName, runtime.specVersion).pipe(
+          takeUntil(this.destroyer),
+          map((constants) => {
+            const palletConstant: pst.RuntimeConstant = constants.filter(s =>
+              s.pallet === pallet && s.constantName === constantName
+            )[0];
+            if (palletConstant) {
+              if (palletConstant.scaleTypeComposition) {
+                this.parsedComposition.next(
+                  typeof palletConstant.scaleTypeComposition === 'string'
+                    ? JSON.parse(palletConstant.scaleTypeComposition)
+                    : palletConstant.scaleTypeComposition
+                );
+              }
+              this.fetchConstantStatus.next(null)
+              return palletConstant;
+            }
+            return null;
+          })
+        )
       }),
       catchError((e) => {
         this.fetchConstantStatus.next('error');
@@ -107,7 +115,7 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroyer.next(undefined);
+    this.destroyer.next();
     this.destroyer.complete();
   }
 }

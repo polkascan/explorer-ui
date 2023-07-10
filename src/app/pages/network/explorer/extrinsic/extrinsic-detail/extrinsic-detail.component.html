@@ -1,3 +1,21 @@
+<!--
+  ~ Polkascan Explorer UI
+  ~ Copyright (C) 2018-2023 Polkascan Foundation (NL)
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
 <button mat-button [routerLink]="'..'"><i class="fas fa-chevron-left"></i> Extrinsics</button>
 
 <h1>Extrinsic</h1>
@@ -36,17 +54,23 @@
 
       <tr>
         <td class="detail-table--label-cell">Pallet</td>
-        <td><a [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion + '/pallet/' + extrinsic.callModule">{{extrinsic.callModule}}</a></td>
+        <td><a
+          [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion + '/pallet/' + extrinsic.callModule">{{extrinsic.callModule}}</a>
+        </td>
       </tr>
 
       <tr>
         <td class="detail-table--label-cell">Call name</td>
-        <td><a [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion + '/pallet/' + extrinsic.callModule + '/call/' + extrinsic.callName">{{extrinsic.callName}}</a></td>
+        <td><a
+          [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion + '/pallet/' + extrinsic.callModule + '/call/' + extrinsic.callName">{{extrinsic.callName}}</a>
+        </td>
       </tr>
 
       <tr>
         <td class="detail-table--label-cell">Runtime</td>
-        <td><a [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion">{{extrinsic.specName + '-' + extrinsic.specVersion}}</a></td>
+        <td><a
+          [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion">{{extrinsic.specName + '-' + extrinsic.specVersion}}</a>
+        </td>
       </tr>
 
       <tr>
@@ -67,13 +91,23 @@
         <td class="break-word">{{extrinsic.signature}}</td>
       </tr>
 
-      <tr *ngIf="(callArguments | async) as arguments">
+      <tr>
         <td class="detail-table--label-cell">Call Arguments</td>
-        <td>
-          <attributes [attributes]="arguments" [iconTheme]="props.iconTheme" [iconSize]="24"
-                      [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
-                      [ss58Prefix]="props.ss58Format"></attributes>
-        </td>
+        <ng-template #argumentsLoadingOrError>
+          <ng-container [ngSwitch]="fetchAttributesStatus | async">
+            <td>
+              <ng-container *ngSwitchCase="'loading'">Loading arguments...</ng-container>
+              <ng-container *ngSwitchCase="'error'">Failed to load arguments.</ng-container>
+            </td>
+          </ng-container>
+        </ng-template>
+        <ng-container *ngIf="(callArguments | async) as arguments; else argumentsLoadingOrError">
+          <td>
+            <attributes [attributes]="arguments" [iconTheme]="props.iconTheme" [iconSize]="24"
+                        [tokenDecimals]="props.tokenDecimals" [tokenSymbol]="props.tokenSymbol"
+                        [ss58Prefix]="props.ss58Format"></attributes>
+          </td>
+        </ng-container>
       </tr>
 
       </tbody>
@@ -86,7 +120,10 @@
       <mat-tab label="Events">
 
         <mat-toolbar>
-          <button mat-stroked-button [routerLink]="'../../event'" [queryParams]="{'blockRangeBegin': extrinsic.blockNumber, 'blockRangeEnd': extrinsic.blockNumber}">Show all</button>
+          <button mat-stroked-button [routerLink]="'../../event'"
+                  [queryParams]="{'blockRangeBegin': extrinsic.blockNumber, 'blockRangeEnd': extrinsic.blockNumber}">
+            Show all
+          </button>
         </mat-toolbar>
 
         <table mat-table [dataSource]="events" [trackBy]="trackEvent" class="mat-table--full-width">
@@ -94,7 +131,8 @@
           <ng-container matColumnDef="eventId">
             <th mat-header-cell *matHeaderCellDef>Event ID</th>
             <td mat-cell *matCellDef="let event">
-              <a [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx">{{event.blockNumber + '-' + event.eventIdx}}</a>
+              <a
+                [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx">{{event.blockNumber + '-' + event.eventIdx}}</a>
             </td>
           </ng-container>
 
