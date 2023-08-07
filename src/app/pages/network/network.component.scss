@@ -17,5 +17,20 @@
  */
 
 .network-explorer-container {
-  padding-bottom: 100px;
+  padding-bottom: 120px;
+}
+
+.network-explorer-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  column-gap: 16px;
+  background: var(--ps-top-bar-bg-color);
+  color: var(--ps-top-bar-text-color);
+  padding: 0 8px;
 }

@@ -20,8 +20,10 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/
 import { ActivatedRoute } from '@angular/router';
 import { distinctUntilChanged, filter, map, switchMap, takeUntil } from 'rxjs/operators';
 import { NetworkService } from '../../services/network.service';
-import { Subject } from 'rxjs';
+import { combineLatestWith, Observable, Subject } from 'rxjs';
 import { VariablesService } from '../../services/variables.service';
+import { PolkadaptService } from '../../services/polkadapt.service';
+import { AppConfig } from '../../app-config';
 
 @Component({
   selector: 'app-network',
@@ -30,11 +32,17 @@ import { VariablesService } from '../../services/variables.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NetworkComponent implements OnInit, OnDestroy {
+  subsquidRegistered: Observable<boolean>;
+  showBottomBar = true;
+
   private destroyer = new Subject<void>();
 
   constructor(private route: ActivatedRoute,
               private ns: NetworkService,
-              public vars: VariablesService) {
+              private pa: PolkadaptService,
+              public vars: VariablesService
+  ) {
+    this.subsquidRegistered = this.pa.subsquidRegistered.asObservable();
   }
 
   ngOnInit(): void {

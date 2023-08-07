@@ -16,75 +16,124 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<h1 mat-dialog-title>{{vars.network|async}} connection</h1>
+<h1 mat-dialog-title>{{vars.network|async}} connections</h1>
 <div mat-dialog-content>
   <p *ngIf="(ns.online | async) === false" class="ps-connection-dialog--browser-offline">Your browser is offline</p>
   <p>Select or enter connection endpoints:</p>
-    <form [formGroup]="substrateRpcUrlForm" (ngSubmit)="submitSubstrateRpcUrl()">
-      <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
-        <mat-label>{{vars.network|async}} node URL</mat-label>
-        <input type="text"
-               placeholder="Enter URL"
-               aria-label="URL"
-               matInput
-               formControlName="url"
-               [matAutocomplete]="substrateUrlOptionsAuto">
-        <mat-autocomplete #substrateUrlOptionsAuto="matAutocomplete" (optionSelected)="submitSubstrateRpcUrl()">
-          <mat-option *ngFor="let option of pa.substrateRpcUrls|async" [value]="option">
-            {{option}}
-          </mat-option>
-        </mat-autocomplete>
-        <span class="mat-select-arrow" style="position: absolute; right: 0; top: 10px;"></span>
-      </mat-form-field>
-      <button mat-stroked-button color="primary" type="submit" style="margin-right: 10px;" [disabled]="(ns.online | async) === false">Connect</button>
-      <ng-container *ngIf="(ns.online | async) === true">
-        <ng-container [ngSwitch]="pa.substrateRpcRegistered|async">
-          <ng-container *ngSwitchCase="true">
-            <ng-container [ngSwitch]="pa.substrateRpcConnected|async">
-              <span *ngSwitchCase="true" style="color: green">(connected)</span>
-              <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
-            </ng-container>
-          </ng-container>
-          <ng-container *ngSwitchCase="false">
-            <span style="color: red;">(error)</span>
+  <form [formGroup]="substrateRpcUrlForm" (ngSubmit)="submitSubstrateRpcUrl()">
+    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+      <mat-label>Node URL</mat-label>
+      <input type="text"
+             placeholder="Enter URL"
+             aria-label="URL"
+             matInput
+             formControlName="url"
+             [matAutocomplete]="substrateUrlOptionsAuto">
+      <mat-autocomplete #substrateUrlOptionsAuto="matAutocomplete" (optionSelected)="submitSubstrateRpcUrl()">
+        <mat-option *ngFor="let option of pa.substrateRpcUrls|async" [value]="option">
+          {{option}}
+        </mat-option>
+      </mat-autocomplete>
+      <span class="mat-select-arrow" style="position: absolute; right: 0; top: 10px;"></span>
+    </mat-form-field>
+    <button mat-stroked-button color="primary" type="submit" style="margin-right: 10px;"
+            [disabled]="(ns.online | async) === false">Connect
+    </button>
+    <ng-container *ngIf="(ns.online | async) === true">
+      <ng-container [ngSwitch]="pa.substrateRpcRegistered|async">
+        <ng-container *ngSwitchCase="true">
+          <ng-container [ngSwitch]="pa.substrateRpcConnected|async">
+            <span *ngSwitchCase="true" style="color: green">(connected)</span>
+            <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
           </ng-container>
         </ng-container>
-      </ng-container>
-    </form>
-
-    <form *ngIf="pa.availableAdapters[ns.currentNetwork.value].explorerApi" [formGroup]="explorerWsUrlForm" (ngSubmit)="submitExplorerWsUrl()">
-      <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
-        <mat-label>{{vars.network|async}} Polkascan URL</mat-label>
-        <input type="text"
-               placeholder="Enter URL"
-               aria-label="URL"
-               matInput
-               formControlName="url"
-               [matAutocomplete]="explorerWsUrlOptionsAuto">
-        <mat-autocomplete #explorerWsUrlOptionsAuto="matAutocomplete" (optionSelected)="submitExplorerWsUrl()">
-          <mat-option *ngFor="let option of pa.explorerWsUrls|async" [value]="option">
-            {{option}}
-          </mat-option>
-        </mat-autocomplete>
-        <span class="mat-select-arrow" style="position: absolute; right: 0; top: 10px;"></span>
-      </mat-form-field>
-      <button mat-stroked-button color="primary" type="submit" style="margin-right: 10px;" [disabled]="(ns.online | async) === false">Connect</button>
-      <ng-container *ngIf="(ns.online | async) === true">
-        <ng-container [ngSwitch]="pa.explorerRegistered|async">
-          <ng-container *ngSwitchCase="true">
-            <ng-container [ngSwitch]="pa.explorerWsConnected|async">
-              <span *ngSwitchCase="true" style="color: green">(connected)</span>
-              <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
-            </ng-container>
-          </ng-container>
-          <ng-container *ngSwitchCase="false">
-            <span style="color: red;">(error)</span>
-          </ng-container>
+        <ng-container *ngSwitchCase="false">
+          <span style="color: red;">(error)</span>
         </ng-container>
       </ng-container>
+    </ng-container>
+  </form>
 
-      <span style="margin-left: 10px; color: red; white-space: nowrap" *ngIf="(pa.explorerDataErrors|async)?.length as dataErrorCount">{{ dataErrorCount }} errors</span>
-    </form>
+  <form *ngIf="pa.availableAdapters[ns.currentNetwork.value].explorerApi" [formGroup]="explorerWsUrlForm"
+        (ngSubmit)="submitExplorerWsUrl()">
+    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+      <mat-label>Polkascan URL</mat-label>
+      <input type="text"
+             placeholder="Enter URL"
+             aria-label="URL"
+             matInput
+             formControlName="url"
+             [matAutocomplete]="explorerWsUrlOptionsAuto">
+      <mat-autocomplete #explorerWsUrlOptionsAuto="matAutocomplete" (optionSelected)="submitExplorerWsUrl()">
+        <mat-option *ngFor="let option of pa.explorerWsUrls|async" [value]="option">
+          {{option}}
+        </mat-option>
+      </mat-autocomplete>
+      <span class="mat-select-arrow" style="position: absolute; right: 0; top: 10px;"></span>
+    </mat-form-field>
+    <button mat-stroked-button color="primary" type="submit" style="margin-right: 10px;"
+            [disabled]="(ns.online | async) === false">Connect
+    </button>
+    <ng-container *ngIf="(ns.online | async) === true">
+      <ng-container [ngSwitch]="pa.explorerRegistered|async">
+        <ng-container *ngSwitchCase="true">
+          <ng-container [ngSwitch]="pa.explorerWsConnected|async">
+            <span *ngSwitchCase="true" style="color: green">(connected)</span>
+            <span *ngSwitchCase="false" style="font-style: italic">(connecting)</span>
+          </ng-container>
+        </ng-container>
+        <ng-container *ngSwitchCase="false">
+          <span style="color: red;">(error)</span>
+        </ng-container>
+      </ng-container>
+    </ng-container>
+
+    <span style="margin-left: 10px; color: red; white-space: nowrap"
+          *ngIf="(pa.explorerDataErrors|async)?.length as dataErrorCount">{{ dataErrorCount }} errors</span>
+  </form>
+
+  <form *ngIf="(subsquidUrls | async) as urls">
+    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+      <mat-label>Subsquid Archive URL</mat-label>
+      <input disabled
+             type="text"
+             placeholder="Not set"
+             aria-label="URL"
+             matInput
+             [value]="urls.archiveUrl">
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+      <mat-label>Subsquid Explorer URL</mat-label>
+      <input disabled
+             type="text"
+             placeholder="Not set"
+             aria-label="URL"
+             matInput
+             [value]="urls.explorerUrl">
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+      <mat-label>Subsquid Giant Squid Explorer URL</mat-label>
+      <input disabled
+             type="text"
+             placeholder="Not set"
+             aria-label="URL"
+             matInput
+             [value]="urls.giantSquidExplorerUrl">
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+      <mat-label>Subsquid Giant Squid Main URL</mat-label>
+      <input disabled
+             type="text"
+             placeholder="Not set"
+             aria-label="URL"
+             matInput
+             [value]="urls.giantSquidMainUrl">
+    </mat-form-field>
+  </form>
+
 </div>
 <div mat-dialog-actions>
   <button mat-button mat-dialog-close cdkFocusInitial>Close</button>

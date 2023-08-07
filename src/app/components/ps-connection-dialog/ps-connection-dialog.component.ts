@@ -24,12 +24,13 @@ import {
   ViewEncapsulation
 } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { combineLatestWith, map, Observable, Subject, take } from 'rxjs';
+import { filter, takeUntil } from 'rxjs/operators';
 import { PolkadaptService } from '../../services/polkadapt.service';
 import { MatDialogRef } from '@angular/material/dialog';
 import { VariablesService } from '../../services/variables.service';
 import { NetworkService } from '../../services/network.service';
+import { AppConfig, SubsquidConfig } from '../../app-config';
 
 @Component({
   templateUrl: 'ps-connection-dialog.component.html',
@@ -46,13 +47,16 @@ export class PsConnectionDialogComponent implements OnInit, OnDestroy {
     url: new FormControl('')
   });
 
+  subsquidUrls: Observable<SubsquidConfig | null> | undefined;
+
   private destroyer = new Subject<void>();
 
   constructor(
     public dialogRef: MatDialogRef<PsConnectionDialogComponent>,
     public pa: PolkadaptService,
     public ns: NetworkService,
-    public vars: VariablesService
+    public vars: VariablesService,
+    private config: AppConfig
   ) {
   }
 
@@ -68,6 +72,17 @@ export class PsConnectionDialogComponent implements OnInit, OnDestroy {
         this.explorerWsUrlForm.setValue({url});
       }
     });
+
+    this.subsquidUrls = this.pa.subsquidRegistered.pipe(
+      combineLatestWith(this.ns.currentNetwork),
+      map(([registered, network]) => {
+        if (registered) {
+          const config = this.config?.networks[network];
+          return config.subsquid;
+        }
+        return null;
+      })
+    )
   }
 
   ngOnDestroy(): void {

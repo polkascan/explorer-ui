@@ -19,17 +19,18 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-type NetworkConfig = {
+export type SubsquidConfig = {
+  archiveUrl: string,
+  explorerUrl: string;
+  giantSquidExplorerUrl: string;
+  giantSquidMainUrl: string;
+}
+
+export type NetworkConfig = {
   [network: string]: {
     substrateRpcUrlArray: string[];
     explorerWsUrlArray: string[];
-    subsquid: {
-      archiveUrl: string,
-      explorerUrl: string;
-      giantSquidExplorerUrl: string;
-      giantSquidMainUrl: string;
-      balancesUrl: string;
-    };
+    subsquid: SubsquidConfig;
     coingecko: {
       coinId: string;
     };
@@ -40,7 +41,9 @@ type NetworkConfig = {
 export class AppConfig {
   networks: NetworkConfig;
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {
+  }
+
   public load(): Promise<void> {
     return this.http
       .get<NetworkConfig>('assets/config.json')
