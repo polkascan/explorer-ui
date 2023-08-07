@@ -311,7 +311,7 @@
 
   <mat-divider></mat-divider>
 
-  <mat-tab-group dynamicHeight animationDuration="0ms" (selectedIndexChange)="tabChange($event)">
+  <mat-tab-group dynamicHeight animationDuration="0ms" (selectedIndexChange)="tabChange($event)" [selectedIndex]="tabIndex">
 
     <mat-tab label="Signed Extrinsics">
 

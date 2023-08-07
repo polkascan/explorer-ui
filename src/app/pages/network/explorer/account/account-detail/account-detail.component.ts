@@ -99,6 +99,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
   listsSize = 50;
   loadedTabs: { [index: number]: boolean } = {0: true};
+  tabIndex: number | null = null;
 
   private destroyer = new Subject<void>();
 
@@ -171,6 +172,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     idObservable.subscribe({
       next: (id) => {
         this.loadedTabs = {0: true};
+        this.tabIndex = 0;
         this.errors.next(null);
 
         this.signedExtrinsics.next([]);
@@ -481,6 +483,7 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
 
   tabChange(tabIndex: number): void {
+    this.tabIndex = tabIndex;
     if (!this.loadedTabs[tabIndex]) {
       this.loadedTabs[tabIndex] = true;
     }
