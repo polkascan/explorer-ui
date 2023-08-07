@@ -36,8 +36,7 @@ Make sure that 'explorerWsUrlArray' and/or 'subsquid' is added to your networks.
       "archiveUrl": "https://polkadot.explorer.subsquid.io/graphql",
       "explorerUrl": "https://squid.subsquid.io/polkadot-explorer/graphql",
       "giantSquidExplorerUrl": "https://squid.subsquid.io/gs-explorer-polkadot/graphql",
-      "giantSquidMainUrl": "https://squid.subsquid.io/gs-main-polkadot/graphql",
-      "balancesUrl": "https://squid.subsquid.io/polkadot-balances/graphql"
+      "giantSquidMainUrl": "https://squid.subsquid.io/gs-main-polkadot/graphql"
     }
   },
   "kusama": {
@@ -50,8 +49,7 @@ Make sure that 'explorerWsUrlArray' and/or 'subsquid' is added to your networks.
       "archiveUrl": "https://kusama.explorer.subsquid.io/graphql",
       "explorerUrl": "https://squid.subsquid.io/kusama-explorer/graphql",
       "giantSquidExplorerUrl": "https://squid.subsquid.io/gs-explorer-kusama/graphql",
-      "giantSquidMainUrl": "https://squid.subsquid.io/gs-main-kusama/graphql",
-      "balancesUrl": "https://squid.subsquid.io/kusama-balances/graphql"
+      "giantSquidMainUrl": "https://squid.subsquid.io/gs-main-kusama/graphql"
     }
   }
 }
