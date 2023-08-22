@@ -32,7 +32,7 @@
         <td><a [routerLink]="'../../block/' + event.blockNumber">{{event.blockNumber}}</a></td>
       </tr>
 
-      <tr *ngIf="event.extrinsicIdx !== null">
+      <tr *ngIf="event.extrinsicIdx !== null && event.extrinsicIdx !== undefined">
         <td class="detail-table--label-cell">Extrinsic</td>
         <td>
           <a [routerLink]="'../../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">
