@@ -23,7 +23,7 @@
     <router-outlet></router-outlet>
   </div>
   <div class="network-explorer-bottom-bar" *ngIf="showBottomBar">
-    <div><small *ngIf="subsquidRegistered | async">Provided by <a href="https://www.subsquid.io/" target="_blank">Subsquid</a>.</small></div>
+    <div><small *ngIf="subsquidRegistered | async">Data indexes provided by <a href="https://www.subsquid.io/" target="_blank">Subsquid</a>.</small></div>
     <div><small>Polkascan Foundation offers no warranties or guarantees concerning the accuracy of the data provided.</small></div>
     <div class="network-explorer-close-bottom-bar">
       <button mat-icon-button (click)="showBottomBar = false"><mat-icon>close</mat-icon></button>
