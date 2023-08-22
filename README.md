@@ -1,6 +1,8 @@
-# Explorer UI
+# Polkascan Explorer UI
 
-Explorer UI is a client-sided [Angular](https://angular.io/) based application that utilizes [PolkADAPT](https://github.com/polkascan/polkadapt) and its Adapters to obtain data from multiple data sources. Its design is based on flat [Material](https://material.angular.io/) component design, styled in Polkascan branding.
+<img width="332" valign="top" alt="Polkascan dashboard" src="https://user-images.githubusercontent.com/5286904/194822070-48c172d4-c65d-4ea0-8287-15b772f32eb4.png"> <img width="312" valign="top" alt="Polkascan account page" src="https://user-images.githubusercontent.com/5286904/194826118-9d655e0c-02d3-4a8c-b4f1-73bfc00e076b.png">
+
+Polkascan Explorer UI is a client-sided [Angular](https://angular.io/) based application that utilizes [PolkADAPT](https://github.com/polkascan/polkadapt) and its Adapters to obtain data from multiple data sources. Its design is based on flat [Material](https://material.angular.io/) component design, styled in [Polkascan](https://polkascan.org/) branding.
 
 ## Clone with submodules!
 
@@ -21,8 +23,10 @@ You will need to add a file named `config.json` in `src/assets/`. This file cont
 
 The order in which the networks are shown in the UI is also based on this configuration. It is advised to add multiple endpoints for fallback and custom switching capabilities.
 
-Explorer UI can run on the Polkacan Explorer API or Subsquid. Or both.
-Make sure that 'explorerWsUrlArray' and/or 'subsquid' is added to your networks. 
+Explorer UI can run on the Polkacan Explorer API or [Subsquid](https://www.subsquid.io/) endpoints. Or both.
+Make sure that `explorerWsUrlArray` and/or `subsquid` is added to your networks. 
+
+To use the Polkascan Explorer UI with the Polkascan Explorer API, see the [installation section of the explorer bundle repos](https://github.com/polkascan/explorer#installation). 
 
 ```shell
 {
