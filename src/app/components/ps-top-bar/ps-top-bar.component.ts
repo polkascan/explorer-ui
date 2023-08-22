@@ -50,10 +50,7 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
 
   private destroyer = new Subject<void>();
 
-  constructor(private host: ElementRef,
-              private renderer: Renderer2,
-              private cd: ChangeDetectorRef,
-              private router: Router,
+  constructor(private router: Router,
               private config: AppConfig,
               public pa: PolkadaptService,
               public ns: NetworkService,

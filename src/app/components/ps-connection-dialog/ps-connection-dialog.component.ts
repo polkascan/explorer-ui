@@ -30,7 +30,7 @@ import { PolkadaptService } from '../../services/polkadapt.service';
 import { MatDialogRef } from '@angular/material/dialog';
 import { VariablesService } from '../../services/variables.service';
 import { NetworkService } from '../../services/network.service';
-import { AppConfig, SubsquidConfig } from '../../app-config';
+import { AppConfig, NetworkConfig, SubsquidConfig } from '../../app-config';
 
 @Component({
   templateUrl: 'ps-connection-dialog.component.html',
@@ -40,6 +40,7 @@ import { AppConfig, SubsquidConfig } from '../../app-config';
   encapsulation: ViewEncapsulation.None
 })
 export class PsConnectionDialogComponent implements OnInit, OnDestroy {
+  networkConfig: NetworkConfig;
   substrateRpcUrlForm = new FormGroup({
     url: new FormControl('')
   });
@@ -61,6 +62,7 @@ export class PsConnectionDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.networkConfig = this.config.networks;
     this.pa.substrateRpcUrl.pipe(takeUntil(this.destroyer)).subscribe({
       next: (url) => {
         this.substrateRpcUrlForm.setValue({url});
