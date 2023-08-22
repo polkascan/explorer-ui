@@ -17,8 +17,9 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnInit, ViewEncapsulation } from '@angular/core';
-import { AppConfig } from '../../app-config';
+import { AppConfig, NetworkConfig, NetworkSpecs } from '../../app-config';
 
+type Parachains = {[paraChainSlug: string]: NetworkSpecs};
 
 @Component({
   templateUrl: 'home.component.html',
@@ -27,12 +28,42 @@ import { AppConfig } from '../../app-config';
   encapsulation: ViewEncapsulation.None
 })
 export class HomeComponent implements OnInit {
-  networks: string[];
+  groups: {[relayChainSlug: string] : {
+    relayChain: NetworkSpecs;
+    parachains: Parachains;
+  }};
+  others: NetworkConfig;
 
   constructor(private config: AppConfig) {
   }
 
   ngOnInit(): void {
-    this.networks = Object.keys(this.config.networks);
+    // Look for relay chains first.
+    for (const network of Object.values(this.config.networks)) {
+      if (network.relayChain && this.config.networks[network.relayChain] && (!this.groups || !this.groups[network.relayChain])) {
+        if (!this.groups) {
+          this.groups = {};
+        }
+        this.groups[network.relayChain] = {
+          relayChain: this.config.networks[network.relayChain],
+          parachains: {}
+        }
+      }
+    }
+    // Now process each network.
+    for (const [slug, network] of Object.entries(this.config.networks)) {
+      if (network.relayChain) {
+        this.groups[network.relayChain].parachains[slug] = network;
+      } else if (!this.groups[slug]) {
+        if (!this.others) {
+          this.others = {};
+        }
+        this.others[slug] = network;
+      }
+    }
+  }
+
+  returnZero() {
+    return 0;
   }
 }

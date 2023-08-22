@@ -29,15 +29,42 @@
   </h1>
 
   <div class="width-container">
-    <h2 class="home-buttons-heading">Choose your network</h2>
 
-    <div class="home-buttons">
-      <mat-card appearance="outlined" *ngFor="let network of networks" [routerLink]="'/' + network" tabindex="0"
-         matRipple
-         class="home-button home-button--{{ network }}">
-        <mat-card-content class="home-button-content">{{network}}</mat-card-content>
-      </mat-card>
+    <div class="home-groups">
+
+      <div class="home-group" *ngFor="let group of groups|keyvalue:returnZero">
+        <h2>{{ group.value.relayChain.name || group.key }} and parachains</h2>
+        <div class="home-buttons">
+
+          <mat-card appearance="outlined" [routerLink]="'/' + group.key" tabindex="0"
+             matRipple
+             class="home-button home-button--relay-chain" [style]="group.value.relayChain.image ? 'background-image: url(\'../../../assets/chains/' + group.value.relayChain.image + '\')' : ''">
+            <mat-card-content class="home-button-content">{{ group.value.relayChain.name || group.key }}</mat-card-content>
+          </mat-card>
+
+          <mat-card appearance="outlined" *ngFor="let network of group.value.parachains|keyvalue:returnZero" [routerLink]="'/' + network.key" tabindex="0"
+             matRipple
+             class="home-button home-button--parachain" [style]="network.value.image ? 'background-image: url(\'../../../assets/chains/' + network.value.image + '\')' : ''">
+            <mat-card-content class="home-button-content">{{ network.value.name || network.key }}</mat-card-content>
+          </mat-card>
+
+        </div>
+      </div>
+
+      <div class="home-group" *ngIf="others">
+        <h2 *ngIf="groups">Others</h2>
+        <div class="home-buttons">
+
+          <mat-card appearance="outlined" *ngFor="let network of others|keyvalue:returnZero" [routerLink]="'/' + network.key" tabindex="0"
+             matRipple
+             class="home-button" [style]="network.value.image ? 'background-image: url(\'../../../assets/chains/' + network.value.image + '\')' : ''">
+            <mat-card-content class="home-button-content--parachain">{{ network.value.name || network.key }}</mat-card-content>
+          </mat-card>
+
+        </div>
+      </div>
     </div>
+
   </div>
 
 </div>

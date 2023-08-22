@@ -26,15 +26,20 @@ export type SubsquidConfig = {
   giantSquidMainUrl: string;
 }
 
-export type NetworkConfig = {
-  [network: string]: {
-    substrateRpcUrlArray: string[];
-    explorerWsUrlArray: string[];
-    subsquid: SubsquidConfig;
-    coingecko: {
-      coinId: string;
-    };
+export type NetworkSpecs = {
+  name?: string;
+  image?: string;
+  relayChain?: string;
+  substrateRpcUrlArray: string[];
+  explorerWsUrlArray: string[];
+  subsquid: SubsquidConfig;
+  coingecko: {
+    coinId: string;
   };
+};
+
+export type NetworkConfig = {
+  [network: string]: NetworkSpecs;
 };
 
 @Injectable()
