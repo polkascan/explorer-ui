@@ -181,8 +181,8 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     return (control: AbstractControl): ValidationErrors | null => {
       const value = control.value.trim();
       if (value === ''  // Nothing
-        || value.startsWith('0x')  // Extrinsic ID
-        || /^\d+-\d+$/.test(value)  // Extrinsic block-index format
+        || value.startsWith('0x') && value.length === 66  // Extrinsic or block hash
+        || /^\d+-\d+$/.test(value)  // Extrinsic ID, block-index format
         || /^\d+$/.test(value)) {  // Block number
         return null;
       } else {
@@ -210,11 +210,9 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     if (this.searchForm.valid) {
       const value = (this.searchForm.value.search)!.trim();
       if (value) {
-        if (value.startsWith('0x')) {
-          // this.router.navigate(['transaction', value], {relativeTo: this.route});
-        } else if (/^\d+-\d+$/.test(value)) {
+        if (/^\d+-\d+$/.test(value)) {
           this.router.navigate(['extrinsic', value], {relativeTo: this.route});
-        } else if (/^\d+$/.test(value)) {
+        } else if (/^\d+$/.test(value) || value.startsWith('0x') && value.length === 66) {
           this.router.navigate(['block', value], {relativeTo: this.route});
         } else {
           let validAddress: boolean;
