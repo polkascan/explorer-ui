@@ -36,11 +36,15 @@
     <button mat-button>{{vars.currency | async}} {{price}}</button>
   </div>
 
-  <button class="ps-top-bar-network-selector ps-top-bar-network-option ps-top-bar-network-option--{{(vars.network|async)}}" mat-button [matMenuTriggerFor]="networkMenu">
-    {{ (vars.network|async) || 'Network' }}
+  <button *ngIf="vars.network|async as network" class="ps-top-bar-network-selector ps-top-bar-network-option ps-top-bar-network-option--{{network}}" mat-button [matMenuTriggerFor]="networkMenu">
+    <span *ngIf="networkConfig[network].image" class="ps-top-bar-network-icon" [style]=" 'background-image: url(\'../../../assets/chains/' + networkConfig[network].image + '\')'"></span>
+    {{ networkConfig[network].name || network }}
   </button>
   <mat-menu #networkMenu="matMenu">
-    <button mat-menu-item *ngFor="let network of networks" (click)="setNetwork(network)" class="ps-top-bar-network-option ps-top-bar-network-option--{{network}}">{{ network }}</button>
+    <button mat-menu-item *ngFor="let network of networks" (click)="setNetwork(network)" class="ps-top-bar-network-option ps-top-bar-network-option--{{network}}">
+      <span *ngIf="networkConfig[network].image" class="ps-top-bar-network-icon" [style]=" 'background-image: url(\'../../../assets/chains/' + networkConfig[network].image + '\')'"></span>
+      {{ networkConfig[network].name || network }}
+    </button>
   </mat-menu>
 
   <button *ngIf="vars.network|async" class="ps-top-bar-connection-selector" mat-icon-button (click)="openConnectionDialog()">

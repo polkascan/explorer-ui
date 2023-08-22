@@ -29,7 +29,7 @@ import {
 import { BehaviorSubject, Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import { distinctUntilChanged, takeUntil } from 'rxjs/operators';
-import { AppConfig } from '../../app-config';
+import { AppConfig, NetworkConfig } from '../../app-config';
 import { VariablesService } from '../../services/variables.service';
 import { PolkadaptService } from '../../services/polkadapt.service';
 import { NetworkService } from '../../services/network.service';
@@ -45,6 +45,7 @@ import { PsConnectionDialogComponent } from '../ps-connection-dialog/ps-connecti
 })
 export class PsTopBarComponent implements OnInit, OnDestroy {
   networks: string[];
+  networkConfig: NetworkConfig;
   networkLabel = new BehaviorSubject('');
 
   private destroyer = new Subject<void>();
@@ -62,6 +63,7 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.networks = Object.keys(this.config.networks);
+    this.networkConfig = this.config.networks;
     this.vars.network
       .pipe(
         takeUntil(this.destroyer),
@@ -70,9 +72,9 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (network) => {
           if (network) {
-            this.networkLabel.next('Network');
+            this.networkLabel.next(this.config.networks[network].name || network);
           } else {
-            this.networkLabel.next(network);
+            this.networkLabel.next('Network');
           }
         }
       });

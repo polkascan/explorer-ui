@@ -74,46 +74,17 @@ ps-top-bar {
   animation: breathe 1s infinite;
 }
 
-.network-polkadot {
-}
-
-.ps-top-bar-network-selector,
-.ps-top-bar-network-option {
-  &:before {
-    content: '';
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: 50% 50%;
-    vertical-align: middle;
-    height: 1rem;
-    width: 1rem;
-    position: static;
-    border: none;
-  }
-}
-
-.ps-top-bar-network-option--polkadot {
-  &:before {
-    display: inline-block;
-    margin-right: 0.3rem;
-    background-image: url('../../../assets/chains/polkadot.svg');
-  }
-}
-
-.ps-top-bar-network-option--kusama {
-  &:before {
-    display: inline-block;
-    margin-right: 0.3rem;
-    background-image: url('../../../assets/chains/kusama.svg');
-  }
-}
-
-.ps-top-bar-network-option--rococo {
-  &:before {
-    display: inline-block;
-    margin-right: 0.3rem;
-    background-image: url('../../../assets/chains/rococo.svg');
-  }
+.ps-top-bar-network-icon {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  vertical-align: middle;
+  height: 1rem;
+  width: 1rem;
+  position: static;
+  border: none;
+  display: inline-block;
+  margin-right: 0.3rem;
 }
 
 .github-link {
