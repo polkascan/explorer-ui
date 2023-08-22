@@ -132,6 +132,11 @@
   color: #fff;
   animation: sunrise-planet 5s ease-out forwards;
 
+  .width-container {
+    display: flex;
+    flex-flow: column nowrap;
+  }
+
   .home-button {
     display: block;
     flex: 0 0 auto;
@@ -182,11 +187,6 @@
       background-position: calc(100% - 20px) center;
     }
   }
-}
-
-.width-container {
-  display: flex;
-  flex-flow: column nowrap;
 }
 
 .home-groups {
