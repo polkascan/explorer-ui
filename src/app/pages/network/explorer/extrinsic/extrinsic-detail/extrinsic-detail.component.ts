@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, combineLatest, Observable, of, Subject, takeLast, tap } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, startWith, Subject, takeLast, tap } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
@@ -192,7 +192,9 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
             extrinsic.callName
           ).pipe(
             takeUntil(this.destroyer),
-            takeLast(1)
+            takeLast(1),
+            catchError(() => []),
+            startWith([]),
           )
         ]).pipe(
           map(([[extrinsic, collectedCallArguments], callArgumentsMeta]) => {
@@ -227,7 +229,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
 
               // Loop through the call arguments metadata. These are indexed.
               // Find values for each call argument and add it to the attributesFromObject array.
-              if (callArgumentsMeta) {
+              if (callArgumentsMeta && callArgumentsMeta.length > 0) {
                 callArgumentsMeta.forEach((meta) => {
 
                   if (meta.name) {
@@ -260,7 +262,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
 
             // The below code in the if statement is specifically to convert JSON that came from a subsquid archive node.
             // Find values recursively in the attributes object to match with other (pallet) call arguments.
-            if (attributesFromObject) {
+            if (attributesFromObject && attributesFromObject.length > 0) {
               const convertSubquidTypedValues = (arrayOrObject: any) => {
 
                 if (Array.isArray(arrayOrObject)) {
@@ -369,7 +371,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
               convertSubquidTypedValues(attributesFromObject);
             }
 
-            return attributesFromObject || extrinsic.callArguments;
+            return attributesFromObject && attributesFromObject.length > 0 ? attributesFromObject : callArguments;
           })
         )
       }),
