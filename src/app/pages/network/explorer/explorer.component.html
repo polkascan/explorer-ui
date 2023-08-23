@@ -21,7 +21,7 @@
   <form [formGroup]="searchForm" (ngSubmit)="submitSearch()">
     <mat-form-field class="search" appearance="outline">
       <mat-label>Search for account, block, extrinsic</mat-label>
-      <input matInput formControlName="search" placeholder="Account address or block number">
+      <input matInput formControlName="search" placeholder="Account address, block number or hash, extrinsic id or hash">
       <button mat-icon-button matSuffix type="submit" [attr.aria-label]="'Search'">
         <mat-icon>search</mat-icon>
       </button>

@@ -64,7 +64,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       // Switch over to the route param from which we extract the extrinsic keys.
       switchMap(() => this.route.params.pipe(
         takeUntil(this.destroyer),
-        map(params => params['id'].split('-').map((v: string) => parseInt(v, 10)))
+        map(params => params['id'].length === 66 ? [params['id'], null] : params['id'].split('-').map((v: string) => parseInt(v, 10)))
       ))
     )
 
@@ -73,8 +73,8 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       tap({
         subscribe: () => this.fetchExtrinsicStatus.next('loading')
       }),
-      switchMap(([blockNr, extrinsicIdx]) =>
-        this.pa.run().getExtrinsic(blockNr, extrinsicIdx).pipe(
+      switchMap(([blockNrOrHash, extrinsicIdx]) =>
+        this.pa.run().getExtrinsic(blockNrOrHash, extrinsicIdx).pipe(
           switchMap((obs) => obs),
           map((inherent) => {
             if (inherent) {
@@ -91,13 +91,16 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
       })
     );
 
-    this.events = paramsObservable.pipe(
+    this.events = this.extrinsic.pipe(
       takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchEventsStatus.next('loading')
       }),
-      switchMap(([blockNr, extrinsicIdx]) =>
-        this.pa.run().getEvents({blockNumber: blockNr, extrinsicIdx: extrinsicIdx}, 100)
+      switchMap((extrinsic) => {
+        if (!extrinsic) {
+          return of([]);
+        }
+        return this.pa.run().getEvents({blockNumber: extrinsic.blockNumber, extrinsicIdx: extrinsic.extrinsicIdx}, 100)
           .pipe(
             switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
             map((items) => {
@@ -108,6 +111,7 @@ export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
               throw new Error('Invalid response.');
             })
           )
+        }
       ),
       catchError((e) => {
         this.fetchEventsStatus.next('error');

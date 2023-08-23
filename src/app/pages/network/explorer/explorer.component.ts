@@ -213,7 +213,11 @@ export class ExplorerComponent implements OnInit, OnDestroy {
         if (/^\d+-\d+$/.test(value)) {
           this.router.navigate(['extrinsic', value], {relativeTo: this.route});
         } else if (/^\d+$/.test(value) || value.startsWith('0x') && value.length === 66) {
-          this.router.navigate(['block', value], {relativeTo: this.route});
+          this.pa.run({observableResults: false}).getBlock(value).subscribe({
+            next: block =>
+              this.router.navigate(['block', value], {relativeTo: this.route}),
+            error: () => this.router.navigate(['extrinsic', value], {relativeTo: this.route})
+          });
         } else {
           let validAddress: boolean;
           try {
