@@ -81,6 +81,11 @@ ARG CONFIG_JSON=src/assets/config.json
 ENV CONFIG_JSON=$CONFIG_JSON
 COPY $CONFIG_JSON /usr/share/nginx/html/assets/config.json
 
+# Copy privacy-policy.html file.
+ARG PRIVACY_POLICY_HTML=src/assets/privacy-policy.html
+ENV PRIVACY_POLICY_HTML=$PRIVACY_POLICY_HTML
+COPY $PRIVACY_POLICY_HTML /usr/share/nginx/html/assets/privacy-policy.html
+
 EXPOSE 80
 
 CMD ["/bin/sh",  "-c",  "exec nginx -g 'daemon off;'"]
