@@ -27,6 +27,9 @@ jobs:
       - name: Create dummy config
         run:  echo '{}' > src/assets/config.json
 
+      - name: Create dummy privacy policy
+        run:  echo '<p>This is a test file.</p>' > src/assets/privacy-policy.html
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
