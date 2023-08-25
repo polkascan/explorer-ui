@@ -27,11 +27,17 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppConfig, initConfig } from './app-config';
 import { HttpClientModule } from '@angular/common/http';
 import { PsTooltipsComponent } from './components/ps-tooltip/ps-tooltips.component';
+import { PrivacyPolicyComponent } from './pages/privacy-policy/privacy-policy.component';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { PolkascanCommonModule } from '../common/polkascan-common.module';
 
 @NgModule({
   declarations: [
     AppComponent,
     PageNotFoundComponent,
+    PrivacyPolicyComponent,
     PsTooltipsComponent
   ],
   imports: [
@@ -40,6 +46,10 @@ import { PsTooltipsComponent } from './components/ps-tooltip/ps-tooltips.compone
     AppRoutingModule,
     CommonModule,
     HttpClientModule,
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    PolkascanCommonModule,
   ],
   providers: [
     AppConfig,

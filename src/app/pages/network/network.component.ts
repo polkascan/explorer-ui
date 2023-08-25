@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { distinctUntilChanged, filter, map, switchMap, takeUntil } from 'rxjs/operators';
 import { NetworkService } from '../../services/network.service';
 import { combineLatestWith, Observable, Subject } from 'rxjs';
@@ -40,7 +40,9 @@ export class NetworkComponent implements OnInit, OnDestroy {
   constructor(private route: ActivatedRoute,
               private ns: NetworkService,
               private pa: PolkadaptService,
-              public vars: VariablesService
+              private config: AppConfig,
+              private router: Router,
+              public vars: VariablesService,
   ) {
     this.subsquidRegistered = this.pa.subsquidRegistered.asObservable();
   }
@@ -55,9 +57,13 @@ export class NetworkComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (network: string) => {
-          this.ns.setNetwork(network);
-          this.vars.network.next(network);
-          this.vars.blockNumber.next(0);
+          if (this.config.networks[network]) {
+            this.ns.setNetwork(network);
+            this.vars.network.next(network);
+            this.vars.blockNumber.next(0);
+          } else {
+            this.router.navigate(['/']);
+          }
         }
       });
 

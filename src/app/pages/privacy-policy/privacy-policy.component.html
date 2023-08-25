@@ -16,8 +16,7 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<div class="not-found">
+<div class="privacy-policy">
   <app-generic-top-bar></app-generic-top-bar>
-  <div class="width-container"><h1>Sorry, page not found!</h1></div>
+  <div class="width-container" [innerHTML]="safeHtml|async"></div>
 </div>
-

@@ -39,6 +39,7 @@ import { RouterModule } from '@angular/router';
 import { TimeAgoCommonComponent } from './time-ago/time-ago.common.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { GenericTopBarComponent } from './generic-top-bar/generic-top-bar.component';
 
 @NgModule({
   declarations: [
@@ -59,7 +60,8 @@ import { MatIconModule } from '@angular/material/icon';
     AttributeProposalComponent,
     AttributeReferendumComponent,
     AttributeSessionComponent,
-    AttributeStructComponent
+    AttributeStructComponent,
+    GenericTopBarComponent
   ],
   imports: [
     CommonModule,
@@ -85,7 +87,8 @@ import { MatIconModule } from '@angular/material/icon';
     AttributeProposalComponent,
     AttributeReferendumComponent,
     AttributeSessionComponent,
-    AttributeStructComponent
+    AttributeStructComponent,
+    GenericTopBarComponent
   ]
 })
 export class PolkascanCommonModule {

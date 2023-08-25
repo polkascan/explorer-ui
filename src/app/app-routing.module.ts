@@ -19,8 +19,17 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { PageNotFoundComponent } from './pages/page-not-found/page-not-found.component';
+import { PrivacyPolicyComponent } from './pages/privacy-policy/privacy-policy.component';
 
 const routes: Routes = [
+  {
+    path: 'not-found',
+    component: PageNotFoundComponent
+  },
+  {
+    path: 'privacy-policy',
+    component: PrivacyPolicyComponent
+  },
   {
     path: ':network',
     loadChildren: () => import('./pages/network/network.module').then(m => m.NetworkModule)
