@@ -19,9 +19,9 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
-import { BehaviorSubject, combineLatest, Observable, of, Subject, take, timer } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, startWith, Subject, take, timer } from 'rxjs';
 import { Block } from '../../../../../services/block/block.harvester';
-import { catchError, filter, first, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, filter, first, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { types as pst } from '@polkadapt/core';
 
@@ -34,8 +34,8 @@ import { types as pst } from '@polkadapt/core';
 export class BlockDetailComponent implements OnInit, OnDestroy {
   private destroyer = new Subject<void>();
   block = new BehaviorSubject<Block | null>(null);
-  extrinsics = new BehaviorSubject<pst.Extrinsic[]>([]);
-  events = new BehaviorSubject<pst.Event[]>([]);
+  extrinsics: Observable<pst.Extrinsic[]>;
+  events: Observable<pst.Event[]>;
   headNumber = new BehaviorSubject<number>(0);
   invalidHash = new BehaviorSubject<boolean>(false);
 
@@ -95,14 +95,13 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
     ).subscribe();
 
 
-    this.block.pipe(
-      filter((block): block is Block => Boolean(block && block.finalized === true)),
-      take(1)
-    ).subscribe({
-      next: (block) => {
-        this.extrinsics.next([]);
-        if (block.countExtrinsics) {
-          timer(0, 1000).pipe(
+    this.extrinsics = this.block.pipe(
+      distinctUntilChanged((p, n) => Boolean(p && n
+        && p.number === n.number
+        && p.finalized === n.finalized)),
+      switchMap((block) => {
+        if (block && block.finalized && block.countExtrinsics) {
+          return timer(0, 1000).pipe(
             take(10),  // Try it for 10 seconds.
             switchMap(() => this.pa.run().getExtrinsics({
               blockNumber: block.number,
@@ -111,15 +110,21 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
             }, 300)),
             takeUntil(this.destroyer),
             takeWhile((extrinsics) => block.countExtrinsics! > extrinsics.length, true),
-            switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
-          ).subscribe({
-            next: (extrinsics: pst.Extrinsic[]) => this.extrinsics.next(extrinsics)
-          });
+            switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
+            startWith([])
+          )
         }
+        return of([]);
+      })
+    );
 
-        this.events.next([]);
-        if (block.countEvents) {
-          timer(0, 1000).pipe(
+    this.events = this.block.pipe(
+      distinctUntilChanged((p, n) => Boolean(p && n
+        && p.number === n.number
+        && p.finalized === n.finalized)),
+      switchMap((block) => {
+        if (block && block.finalized && block.countEvents) {
+          return timer(0, 1000).pipe(
             take(10),  // Try it for 10 seconds.
             switchMap(() => this.pa.run().getEvents({
               blockNumber: block.number,
@@ -128,13 +133,13 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
             }, 300)),
             takeUntil(this.destroyer),
             takeWhile((events) => block.countEvents! > events.length, true),
-            switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
-          ).subscribe({
-            next: (events: pst.Event[]) => this.events.next(events)
-          });
+            switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
+            startWith([])
+          )
         }
-      }
-    })
+        return of([]);
+      })
+    );
   }
 
   ngOnDestroy(): void {

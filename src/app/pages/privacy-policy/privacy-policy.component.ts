@@ -37,7 +37,6 @@ export class PrivacyPolicyComponent implements OnInit {
     this.http.get('assets/privacy-policy.html', {responseType: 'text'}).subscribe({
       next: html => {
         this.safeHtml.next(this.sanitizer.sanitize(SecurityContext.HTML, html));
-        console.log(this.safeHtml.value);
       },
       error: (err) => {
         this.router.navigate(['/not-found']);
