@@ -24,6 +24,7 @@ export type SubsquidConfig = {
   explorerUrl: string;
   giantSquidExplorerUrl: string;
   giantSquidMainUrl: string;
+  giantSquidStatsUrl: string;
 }
 
 export type NetworkSpecs = {

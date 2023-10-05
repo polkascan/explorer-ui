@@ -17,7 +17,7 @@
  */
 
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { ExplorerComponent } from './explorer.component';
 import { ExplorerRoutingModule } from './explorer-routing.module';
 import { ReactiveFormsModule } from '@angular/forms';
