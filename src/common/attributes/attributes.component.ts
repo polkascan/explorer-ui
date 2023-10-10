@@ -79,7 +79,7 @@ export class AttributesComponent implements OnChanges {
         }
 
         if (Array.isArray(this.runtimeEventAttributes)) {
-          attrs = attrs.map(value => {
+          attrs = attrs.map((value, i) => {
             if (value.type) {
               return value;
             }
@@ -110,7 +110,12 @@ export class AttributesComponent implements OnChanges {
                 }
               });
             }
-            return value;
+
+            return {
+              name: (this.runtimeEventAttributes as pst.RuntimeEventAttribute[])[i].eventAttributeName,
+              type: (this.runtimeEventAttributes as pst.RuntimeEventAttribute[])[i].scaleType,
+              value: value
+            }
           });
           if (attrs.length === 1 && Array.isArray(attrs[0])) {
             attrs = attrs[0];

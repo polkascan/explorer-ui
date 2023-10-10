@@ -21,7 +21,7 @@ import { ActivatedRoute } from '@angular/router';
 import { NetworkService } from '../../../../../services/network.service';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { catchError, filter, first, map, switchMap, takeUntil } from 'rxjs/operators';
-import { BehaviorSubject, Observable, of, ReplaySubject, Subject, takeLast, tap } from 'rxjs';
+import { BehaviorSubject, Observable, of, Subject, tap } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 
@@ -86,8 +86,7 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         this.fetchEventStatus.next('error');
         return of(null);
       })
-    )
-    ;
+    );
 
     this.eventAttributes = this.event.pipe(
       tap({
@@ -102,41 +101,6 @@ export class EventDetailComponent implements OnInit, OnDestroy {
         }
         return parsed;
       }),
-      map((attributes) => {
-        if (attributes) {
-          (Object.entries(attributes) as [key: string, attr: any][]).forEach(([key, attr]) => {
-            if (attr && attr['__kind']) {
-              if (attr.value && attr.value['__kind']) {
-                // Sublevel type found. Leave as is.
-                return;
-              } else {
-                attributes[key] = attr.value || attr;
-              }
-            }
-          })
-
-          const convertSubquidData = (item: any, parent?: any, keyOrIndex?: number | string) => {
-            if (Object.prototype.toString.call(item) === '[object Object]') {
-              if (item && item['__kind']) {
-                if (!(item.value && item.value['__kind'])) {
-                  if (parent && keyOrIndex) {
-                    parent[keyOrIndex] = item.value || item['__kind'] || item;
-                  }
-                }
-              } else {
-                Object.entries(item).forEach(([k, v]) => {
-                  convertSubquidData(v, item, k);
-                })
-              }
-            } else if (Array.isArray(item)) {
-              item.forEach((v, i) => convertSubquidData(v, item, i));
-            }
-          }
-          convertSubquidData(attributes)
-          return attributes;
-        }
-        return null;
-      }),
       tap({
         next: () => this.fetchEventAttributesStatus.next(null),
         error: () => this.fetchEventAttributesStatus.next('error')
@@ -145,24 +109,17 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
     this.runtimeEventAttributes = this.event.pipe(
       switchMap((event) => {
-        if (event && event.specName && event.specVersion && event.eventModule && event.eventName) {
-          const subject = new ReplaySubject<pst.RuntimeEventAttribute[]>(1);
-
-          this.rs.getRuntimeEventAttributes(this.ns.currentNetwork.value, event.specVersion, event.eventModule, event.eventName).pipe(
+        if (event && event.specVersion && event.eventModule && event.eventName) {
+          return this.rs.getRuntime(this.ns.currentNetwork.value, event.specVersion).pipe(
             takeUntil(this.destroyer),
-            takeLast(1)
-          ).subscribe({
-            next: (items) => {
-              if (Array.isArray(items)) {
-                subject.next(items);
-              }
-            },
-            error: (e) => {
-              console.error(e);
-              subject.error(e);
-            }
-          });
-          return subject.pipe(takeUntil(this.destroyer));
+            filter((r) => !!r),
+            switchMap(() =>
+              this.rs.getRuntimeEventAttributes(this.ns.currentNetwork.value, event.specVersion as number, event.eventModule as string, event.eventName as string).pipe(
+                takeUntil(this.destroyer),
+                map((items) => Array.isArray(items) ? items : null)
+              )
+            )
+          )
         }
 
         return of(null);
