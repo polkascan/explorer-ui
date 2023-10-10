@@ -89,3 +89,28 @@
   margin-top: 15px;
   width: 100%;
 }
+
+.chain-statistics {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chain-statistic {
+  //border: solid 1px var(--ps-top-bar-bg-color);
+  padding: 4px;
+}
+
+.chain-statistic-values {
+  display: flex;
+  gap: 8px;
+}
+
+.chain-statistic-value {
+
+}
+
+.chain-statistic-title {
+  font-size: 12px;
+}
+

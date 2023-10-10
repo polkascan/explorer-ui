@@ -20,14 +20,25 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/
 import { animate, group, query, stagger, style, transition, trigger } from '@angular/animations';
 import { PolkadaptService } from '../../../services/polkadapt.service';
 import { NetworkService } from '../../../services/network.service';
-import { BehaviorSubject, of, Subject } from 'rxjs';
-import { catchError, distinctUntilChanged, filter, first, switchMap, takeUntil, tap, timeout } from 'rxjs/operators';
+import { BehaviorSubject, map, Observable, of, startWith, Subject } from 'rxjs';
+import {
+  catchError,
+  distinctUntilChanged,
+  filter,
+  first,
+  shareReplay,
+  switchMap,
+  takeUntil,
+  tap,
+  timeout
+} from 'rxjs/operators';
 import { Block } from '../../../services/block/block.harvester';
-import { AppConfig } from '../../../app-config';
 import { AbstractControl, FormControl, FormGroup, ValidationErrors } from '@angular/forms';
 import { validateAddress } from '@polkadot/util-crypto'
 import { ActivatedRoute, Router } from '@angular/router';
 import { VariablesService } from '../../../services/variables.service';
+import { types as pst } from '@polkadapt/core';
+import { BN } from "@polkadot/util";
 
 
 const blocksAnimation = trigger('blocksAnimation', [
@@ -83,11 +94,15 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     search: new FormControl('', [this.searchValidator()])
   })
 
+  statistics: Observable<pst.ChainStatistics | null>
+  stakedRatio: Observable<string | null>;
+  inflationRatio: Observable<string | null>;
+  rewardsRatio: Observable<string | null>
+
   constructor(
     public pa: PolkadaptService,
     public ns: NetworkService,
     private vars: VariablesService,
-    private config: AppConfig,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -95,15 +110,17 @@ export class ExplorerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Watch for changes to network, the latest block number and last block data.
-    this.ns.currentNetwork.pipe(
+    const networkObservable = this.ns.currentNetwork.pipe(
       // Keep it running until this component is destroyed.
       takeUntil(this.destroyer),
       // Only continue if a network is set.
       filter(network => !!network),
       // Only continue if the network value has changed.
-      distinctUntilChanged(),
-      // When network has changed, reset the block Array for this component.
-      tap(() => {
+      distinctUntilChanged()
+    );
+
+    // When network has changed, reset the block Array for this component.
+    networkObservable.pipe(tap(() => {
         this.latestBlockNumber.next(0);
         this.blocks.next([]);
         this.searchForm.controls['search'].setValue('');
@@ -156,6 +173,38 @@ export class ExplorerComponent implements OnInit, OnDestroy {
         this.searchForm.controls['search'].setValue('');
       }
     });
+
+    this.statistics = networkObservable.pipe(
+      switchMap(() => this.pa.run().getLatestStatistics().pipe(
+        startWith(null),
+        catchError(() => of(null)),
+        switchMap((o) => o || of(null)))),
+      shareReplay({
+        refCount: true,
+        bufferSize: 1
+      })
+    );
+
+    this.stakedRatio = this.statistics.pipe(
+      // TODO Change this code when BN is implemented in the adapter.
+      map((stats) => {
+        if (stats && stats.balancesTotalIssuance && stats.stakingTotalStake) {
+          const calc = new BN(stats.stakingTotalStake).mul(new BN(10000)).div(
+            new BN(stats.balancesTotalIssuance)
+          ).toNumber();
+          return (calc / 100).toFixed(2);
+        }
+        return null;
+      })
+    );
+
+    this.inflationRatio = this.statistics.pipe(
+      map((stats) => stats?.stakingInflationRatio?.toFixed(2) || null)
+    );
+
+    this.rewardsRatio = this.statistics.pipe(
+      map((stats) => stats?.stakingRewardsRatio?.toFixed(2) || null)
+    );
   }
 
   ngOnDestroy(): void {
