@@ -113,7 +113,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).pipe(
             map((pallets) => {
-              const matchedPallet: pst.RuntimePallet = pallets.filter(p => p.pallet === pallet)[0];
+              const matchedPallet: pst.RuntimePallet = pallets.filter(p => p.pallet.toLowerCase() === pallet.toLowerCase())[0];
               if (matchedPallet) {
                 this.fetchPalletStatus.next(null);
                 return matchedPallet
@@ -139,7 +139,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeCalls(runtime.specName as string, runtime.specVersion as number).pipe(
             map((calls) => {
-              const palletCalls: pst.RuntimeCall[] = calls.filter(c => c.pallet === pallet);
+              const palletCalls: pst.RuntimeCall[] = calls.filter(c => c.pallet.toLowerCase() === pallet.toLowerCase());
               this.fetchCallsStatus.next(null);
               return palletCalls
             })
@@ -162,7 +162,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeEvents(runtime.specName as string, runtime.specVersion as number).pipe(
             map((events) => {
-              const palletEvents: pst.RuntimeEvent[] = events.filter(e => e.pallet === pallet);
+              const palletEvents: pst.RuntimeEvent[] = events.filter(e => e.pallet.toLowerCase() === pallet.toLowerCase());
               this.fetchEventsStatus.next(null);
               return palletEvents;
             })
@@ -185,7 +185,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeStorages(runtime.specName as string, runtime.specVersion as number).pipe(
             map((storages) => {
-              const palletStorages: pst.RuntimeStorage[] = storages.filter(s => s.pallet === pallet);
+              const palletStorages: pst.RuntimeStorage[] = storages.filter(s => s.pallet.toLowerCase() === pallet.toLowerCase());
               this.fetchStoragesStatus.next(null);
               return palletStorages;
             })
@@ -208,7 +208,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeConstants(runtime.specName as string, runtime.specVersion as number).pipe(
             map((constants) => {
-              const palletConstants: pst.RuntimeConstant[] = constants.filter(c => c.pallet === pallet);
+              const palletConstants: pst.RuntimeConstant[] = constants.filter(c => c.pallet.toLowerCase() === pallet.toLowerCase());
               this.fetchConstantsStatus.next(null);
               return palletConstants;
             })
@@ -231,7 +231,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeErrorMessages(runtime.specName as string, runtime.specVersion as number).pipe(
             map((errors) => {
-              const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet === pallet);
+              const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet.toLowerCase() === pallet.toLowerCase());
               this.fetchErrorMessagesStatus.next(null);
               return palletErrors;
             })

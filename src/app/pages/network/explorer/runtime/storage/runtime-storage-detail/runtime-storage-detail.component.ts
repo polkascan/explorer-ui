@@ -87,7 +87,7 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
       switchMap(([runtime, pallet, storageName]) => this.rs.getRuntimeStorages(runtime.specName, runtime.specVersion).pipe(
         map((storages) => {
           const palletStorages: pst.RuntimeStorage[] = storages.filter(s =>
-            s.pallet === pallet && s.storageName === storageName
+            s.pallet.toLowerCase() === pallet.toLowerCase() && s.storageName.toLowerCase() === storageName.toLowerCase()
           );
           const storage = palletStorages[0];
           if (storage) {

@@ -95,7 +95,7 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeEvents(runtime.specName, runtime.specVersion).pipe(
             map((events) => {
-              const matchedEvent: pst.RuntimeEvent = events.filter(e => e.pallet === pallet && e.eventName === eventName)[0];
+              const matchedEvent: pst.RuntimeEvent = events.filter(e => e.pallet.toLowerCase() === pallet.toLowerCase() && e.eventName?.toLowerCase() === eventName.toLowerCase())[0];
               if (matchedEvent) {
                 this.fetchEventStatus.next(null);
                 return matchedEvent;

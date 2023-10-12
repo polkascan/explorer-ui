@@ -55,21 +55,21 @@
       <tr>
         <td class="detail-table--label-cell">Pallet</td>
         <td><a
-          [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion + '/pallet/' + extrinsic.callModule">{{extrinsic.callModule}}</a>
+          [routerLink]="'../../runtime/' + (extrinsic.specName || props.specName) + '-' + extrinsic.specVersion + '/pallet/' + extrinsic.callModule">{{extrinsic.callModule}}</a>
         </td>
       </tr>
 
       <tr>
         <td class="detail-table--label-cell">Call name</td>
         <td><a
-          [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion + '/pallet/' + extrinsic.callModule + '/call/' + extrinsic.callName">{{extrinsic.callName}}</a>
+          [routerLink]="'../../runtime/' + (extrinsic.specName || props.specName) + '-' + extrinsic.specVersion + '/pallet/' + extrinsic.callModule + '/call/' + extrinsic.callName">{{extrinsic.callName}}</a>
         </td>
       </tr>
 
       <tr>
         <td class="detail-table--label-cell">Runtime</td>
         <td><a
-          [routerLink]="'../../runtime/' + extrinsic.specName + '-' + extrinsic.specVersion">{{extrinsic.specName + '-' + extrinsic.specVersion}}</a>
+          [routerLink]="'../../runtime/' + (extrinsic.specName || props.specName) + '-' + extrinsic.specVersion">{{(extrinsic.specName || props.specName) + '-' + extrinsic.specVersion}}</a>
         </td>
       </tr>
 

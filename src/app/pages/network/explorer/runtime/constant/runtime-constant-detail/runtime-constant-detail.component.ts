@@ -90,7 +90,7 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
           takeUntil(this.destroyer),
           map((constants) => {
             const palletConstant: pst.RuntimeConstant = constants.filter(s =>
-              s.pallet === pallet && s.constantName === constantName
+              s.pallet.toLowerCase() === pallet.toLowerCase() && s.constantName.toLowerCase() === constantName.toLowerCase()
             )[0];
             if (palletConstant) {
               if (palletConstant.scaleTypeComposition) {

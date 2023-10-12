@@ -93,7 +93,7 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
           this.rs.getRuntimeCalls(runtime.specName, runtime.specVersion).pipe(
             map((calls) => {
               const palletCall: pst.RuntimeCall = calls.filter(c =>
-                c.pallet === pallet && c.callName === callName
+                c.pallet.toLowerCase() === pallet.toLowerCase() && c.callName.toLowerCase() === callName.toLowerCase()
               )[0];
 
               if (palletCall) {
