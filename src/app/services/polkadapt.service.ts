@@ -111,7 +111,8 @@ export class PolkadaptService {
           chain: network,
           giantSquidExplorerUrl: this.config.networks[network].subsquid?.giantSquidExplorerUrl,
           giantSquidMainUrl: this.config.networks[network].subsquid?.giantSquidMainUrl,
-          giantSquidStatsUrl: this.config.networks[network].subsquid?.giantSquidStatsUrl
+          giantSquidStatsUrl: this.config.networks[network].subsquid?.giantSquidStatsUrl,
+          metaDataUrl: this.config.networks[network].subsquid?.metaDataUrl
         });
       }
       if (config.coingecko && config.coingecko.coinId) {
