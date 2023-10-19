@@ -19,7 +19,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
-import { debounceTime, distinctUntilChanged, map, takeUntil } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, map, shareReplay, takeUntil } from 'rxjs/operators';
 import { FormControl, FormGroup } from '@angular/forms';
 import { RuntimeService } from '../../../../../services/runtime/runtime.service';
 import { types as pst } from '@polkadapt/core';
@@ -27,7 +27,17 @@ import { PaginatedListComponentBase } from '../../../../../../common/list-base/p
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { BN, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
-import { Observable } from 'rxjs';
+import {
+  catchError,
+  combineAll,
+  combineLatest,
+  combineLatestAll,
+  combineLatestWith,
+  Observable,
+  of,
+  switchMap,
+  take, tap
+} from 'rxjs';
 
 
 @Component({
@@ -53,6 +63,8 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
     blockRangeEnd: this.blockRangeEndControl,
     address: this.addressControl,
   });
+
+  temporaryRpcEventsCache = new Map<string, Observable<pst.Event>>
 
   visibleColumns = ['icon', 'referencedTransaction', 'age', 'fromAddress', 'arrow', 'toAddress', 'amount', 'details'];
 
@@ -177,8 +189,8 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
       );
     } else {
       return this.pa.run(this.network).getEvents(
-        filters,
-        this.listSize
+          filters,
+          this.listSize
       );
     }
   }
@@ -238,36 +250,74 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
   }
 
 
-    getAmountsFromAttributes(data: string): [string, BN][] {
-    const attrNames = ['amount', 'actual_fee', 'actualFee', 'tip'];
-    const amounts: [string, BN][] = [];
+  getAmountsFromEvent(event: pst.Event): Observable<[string, BN][]> {
+    // const attrNames = ['amount', 'actual_fee', 'actualFee', 'tip'];
 
-    if (typeof data === 'string') {
-      for (let name of attrNames) {
-        const match = new RegExp(`"${name}": ?\"?(\\d+)\"?`).exec(data);
-        if (match) {
-          amounts.push([name, new BN(match[1])]);
-        }
-      }
-    } else if (Object.prototype.toString.call(data) == '[object Object]') {
-      attrNames.forEach((name) => {
-        if ((data as any).hasOwnProperty(name)) {
-          amounts.push([name, new BN(data[name])])
-        }
-      })
+    // TEMPORARY FUNCTIONALITY UNTIL ATTRIBUTES IN SUBSQUID ARE FIXED.
+    let cachedEvent = this.temporaryRpcEventsCache.get(`${event.blockNumber}_${event.eventIdx}`);
+    if (!cachedEvent) {
+      cachedEvent = this.pa.run({chain: this.network, adapters: ['substrate-rpc']}).getEvent(event.blockNumber, event.eventIdx).pipe(
+          takeUntil(this.destroyer),
+          switchMap((obs => obs)),
+          shareReplay(1)
+      )
+      this.temporaryRpcEventsCache.set(`${event.blockNumber}_${event.eventIdx}`, cachedEvent)
     }
 
-    return amounts;
+    return cachedEvent.pipe(
+      map((event) => {
+        const amounts: [string, BN][] = [];
+        if (event.attributes) {
+          // if (typeof event.attributes === 'string') {
+          //   for (let name of attrNames) {
+          //     const match = new RegExp(`"${name}": ?\"?(\\d+)\"?`).exec(event.attributes);
+          //     if (match) {
+          //       amounts.push([name, new BN(match[1])]);
+          //     }
+          //   }
+          // } else if (Object.prototype.toString.call(event.attributes) == '[object Object]') {
+          //   attrNames.forEach((name) => {
+          //     if ((event.attributes as any).hasOwnProperty(name)) {
+          //       amounts.push([name, new BN((event.attributes as any)[name])])
+          //     }
+          //   })
+          // }
+          amounts.push(['amount', new BN(event.attributes[2])]);
+        }
+        return amounts;
+      })
+    );
   }
 
 
-  getAddressFromEvent(event: pst.AccountEvent, attrName: string): string {
-    if (event.attributes) {
-      const data: any = typeof event.attributes === 'string'
-        ? JSON.parse(event.attributes)
-        : event.attributes;
-      return data[attrName];
+  getAddressFromEvent(event: pst.AccountEvent, attrName: string): Observable<string> {
+    // TEMPORARY FUNCTIONALITY UNTIL ATTRIBUTES IN SUBSQUID ARE FIXED.
+    let cachedEvent = this.temporaryRpcEventsCache.get(`${event.blockNumber}_${event.eventIdx}`);
+    if (!cachedEvent) {
+      cachedEvent = this.pa.run({chain: this.network, adapters: ['substrate-rpc']}).getEvent(event.blockNumber, event.eventIdx).pipe(
+          takeUntil(this.destroyer),
+          switchMap((obs => obs)),
+          shareReplay(1)
+      )
+      this.temporaryRpcEventsCache.set(`${event.blockNumber}_${event.eventIdx}`, cachedEvent)
     }
-    return '';
+
+    return cachedEvent.pipe(
+      map((event) => {
+        if (event.attributes) {
+          const data: any = typeof event.attributes === 'string'
+              ? JSON.parse(event.attributes)
+              : event.attributes;
+          if (attrName === 'from') {
+            return data[0];
+          }
+          if (attrName === 'to') {
+            return data[1];
+          }
+          return data[attrName];
+        }
+        return '';
+      })
+    );
   }
 }
