@@ -26,15 +26,51 @@
     </svg>
   </a>
 
-  <div class="ps-top-bar-block-nr" *ngIf="vars.blockNumber|async as blockNumber">
-    <button mat-button [routerLink]="'./block/' + blockNumber">
-      <i class="fas fa-cube"></i> {{blockNumber}}
-    </button>
-  </div>
-
-  <div class="ps-top-bar-block-nr" *ngIf="vars.price|async as price">
-    <button mat-button>{{vars.currency | async}} {{price}}</button>
-  </div>
+  <form [formGroup]="searchForm" (ngSubmit)="submitSearch()" class="ps-top-bar-search-form">
+    <mat-form-field class="ps-top-bar-search">
+      <input matInput formControlName="search"
+             placeholder="Search for account, block, extrinsic" (blur)="resetSearchIfEmpty()" (focus)="showPreviewIfMissing()">
+      <button *ngIf="searchForm.controls.search.valueChanges|async" class="ps-top-bar-search-clear" matSuffix mat-icon-button type="button" aria-label="Clear" (click)="clearSearch()">
+        <mat-icon>close</mat-icon>
+      </button>
+      <button mat-icon-button matSuffix type="submit" [attr.aria-label]="'Search'">
+        <mat-icon *ngIf="(searching|async) === false">search</mat-icon>
+        <mat-spinner *ngIf="searching|async" diameter="24"></mat-spinner>
+      </button>
+    </mat-form-field>
+    <ng-container *ngIf="showPreview|async">
+      <ng-container *ngIf="searchPreviewItems|async as items">
+        <div class="ps-top-bar-search-preview" *ngIf="items.length > 0">
+          <ng-container *ngFor="let item of items">
+            <div *ngIf="item.type === 'account-other-network'">
+              This account belongs to another blockchain. Please choose the correct one with the <button mat-button [matMenuTriggerFor]="networkMenu">network selector</button> tool.
+            </div>
+            <button mat-menu-item *ngIf="item.type !== 'account-other-network'" [routerLink]="'/' + (vars.network|async) + '/' + item.type + '/' + item.value" class="ps-top-bar-search-preview-item">
+              <span class="ps-top-bar-search-preview-label" [ngSwitch]="item.type">
+                <ng-container *ngSwitchCase="'block'">
+                  <img src="/assets/polkadot-icons/block-number.svg" width="18" height="18" title="Finalized Blocks">
+                  Block
+                </ng-container>
+                <ng-container *ngSwitchCase="'extrinsic'">
+                  <img src="/assets/polkadot-icons/transaction.svg" width="18" height="18" title="Finalized Blocks">
+                  Extrinsic
+                </ng-container>
+                <ng-container *ngSwitchCase="'event'">
+                  <img src="/assets/polkadot-icons/events.svg" width="18" height="18" title="Finalized Blocks">
+                  Event
+                </ng-container>
+                <ng-container *ngSwitchCase="'account'">
+                  <img src="/assets/polkadot-icons/wallet.svg" width="18" height="18" title="Finalized Blocks">
+                  Account
+                </ng-container>
+              </span>
+              <span class="ps-top-bar-search-preview-value">{{ item.display || item.value }}</span>
+            </button>
+          </ng-container>
+        </div>
+      </ng-container>
+    </ng-container>
+  </form>
 
   <button *ngIf="vars.network|async as network" class="ps-top-bar-network-selector ps-top-bar-network-option ps-top-bar-network-option--{{network}}" mat-button [matMenuTriggerFor]="networkMenu">
     <span *ngIf="networkConfig[network].image" class="ps-top-bar-network-icon" [style]=" 'background-image: url(\'../../../assets/chains/' + networkConfig[network].image + '\')'"></span>

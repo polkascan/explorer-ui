@@ -90,9 +90,6 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   blockListSize = 10;
   latestBlockNumber = new BehaviorSubject<number>(0);
   blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
-  searchForm = new FormGroup({
-    search: new FormControl('', [this.searchValidator()])
-  })
 
   statistics: Observable<pst.ChainStatistics | null>
   stakedRatio: Observable<string | null>;
@@ -102,9 +99,7 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   constructor(
     public pa: PolkadaptService,
     public ns: NetworkService,
-    private vars: VariablesService,
-    private router: Router,
-    private route: ActivatedRoute
+    private vars: VariablesService
   ) {
   }
 
@@ -123,7 +118,6 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     networkObservable.pipe(tap(() => {
         this.latestBlockNumber.next(0);
         this.blocks.next([]);
-        this.searchForm.controls['search'].setValue('');
       }),
       // Wait for the first most recent finalized block to arrive from Polkascan.
       switchMap(() => this.ns.blockHarvester.finalizedNumber.pipe(
@@ -170,7 +164,6 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       next: () => {
         this.latestBlockNumber.next(0);
         this.blocks.next([]);
-        this.searchForm.controls['search'].setValue('');
       }
     });
 
@@ -225,61 +218,4 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     this.blocks.next(blocks);
   }
 
-  searchValidator() {
-    const ns = this.ns;
-    return (control: AbstractControl): ValidationErrors | null => {
-      const value = control.value.trim();
-      if (value === ''  // Nothing
-        || value.startsWith('0x') && value.length === 66  // Extrinsic or block hash
-        || /^\d+-\d+$/.test(value)  // Extrinsic ID, block-index format
-        || /^\d+$/.test(value)) {  // Block number
-        return null;
-      } else {
-        let validAddress: boolean;
-        try {
-          validAddress = validateAddress(value);
-        } catch (e) {
-          validAddress = false;
-        }
-        if (validAddress) {
-          // Check if address belongs to this network/chain.
-          try {
-            validateAddress(value, false, ns.currentNetworkProperties.value?.ss58Format);
-            return null;
-          } catch (e) {
-            return {wrongNetwork: {value}};
-          }
-        }
-      }
-      return {wrongFormat: {value}};
-    }
-  }
-
-  submitSearch() {
-    if (this.searchForm.valid) {
-      const value = (this.searchForm.value.search)!.trim();
-      if (value) {
-        if (/^\d+-\d+$/.test(value)) {
-          this.router.navigate(['extrinsic', value], {relativeTo: this.route});
-        } else if (/^\d+$/.test(value) || value.startsWith('0x') && value.length === 66) {
-          this.pa.run({observableResults: false}).getBlock(value).subscribe({
-            next: block =>
-              this.router.navigate(['block', value], {relativeTo: this.route}),
-            error: () => this.router.navigate(['extrinsic', value], {relativeTo: this.route})
-          });
-        } else {
-          let validAddress: boolean;
-          try {
-            validAddress = validateAddress(value, false,
-              this.ns.currentNetworkProperties.value?.ss58Format);
-          } catch (e) {
-            validAddress = false;
-          }
-          if (validAddress) {
-            this.router.navigate(['account', value], {relativeTo: this.route});
-          }
-        }
-      }
-    }
-  }
 }

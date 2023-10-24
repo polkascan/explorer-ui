@@ -16,10 +16,10 @@
   ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   -->
 
-<div class="network-{{ vars.network|async }}">
+<div class="network-page network-{{ vars.network|async }}">
   <ps-top-bar></ps-top-bar>
+  <explorer-menu class="width-container"></explorer-menu>
   <div class="width-container network-explorer-container">
-    <explorer-menu></explorer-menu>
     <router-outlet></router-outlet>
   </div>
   <div class="network-explorer-bottom-bar" *ngIf="showBottomBar">
