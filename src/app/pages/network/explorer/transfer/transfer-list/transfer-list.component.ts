@@ -46,7 +46,7 @@ import {
   styleUrls: ['./transfer-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TransferListComponent extends PaginatedListComponentBase<pst.Event | pst.AccountEvent> implements OnInit, OnDestroy {
+export class TransferListComponent extends PaginatedListComponentBase<pst.Event | pst.AccountEvent | pst.Transfer> implements OnInit, OnDestroy {
   listSize = 100;
   blockNumberIdentifier = 'blockNumber';
 
@@ -175,37 +175,57 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
   }
 
 
-  createGetItemsRequest(untilBlockNumber?: number): Observable<Observable<(pst.Event | pst.AccountEvent)>[]> {
+  createGetItemsRequest(untilBlockNumber?: number): Observable<Observable<(pst.Event | pst.AccountEvent | pst.Transfer)>[]> {
     const filters = this.filters;
     if (untilBlockNumber) {
       filters.blockRangeEnd = untilBlockNumber;
     }
 
+    let addressHex: string | undefined;
     if (this.addressControl.value) {
-      return this.pa.run(this.network).getEventsByAccount(
-        u8aToHex(decodeAddress(this.addressControl.value)),
-        filters,
-        this.listSize
-      );
+      addressHex = u8aToHex(decodeAddress(this.addressControl.value))
+    }
+
+
+    if (addressHex) {
+      return this.pa.run(this.network).getTransfersByAccount(addressHex, filters, this.listSize).pipe(
+        catchError(() => this.pa.run(this.network).getEventsByAccount(
+            addressHex!,
+            filters,
+            this.listSize
+          )
+        )
+      )
+
     } else {
-      return this.pa.run(this.network).getEvents(
-          filters,
-          this.listSize
-      );
+      return this.pa.run(this.network).getTransfers(filters, this.listSize).pipe(
+        catchError(() => this.pa.run(this.network).getEvents(
+            filters,
+            this.listSize
+          )
+        )
+      )
     }
   }
 
 
-  createNewItemSubscription(): Observable<Observable<pst.Event | pst.AccountEvent>> {
+  createNewItemSubscription(): Observable<Observable<pst.Event | pst.AccountEvent | pst.Transfer>> {
+    let address: string | undefined;
     if (this.addressControl.value) {
-      return this.pa.run(this.network).subscribeNewEventByAccount(
-        u8aToHex(decodeAddress(this.addressControl.value)),
-        this.filters
-      );
+      address = u8aToHex(decodeAddress(this.addressControl.value))
+    }
+
+    if (address) {
+      return this.pa.run(this.network).subscribeNewTransferByAccount(address as string, this.filters).pipe(
+        catchError(() => this.pa.run(this.network).subscribeNewEventByAccount(address as string, this.filters)
+        )
+      )
+
     } else {
-      return this.pa.run(this.network).subscribeNewEvent(
-        this.filters
-      );
+      return this.pa.run(this.network).subscribeNewTransfer(this.filters).pipe(
+        catchError(() => this.pa.run(this.network).subscribeNewEvent(this.filters)
+        )
+      )
     }
   }
 
@@ -245,23 +265,27 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
   }
 
 
-  track(i: any, event: pst.Event | pst.AccountEvent): string {
+  track(i: any, event: pst.Event | pst.AccountEvent | pst.Transfer): string {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 
 
-  getAmountsFromEvent(event: pst.Event): Observable<[string, BN][]> {
+  getAmountsFromEvent(eventOrTransfer: pst.Event | pst.AccountEvent | pst.Transfer): Observable<[string, BN][]> {
     // const attrNames = ['amount', 'actual_fee', 'actualFee', 'tip'];
 
-    // TEMPORARY FUNCTIONALITY UNTIL ATTRIBUTES IN SUBSQUID ARE FIXED.
-    let cachedEvent = this.temporaryRpcEventsCache.get(`${event.blockNumber}_${event.eventIdx}`);
+    if ((eventOrTransfer as pst.Transfer).hasOwnProperty('amount')) {
+      // return [['amount', new BN((eventOrTransfer as pst.Transfer).amount)]];
+    }
+
+    // TEMPORARY FUNCTIONALITY UNTIL ATTRIBUTES IN SUBSQUID ARE FIXED FOR EVENTS.
+    let cachedEvent = this.temporaryRpcEventsCache.get(`${eventOrTransfer.blockNumber}_${eventOrTransfer.eventIdx}`);
     if (!cachedEvent) {
-      cachedEvent = this.pa.run({chain: this.network, adapters: ['substrate-rpc']}).getEvent(event.blockNumber, event.eventIdx).pipe(
-          takeUntil(this.destroyer),
-          switchMap((obs => obs)),
-          shareReplay(1)
+      cachedEvent = this.pa.run({chain: this.network, adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
+        takeUntil(this.destroyer),
+        switchMap((obs => obs)),
+        shareReplay(1)
       )
-      this.temporaryRpcEventsCache.set(`${event.blockNumber}_${event.eventIdx}`, cachedEvent)
+      this.temporaryRpcEventsCache.set(`${eventOrTransfer.blockNumber}_${eventOrTransfer.eventIdx}`, cachedEvent)
     }
 
     return cachedEvent.pipe(
@@ -295,9 +319,9 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
     let cachedEvent = this.temporaryRpcEventsCache.get(`${event.blockNumber}_${event.eventIdx}`);
     if (!cachedEvent) {
       cachedEvent = this.pa.run({chain: this.network, adapters: ['substrate-rpc']}).getEvent(event.blockNumber, event.eventIdx).pipe(
-          takeUntil(this.destroyer),
-          switchMap((obs => obs)),
-          shareReplay(1)
+        takeUntil(this.destroyer),
+        switchMap((obs => obs)),
+        shareReplay(1)
       )
       this.temporaryRpcEventsCache.set(`${event.blockNumber}_${event.eventIdx}`, cachedEvent)
     }
@@ -306,8 +330,8 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
       map((event) => {
         if (event.attributes) {
           const data: any = typeof event.attributes === 'string'
-              ? JSON.parse(event.attributes)
-              : event.attributes;
+            ? JSON.parse(event.attributes)
+            : event.attributes;
           if (attrName === 'from') {
             return data[0];
           }
