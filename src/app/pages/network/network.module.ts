@@ -33,6 +33,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatOptionModule } from '@angular/material/core';
 import { MatDialogModule } from '@angular/material/dialog';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 
 @NgModule({
@@ -42,20 +43,21 @@ import { MatDialogModule } from '@angular/material/dialog';
     PsTopBarComponent,
     PsConnectionDialogComponent
   ],
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    NetworkRoutingModule,
-    MatMenuModule,
-    MatButtonModule,
-    MatSelectModule,
-    MatFormFieldModule,
-    MatAutocompleteModule,
-    MatOptionModule,
-    MatInputModule,
-    MatIconModule,
-    MatDialogModule
-  ]
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        NetworkRoutingModule,
+        MatMenuModule,
+        MatButtonModule,
+        MatSelectModule,
+        MatFormFieldModule,
+        MatAutocompleteModule,
+        MatOptionModule,
+        MatInputModule,
+        MatIconModule,
+        MatDialogModule,
+        MatProgressSpinnerModule
+    ]
 })
 export class NetworkModule {
 }
