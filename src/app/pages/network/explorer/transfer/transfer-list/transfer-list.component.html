@@ -87,16 +87,8 @@
     <ng-container matColumnDef="fromAddress">
       <th mat-header-cell *matHeaderCellDef>From</th>
       <td mat-cell *matCellDef="let event">
-        <ng-container [ngSwitch]="!!event.from">
-          <ng-container *ngSwitchCase="true">
-            <account-id [address]="event.from" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
-          </ng-container>
-
-          <ng-container *ngSwitchDefault>
-            <ng-container *ngIf="getAddressFromEvent(event, 'from') | async as address">
-              <account-id [address]="address" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
-            </ng-container>
-          </ng-container>
+        <ng-container *ngIf="getAddressFromEvent(event) | async as addresses">
+          <account-id [address]="addresses[0]" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
         </ng-container>
       </td>
     </ng-container>
@@ -109,16 +101,8 @@
     <ng-container matColumnDef="toAddress">
       <th mat-header-cell *matHeaderCellDef>To</th>
       <td mat-cell *matCellDef="let event">
-        <ng-container [ngSwitch]="!!event.to">
-          <ng-container *ngSwitchCase="true">
-            <account-id [address]="event.to" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
-          </ng-container>
-
-          <ng-container *ngSwitchDefault>
-              <ng-container *ngIf="getAddressFromEvent(event, 'to') | async as address">
-                <account-id [address]="address" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
-              </ng-container>
-            </ng-container>
+        <ng-container *ngIf="getAddressFromEvent(event) | async as addresses">
+          <account-id [address]="addresses[1]" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
         </ng-container>
       </td>
     </ng-container>
@@ -126,16 +110,8 @@
     <ng-container matColumnDef="amount">
       <th mat-header-cell *matHeaderCellDef>Amount</th>
       <td mat-cell *matCellDef="let event">
-        <ng-container [ngSwitch]="!!event.amount">
-          <ng-container *ngSwitchCase="true">
-            <balance [value]="event.amount" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
-          </ng-container>
-
-          <ng-container *ngSwitchDefault>
-            <ng-container *ngFor="let nameAndAmount of getAmountsFromEvent(event) | async">
-              <balance [value]="nameAndAmount[1]" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
-            </ng-container>
-          </ng-container>
+        <ng-container *ngFor="let nameAndAmount of getAmountsFromEvent(event) | async">
+          <balance [value]="nameAndAmount[1]" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
         </ng-container>
       </td>
     </ng-container>

@@ -386,9 +386,7 @@
     <mat-tab label="Transfers">
       <ng-container *ngIf="loadedTabs[1]">
         <ng-container *ngIf="(id | async) as address">
-          <app-account-events [address]="address" [listSize]="listsSize"
-                              [eventTypes]="{'Balances': ['Transfer']}"
-                              [columns]="['icon', 'referencedTransaction', 'age', 'direction', 'address', 'amount', 'detailsExtrinsic']"></app-account-events>
+          <app-account-transfers [address]="address" [listSize]="listsSize"></app-account-transfers>
         </ng-container>
       </ng-container>
     </mat-tab>

@@ -40,6 +40,10 @@ import {
 } from 'rxjs';
 
 
+type eventAmounts = [string, BN][];
+type eventAddresses = [string, string];  // [from, to]
+
+
 @Component({
   selector: 'app-transfer-list',
   templateUrl: './transfer-list.component.html',
@@ -64,7 +68,9 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
     address: this.addressControl,
   });
 
-  temporaryRpcEventsCache = new Map<string, Observable<pst.Event>>
+  rpcEventsCache = new Map<string, Observable<pst.Event>>
+  amountsCache = new Map<string, Observable<eventAmounts>>
+  addressesCache = new Map<string, Observable<eventAddresses>>
 
   visibleColumns = ['icon', 'referencedTransaction', 'age', 'fromAddress', 'arrow', 'toAddress', 'amount', 'details'];
 
@@ -270,78 +276,138 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
   }
 
 
-  getAmountsFromEvent(eventOrTransfer: pst.Event | pst.AccountEvent | pst.Transfer): Observable<[string, BN][]> {
-    // const attrNames = ['amount', 'actual_fee', 'actualFee', 'tip'];
+  getAmountsFromEvent(eventOrTransfer: pst.Event | pst.AccountEvent | pst.Transfer): Observable<eventAmounts> {
+    const key = `${eventOrTransfer.blockNumber}_${eventOrTransfer.eventIdx}`;
+    let cachedAmount = this.amountsCache.get(key);
+    let cachedEvent = this.rpcEventsCache.get(key);
 
-    if ((eventOrTransfer as pst.Transfer).hasOwnProperty('amount')) {
-      // return [['amount', new BN((eventOrTransfer as pst.Transfer).amount)]];
+    if (cachedAmount) {
+      return cachedAmount;
     }
 
-    // TEMPORARY FUNCTIONALITY UNTIL ATTRIBUTES IN SUBSQUID ARE FIXED FOR EVENTS.
-    let cachedEvent = this.temporaryRpcEventsCache.get(`${eventOrTransfer.blockNumber}_${eventOrTransfer.eventIdx}`);
+    // First check if there is a Transfer available.
+    if ((eventOrTransfer as pst.Transfer).hasOwnProperty('amount')) {
+      const amounts: eventAmounts = [];
+      amounts.push(['amount', new BN((eventOrTransfer as pst.Transfer).amount)]);
+      const observable = of(amounts);
+      this.amountsCache.set(key, observable);
+      return observable;
+    }
+
+    // Second check if there is an AccountEvent or Event with attributes available.
+    const attributes = (eventOrTransfer as pst.Event | pst.AccountEvent).attributes;
+    if (attributes) {
+      const attrNames = ['amount', 'actual_fee', 'actualFee', 'tip'];
+      const amounts: eventAmounts = [];
+
+      if (typeof attributes === 'string') {
+        for (let name of attrNames) {
+          const match = new RegExp(`"${name}": ?\"?(\\d+)\"?`).exec(attributes);
+          if (match) {
+            amounts.push([name, new BN(match[1])]);
+          }
+        }
+      } else if (Object.prototype.toString.call(attributes) == '[object Object]') {
+        attrNames.forEach((name) => {
+          if (attributes.hasOwnProperty(name)) {
+            amounts.push([name, new BN(attributes[name])])
+          }
+        })
+      }
+
+      const observable = of(amounts);
+      this.amountsCache.set(key, observable);
+      return observable;
+    }
+
+    // Lastly fetch from the RPC.
     if (!cachedEvent) {
-      cachedEvent = this.pa.run({chain: this.network, adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
+      cachedEvent = this.pa.run({adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
         takeUntil(this.destroyer),
         switchMap((obs => obs)),
-        shareReplay(1)
+        shareReplay({
+          bufferSize: 1,
+          refCount: true
+        })
       )
-      this.temporaryRpcEventsCache.set(`${eventOrTransfer.blockNumber}_${eventOrTransfer.eventIdx}`, cachedEvent)
+      this.rpcEventsCache.set(key, cachedEvent)
     }
 
-    return cachedEvent.pipe(
+    const observable = cachedEvent.pipe(
       map((event) => {
         const amounts: [string, BN][] = [];
         if (event.attributes) {
-          // if (typeof event.attributes === 'string') {
-          //   for (let name of attrNames) {
-          //     const match = new RegExp(`"${name}": ?\"?(\\d+)\"?`).exec(event.attributes);
-          //     if (match) {
-          //       amounts.push([name, new BN(match[1])]);
-          //     }
-          //   }
-          // } else if (Object.prototype.toString.call(event.attributes) == '[object Object]') {
-          //   attrNames.forEach((name) => {
-          //     if ((event.attributes as any).hasOwnProperty(name)) {
-          //       amounts.push([name, new BN((event.attributes as any)[name])])
-          //     }
-          //   })
-          // }
           amounts.push(['amount', new BN(event.attributes[2])]);
         }
         return amounts;
+      }),
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
       })
     );
+
+    this.amountsCache.set(key, observable);
+    return observable;
   }
 
 
-  getAddressFromEvent(event: pst.AccountEvent, attrName: string): Observable<string> {
-    // TEMPORARY FUNCTIONALITY UNTIL ATTRIBUTES IN SUBSQUID ARE FIXED.
-    let cachedEvent = this.temporaryRpcEventsCache.get(`${event.blockNumber}_${event.eventIdx}`);
-    if (!cachedEvent) {
-      cachedEvent = this.pa.run({chain: this.network, adapters: ['substrate-rpc']}).getEvent(event.blockNumber, event.eventIdx).pipe(
-        takeUntil(this.destroyer),
-        switchMap((obs => obs)),
-        shareReplay(1)
-      )
-      this.temporaryRpcEventsCache.set(`${event.blockNumber}_${event.eventIdx}`, cachedEvent)
+  getAddressFromEvent(eventOrTransfer: pst.AccountEvent | pst.Event | pst.Transfer): Observable<eventAddresses> {
+    const key = `${eventOrTransfer.blockNumber}_${eventOrTransfer.eventIdx}`;
+    let cachedAddresses = this.addressesCache.get(key);
+    let cachedEvent = this.rpcEventsCache.get(key);
+
+    if (cachedAddresses) {
+      return cachedAddresses;
     }
 
-    return cachedEvent.pipe(
+    // First check if there is a Transfer available.
+    if ((eventOrTransfer as pst.Transfer).hasOwnProperty('from') && (eventOrTransfer as pst.Transfer).hasOwnProperty('to')) {
+      const addresses: eventAddresses = [(eventOrTransfer as pst.Transfer).from, (eventOrTransfer as pst.Transfer).to];
+      const observable = of(addresses);
+      this.addressesCache.set(key, observable);
+      return observable;
+    }
+
+    // Second check if there is an AccountEvent or Event with attributes available.
+    const attributes = (eventOrTransfer as pst.Event | pst.AccountEvent).attributes
+    if (attributes) {
+      const data: any = typeof attributes === 'string'
+        ? JSON.parse(attributes)
+        : attributes;
+      if (data.from && data.to) {
+        const observable = of([data.from, data.to] as eventAddresses);
+        this.addressesCache.set(key, observable);
+        return observable;
+      }
+    }
+
+    // Lastly fetch from the RPC.
+    if (!cachedEvent) {
+      cachedEvent = this.pa.run({adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
+        takeUntil(this.destroyer),
+        switchMap((obs => obs)),
+        shareReplay({
+          bufferSize: 1,
+          refCount: true
+        })
+      );
+      this.rpcEventsCache.set(key, cachedEvent);
+    }
+
+    const observable = cachedEvent.pipe(
       map((event) => {
         if (event.attributes) {
-          const data: any = typeof event.attributes === 'string'
-            ? JSON.parse(event.attributes)
-            : event.attributes;
-          if (attrName === 'from') {
-            return data[0];
-          }
-          if (attrName === 'to') {
-            return data[1];
-          }
-          return data[attrName];
+          return [event.attributes[0], event.attributes[1]] as eventAddresses;
         }
-        return '';
+        return ['', ''] as eventAddresses;
+      }),
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
       })
     );
+
+    return observable;
   }
 }
