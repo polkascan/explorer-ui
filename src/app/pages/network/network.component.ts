@@ -26,7 +26,6 @@ import { PolkadaptService } from '../../services/polkadapt.service';
 import { AppConfig } from '../../app-config';
 
 @Component({
-  selector: 'app-network',
   templateUrl: './network.component.html',
   styleUrls: ['./network.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
