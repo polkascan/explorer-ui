@@ -83,10 +83,12 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
   readonly reset: Subject<void> = new Subject();
 
   protected constructor(private _ns: NetworkService) {
-    this.loadingObservable = this.loadingCounterObservable.pipe(takeUntil(this.destroyer), map((c) => !!c));
+    this.loadingObservable = this.loadingCounterObservable.pipe(
+      map((c) => !!c),
+      takeUntil(this.destroyer),
+    );
 
     this.lowestBlockNumber = this.itemsObservable.pipe(
-      takeUntil(this.destroyer),
       map((items) => {
         if (items.length > 0) {
           const itemWithLowestBlockNumber: T =
@@ -101,7 +103,12 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
         }
         return null;
       }),
-      shareReplay(1)
+      takeUntil(this.destroyer), // refcount is false, destroy manually.
+      shareReplay({
+        bufferSize: 1,
+        refCount: false
+      }),
+      takeUntil(this.destroyer)
     );
   }
 
@@ -110,8 +117,8 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
     this._ns.currentNetwork
       .pipe(
         debounceTime(100),
-        takeUntil(this.destroyer),
-        filter((n) => !!n)
+        filter((n) => !!n),
+        takeUntil(this.destroyer)
       )
       .subscribe((network: string) => {
         if (this.network !== network) {
@@ -124,9 +131,9 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
 
     this.latestItemObservable
       .pipe(
-        takeUntil(this.destroyer),
         filter(() => this.pageLive),
-        switchMap<Observable<T> | T, Observable<T>>((item) => isObservable(item) ? item.pipe(takeUntil(this.destroyer)) : of(item))
+        switchMap<Observable<T> | T, Observable<T>>((item) => isObservable(item) ? item : of(item)),
+        takeUntil(this.destroyer)
       ).subscribe((item: T) => {
       const itemObservables = this.itemsObservable.value;
       // Add the latest item to the list.
@@ -210,8 +217,6 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
 
       // Merge list with current list, sort the list.
       itemsSubscription = itemsObservable.pipe(
-        takeUntil(this.destroyer),
-        takeUntil(this.reset),
         tap({
           subscribe: () => {
             this.loading++;
@@ -234,7 +239,9 @@ export abstract class PaginatedListComponentBase<T> implements OnInit, OnDestroy
             }
           ) === -1
         )),
-        map((items) => items.sort(this.sortCompareFn))
+        map((items) => items.sort(this.sortCompareFn)),
+        takeUntil(this.destroyer),
+        takeUntil(this.reset),
       ).subscribe({
         next: (items) => {
           if (items.length >= this.listSize) {

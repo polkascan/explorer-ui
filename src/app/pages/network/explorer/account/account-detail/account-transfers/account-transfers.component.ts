@@ -73,8 +73,6 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
 
   loading = new BehaviorSubject<boolean>(false);
 
-  temporaryRpcEventsCache = new Map<string, Observable<pst.Event>>
-
   private reset: Subject<void> = new Subject();
   private destroyer = new Subject<void>();
 
@@ -119,8 +117,6 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
 
     const subscription = this.pa.run().getTransfersByAccount(idHex, undefined, this.listSize).pipe(
       catchError(() => this.pa.run().getEventsByAccount(idHex, filterParams, listSize)),
-      takeUntil(this.reset),
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => {
           this.loading.next(true);
@@ -131,7 +127,9 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
       }),
       switchMap((obs) => obs.length
         ? combineLatest(obs) as unknown as Observable<(pst.AccountEvent | pst.Transfer)[]>
-        : of([]) as Observable<pst.AccountEvent[]>)
+        : of([]) as Observable<pst.AccountEvent[]>),
+      takeUntil(this.reset),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: (items) => {
         const merged = [...events, ...items.filter((event) => {
@@ -184,7 +182,6 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
 
   fetchAndCacheRpcEvent(eventOrTransfer: pst.Event | pst.AccountEvent | pst.Transfer) {
     return this.pa.run({adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
-      takeUntil(this.destroyer),
       switchMap((obs => obs)),
       map((event) => {
         if (event.attributes && event.attributes[0] && event.attributes[1]) {
@@ -198,7 +195,8 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
       shareReplay({
         bufferSize: 1,
         refCount: true
-      })
+      }),
+      takeUntil(this.destroyer)
     );
   }
 

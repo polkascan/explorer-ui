@@ -45,20 +45,18 @@ export class LogDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const paramsObservable = this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       // Network must be set.
       filter(network => !!network),
       // Only need to load once.
       first(),
       // Switch over to the route param from which we extract the extrinsic keys.
       switchMap(() => this.route.params.pipe(
-        takeUntil(this.destroyer),
         map(params => params['id'].split('-').map((v: string) => parseInt(v, 10)))
-      ))
+      )),
+      takeUntil(this.destroyer)
     )
 
     this.log = paramsObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchLogStatus.next('loading')
       }),
@@ -76,7 +74,8 @@ export class LogDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchLogStatus.next('error');
         return of(null);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
   }
 

@@ -54,12 +54,11 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Get the network.
     const runtimeObservable = this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       filter(network => !!network),
       first(),
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
-        takeUntil(this.destroyer),
+
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
@@ -76,15 +75,18 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
       )),
       switchMap(([specName, specVersion, pallet, callName]) =>
         this.rs.getRuntime(specName, specVersion).pipe(
-          takeUntil(this.destroyer),
           map(runtime => [runtime as pst.Runtime, pallet, callName])
         )
       ),
-      shareReplay(1)
-    )
+      takeUntil(this.destroyer), // refCount is false, destroy manually
+      shareReplay({
+        bufferSize: 1,
+        refCount: false
+      }),
+      takeUntil(this.destroyer)
+    );
 
     this.call = runtimeObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchCallStatus.next('loading')
       }),
@@ -108,7 +110,8 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchCallStatus.next('error');
         return of(null);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
 
     this.callArguments = runtimeObservable.pipe(

@@ -17,17 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
-import {
-    BehaviorSubject,
-    combineLatest,
-    combineLatestWith, delay,
-    Observable,
-    of,
-    startWith,
-    Subject,
-    takeLast,
-    tap
-} from 'rxjs';
+import { BehaviorSubject, combineLatest, combineLatestWith, Observable, of, Subject, tap } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PolkadaptService } from '../../../../../services/polkadapt.service';
 import { NetworkService } from '../../../../../services/network.service';
@@ -37,160 +27,157 @@ import { RuntimeService } from '../../../../../services/runtime/runtime.service'
 
 
 @Component({
-    selector: 'app-extrinsic-detail',
-    templateUrl: './extrinsic-detail.component.html',
-    styleUrls: ['./extrinsic-detail.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+  selector: 'app-extrinsic-detail',
+  templateUrl: './extrinsic-detail.component.html',
+  styleUrls: ['./extrinsic-detail.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ExtrinsicDetailComponent implements OnInit, OnDestroy {
-    extrinsic: Observable<pst.Extrinsic | null>;
-    callArguments: Observable<any>;
-    runtimeCallArguments: Observable<pst.RuntimeCallArgument[] | null>;
-    events: Observable<pst.Event[]>;
-    networkProperties = this.ns.currentNetworkProperties;
-    fetchExtrinsicStatus: BehaviorSubject<any> = new BehaviorSubject(null);
-    fetchEventsStatus: BehaviorSubject<any> = new BehaviorSubject(null);
-    fetchAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
-    visibleColumns = ['eventId', 'pallet', 'event', 'details']
+  extrinsic: Observable<pst.Extrinsic | null>;
+  callArguments: Observable<any>;
+  runtimeCallArguments: Observable<pst.RuntimeCallArgument[] | null>;
+  events: Observable<pst.Event[]>;
+  networkProperties = this.ns.currentNetworkProperties;
+  fetchExtrinsicStatus: BehaviorSubject<any> = new BehaviorSubject(null);
+  fetchEventsStatus: BehaviorSubject<any> = new BehaviorSubject(null);
+  fetchAttributesStatus: BehaviorSubject<any> = new BehaviorSubject(null);
+  visibleColumns = ['eventId', 'pallet', 'event', 'details']
 
-    private destroyer = new Subject<void>();
-    private onDestroyCalled = false;
+  private destroyer = new Subject<void>();
+  private onDestroyCalled = false;
 
-    constructor(private router: Router,
-                private route: ActivatedRoute,
-                private cd: ChangeDetectorRef,
-                private pa: PolkadaptService,
-                private ns: NetworkService,
-                private rs: RuntimeService
-    ) {
-    }
+  constructor(private router: Router,
+              private route: ActivatedRoute,
+              private cd: ChangeDetectorRef,
+              private pa: PolkadaptService,
+              private ns: NetworkService,
+              private rs: RuntimeService
+  ) {
+  }
 
-    ngOnInit(): void {
-        const paramsObservable = this.ns.currentNetwork.pipe(
-            takeUntil(this.destroyer),
-            // Network must be set.
-            filter(network => !!network),
-            // Only need to load once.
-            first(),
-            // Switch over to the route param from which we extract the extrinsic keys.
-            switchMap(() => this.route.params.pipe(
-                takeUntil(this.destroyer),
-                map(params => params['id'].length === 66 ? [params['id'], null] : params['id'].split('-').map((v: string) => parseInt(v, 10)))
-            ))
+  ngOnInit(): void {
+    const paramsObservable = this.ns.currentNetwork.pipe(
+      // Network must be set.
+      filter(network => !!network),
+      // Only need to load once.
+      first(),
+      // Switch over to the route param from which we extract the extrinsic keys.
+      switchMap(() => this.route.params.pipe(
+        map(params => params['id'].length === 66 ? [params['id'], null] : params['id'].split('-').map((v: string) => parseInt(v, 10)))
+      )),
+      takeUntil(this.destroyer)
+    )
+
+    this.extrinsic = paramsObservable.pipe(
+      tap({
+        subscribe: () => this.fetchExtrinsicStatus.next('loading')
+      }),
+      switchMap(([blockNrOrHash, extrinsicIdx]) =>
+        this.pa.run().getExtrinsic(blockNrOrHash, extrinsicIdx).pipe(
+          switchMap((obs) => obs),
+          map((inherent) => {
+            if (inherent) {
+              this.fetchExtrinsicStatus.next(null);
+              return inherent;
+            }
+            throw new Error('Extrinsic not found.')
+          })
         )
+      ),
+      catchError((e) => {
+        this.fetchExtrinsicStatus.next('error');
+        return of(null);
+      }),
+      takeUntil(this.destroyer)
+    );
 
-        this.extrinsic = paramsObservable.pipe(
-            takeUntil(this.destroyer),
-            tap({
-                subscribe: () => this.fetchExtrinsicStatus.next('loading')
-            }),
-            switchMap(([blockNrOrHash, extrinsicIdx]) =>
-                this.pa.run().getExtrinsic(blockNrOrHash, extrinsicIdx).pipe(
-                    switchMap((obs) => obs),
-                    map((inherent) => {
-                        if (inherent) {
-                            this.fetchExtrinsicStatus.next(null);
-                            return inherent;
-                        }
-                        throw new Error('Extrinsic not found.')
-                    })
-                )
-            ),
-            catchError((e) => {
-                this.fetchExtrinsicStatus.next('error');
-                return of(null);
-            })
-        );
-
-        this.events = this.extrinsic.pipe(
-            takeUntil(this.destroyer),
-            tap({
-                subscribe: () => this.fetchEventsStatus.next('loading')
-            }),
-            switchMap((extrinsic) => {
-                    if (!extrinsic) {
-                        return of([]);
-                    }
-                    return this.pa.run().getEvents({blockNumber: extrinsic.blockNumber, extrinsicIdx: extrinsic.extrinsicIdx}, 100)
-                        .pipe(
-                            switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
-                            map((items) => {
-                                if (Array.isArray(items)) {
-                                    this.fetchEventsStatus.next(null)
-                                    return items;
-                                }
-                                throw new Error('Invalid response.');
-                            })
-                        )
+    this.events = this.extrinsic.pipe(
+      tap({
+        subscribe: () => this.fetchEventsStatus.next('loading')
+      }),
+      switchMap((extrinsic) => {
+          if (!extrinsic) {
+            return of([]);
+          }
+          return this.pa.run().getEvents({blockNumber: extrinsic.blockNumber, extrinsicIdx: extrinsic.extrinsicIdx}, 100)
+            .pipe(
+              switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
+              map((items) => {
+                if (Array.isArray(items)) {
+                  this.fetchEventsStatus.next(null)
+                  return items;
                 }
-            ),
-            catchError((e) => {
-                this.fetchEventsStatus.next('error');
-                return of([]);
-            }),
-            shareReplay({
-                refCount: true,
-                bufferSize: 1
-            })
-        );
+                throw new Error('Invalid response.');
+              })
+            )
+        }
+      ),
+      catchError((e) => {
+        this.fetchEventsStatus.next('error');
+        return of([]);
+      }),
+      shareReplay({
+        refCount: true,
+        bufferSize: 1
+      }),
+      takeUntil(this.destroyer)
+    );
 
-        this.callArguments = this.extrinsic.pipe(
-            tap({
-                subscribe: () => {
-                    this.fetchAttributesStatus.next('loading');
-                }
-            }),
-            switchMap((extrinsic: pst.Extrinsic | null) => {
-                if (!extrinsic) {
-                    return of(null);
-                }
+    this.callArguments = this.extrinsic.pipe(
+      tap({
+        subscribe: () => {
+          this.fetchAttributesStatus.next('loading');
+        }
+      }),
+      switchMap((extrinsic: pst.Extrinsic | null) => {
+        if (!extrinsic) {
+          return of(null);
+        }
 
-                return of(extrinsic.callArguments as any || null);
-            }),
-            tap({
-                next: (extrinsic: pst.Extrinsic | null) => {
-                    if (extrinsic && extrinsic.callArguments) {
-                        this.fetchAttributesStatus.next(null);
-                    }
-                }
-            }),
-            catchError((e) => {
-                this.fetchAttributesStatus.next('error');
-                return of(null);
-            })
-        )
+        return of(extrinsic.callArguments as any || null);
+      }),
+      tap({
+        next: (extrinsic: pst.Extrinsic | null) => {
+          if (extrinsic && extrinsic.callArguments) {
+            this.fetchAttributesStatus.next(null);
+          }
+        }
+      }),
+      catchError((e) => {
+        this.fetchAttributesStatus.next('error');
+        return of(null);
+      })
+    )
 
-        this.runtimeCallArguments = this.extrinsic.pipe(
-            combineLatestWith(this.networkProperties),
-            switchMap(([extrinsic, props]) => {
-                if (extrinsic && extrinsic.specVersion && extrinsic.callModule && extrinsic.callName) {
-                    return this.rs.getRuntime(this.ns.currentNetwork.value, extrinsic.specVersion).pipe(
-                        takeUntil(this.destroyer),
-                        filter((r) => !!r),
-                        switchMap(() =>
-                            this.rs.getRuntimeCallArguments(
-                                this.ns.currentNetwork.value,
-                                extrinsic.specVersion!,
-                                extrinsic.callModule!,
-                                extrinsic.callName!
-                            ).pipe(
-                                takeUntil(this.destroyer)
-                            )
-                        )
-                    )
-                }
-                return of(null);
-            })
-        )
-    }
+    this.runtimeCallArguments = this.extrinsic.pipe(
+      combineLatestWith(this.networkProperties),
+      switchMap(([extrinsic, props]) => {
+        if (extrinsic && extrinsic.specVersion && extrinsic.callModule && extrinsic.callName) {
+          return this.rs.getRuntime(this.ns.currentNetwork.value, extrinsic.specVersion).pipe(
+            filter((r) => !!r),
+            switchMap(() =>
+              this.rs.getRuntimeCallArguments(
+                this.ns.currentNetwork.value,
+                extrinsic.specVersion!,
+                extrinsic.callModule!,
+                extrinsic.callName!
+              )
+            )
+          )
+        }
+        return of(null);
+      }),
+      takeUntil(this.destroyer)
+    )
+  }
 
-    ngOnDestroy(): void {
-        this.onDestroyCalled = true;
-        this.destroyer.next();
-        this.destroyer.complete();
-    }
+  ngOnDestroy(): void {
+    this.onDestroyCalled = true;
+    this.destroyer.next();
+    this.destroyer.complete();
+  }
 
-    trackEvent(i: any, event: pst.Event): string {
-        return `${event.blockNumber}-${event.eventIdx}`;
-    }
+  trackEvent(i: any, event: pst.Event): string {
+    return `${event.blockNumber}-${event.eventIdx}`;
+  }
 }

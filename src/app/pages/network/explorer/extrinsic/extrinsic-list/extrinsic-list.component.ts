@@ -78,7 +78,6 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
 
   ngOnInit(): void {
     this.route.queryParamMap.pipe(
-      takeUntil(this.destroyer),
       distinctUntilChanged(),
       map(params => [
         params.get('address') as string || '',
@@ -90,7 +89,8 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
         parseInt(params.get('blockRangeBegin') as string, 10) || '',
         parseInt(params.get('blockRangeEnd') as string, 10) || '',
         params.get('signature') as string || 'signed'
-      ] as [string, number | '', string, string, Date | '', Date | '', number | '', number | '', string])
+      ] as [string, number | '', string, string, Date | '', Date | '', number | '', number | '', string]),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: ([address, specVersion, pallet, callName, dateRangeBegin, dateRangeEnd,
                blockRangeBegin, blockRangeEnd, signature]) => {
@@ -268,14 +268,14 @@ export class ExtrinsicListComponent extends PaginatedListComponentBase<pst.Extri
 
   loadExtrinsicsFilters(network: string, specVersion?: number): void {
     this.rs.getRuntime(network, specVersion).pipe(
-      takeUntil(this.destroyer),
       filter((r) => r !== null),
       switchMap((runtime) =>
         combineLatest([
-          this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion).pipe(takeUntil(this.destroyer)),
-          this.rs.getRuntimeCalls(network, (runtime as pst.Runtime).specVersion).pipe(takeUntil(this.destroyer))
+          this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion),
+          this.rs.getRuntimeCalls(network, (runtime as pst.Runtime).specVersion)
         ])
-      )
+      ),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: ([pallets, calls]): void => {
         if (pallets) {

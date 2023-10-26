@@ -50,12 +50,10 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Get the network.
     const runtimeObservable = this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       filter(network => !!network),
       first(),
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
-        takeUntil(this.destroyer),
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
@@ -72,13 +70,12 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
       )),
       switchMap(([specName, specVersion, pallet, constantName]) =>
         this.rs.getRuntime(specName, specVersion).pipe(
-          takeUntil(this.destroyer),
           map(runtime => [runtime as pst.Runtime, pallet, constantName])
-        ))
+        )),
+      takeUntil(this.destroyer)
     );
 
     this.constant = runtimeObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchConstantStatus.next(null)
       }),
@@ -87,7 +84,6 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
           return of(null);
         }
         return this.rs.getRuntimeConstants(runtime.specName, runtime.specVersion).pipe(
-          takeUntil(this.destroyer),
           map((constants) => {
             const palletConstant: pst.RuntimeConstant = constants.filter(s =>
               s.pallet.toLowerCase() === pallet.toLowerCase() && s.constantName.toLowerCase() === constantName.toLowerCase()
@@ -110,7 +106,8 @@ export class RuntimeConstantDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchConstantStatus.next('error');
         return of(null);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
   }
 

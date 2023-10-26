@@ -52,26 +52,23 @@ export class EventDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const paramsObservable = this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       // Network must be set.
       filter(network => !!network),
       // Only need to load once.
       first(),
       // Switch over to the route param from which we extract the extrinsic keys.
       switchMap(() => this.route.params.pipe(
-        takeUntil(this.destroyer),
         map(params => params['id'].split('-').map((v: string) => parseInt(v, 10)))
-      ))
+      )),
+      takeUntil(this.destroyer)
     )
 
     this.event = paramsObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchEventStatus.next('loading')
       }),
       switchMap(([blockNr, eventIdx]) =>
         this.pa.run().getEvent(blockNr, eventIdx).pipe(
-          takeUntil(this.destroyer),
           switchMap((obs) => obs),
           map((event) => {
             if (event) {
@@ -85,7 +82,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchEventStatus.next('error');
         return of(null);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
 
     this.eventAttributes = this.event.pipe(
@@ -111,11 +109,9 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       switchMap((event) => {
         if (event && event.specVersion && event.eventModule && event.eventName) {
           return this.rs.getRuntime(this.ns.currentNetwork.value, event.specVersion).pipe(
-            takeUntil(this.destroyer),
             filter((r) => !!r),
             switchMap(() =>
               this.rs.getRuntimeEventAttributes(this.ns.currentNetwork.value, event.specVersion as number, event.eventModule as string, event.eventName as string).pipe(
-                takeUntil(this.destroyer),
                 map((items) => Array.isArray(items) ? items : null)
               )
             )
@@ -126,7 +122,8 @@ export class EventDetailComponent implements OnInit, OnDestroy {
       }),
       catchError((e) => {
         return of(null);
-      })
+      }),
+      takeUntil(this.destroyer),
     );
   }
 

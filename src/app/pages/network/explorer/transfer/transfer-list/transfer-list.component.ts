@@ -85,7 +85,6 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
 
   ngOnInit(): void {
     this.route.queryParamMap.pipe(
-      takeUntil(this.destroyer),
       distinctUntilChanged(),
       map(params => [
         params.get('dateRangeBegin') ? new Date(`${params.get('dateRangeBegin') as string}T00:00`) : '',
@@ -93,7 +92,8 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
         parseInt(params.get('blockRangeBegin') as string, 10) || '',
         parseInt(params.get('blockRangeEnd') as string, 10) || '',
         params.get('address') as string || ''
-      ] as [Date | '', Date | '', number | '', number | '', string])
+      ] as [Date | '', Date | '', number | '', number | '', string]),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: ([dateRangeBegin, dateRangeEnd, blockRangeBegin, blockRangeEnd, address]) => {
         const oldDateStart = this.dateRangeBeginControl.value;
@@ -277,12 +277,12 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
 
   fetchAndCacheRpcEvent(eventOrTransfer: pst.Event | pst.AccountEvent | pst.Transfer) {
     return this.pa.run({adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
-      takeUntil(this.destroyer),
       switchMap((obs => obs)),
       shareReplay({
         bufferSize: 1,
         refCount: true
-      })
+      }),
+      takeUntil(this.destroyer)
     );
   }
 

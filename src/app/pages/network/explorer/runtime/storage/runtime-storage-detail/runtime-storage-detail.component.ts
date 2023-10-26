@@ -48,12 +48,10 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Get the network.
     const observable = this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       filter(network => !!network),
       first(),
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
-          takeUntil(this.destroyer),
           map(params => {
             const lastIndex = params['runtime'].lastIndexOf('-');
             const specName = params['runtime'].substring(0, lastIndex);
@@ -61,7 +59,8 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
             return [specName, parseInt(specVersion, 10), params['pallet'], params['storageName']];
           })
         )
-      )
+      ),
+      takeUntil(this.destroyer)
     )
 
     this.runtime = observable.pipe(
@@ -78,10 +77,9 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
       }),
       switchMap(([specName, specVersion, pallet, storageName]) =>
         this.rs.getRuntime(specName, specVersion).pipe(
-          takeUntil(this.destroyer),
           filter(r => r !== null),
           first(),
-          map(runtime => [runtime as pst.Runtime, pallet, storageName])
+          map(runtime => [runtime as pst.Runtime, pallet, storageName]),
         )
       ),
       switchMap(([runtime, pallet, storageName]) => this.rs.getRuntimeStorages(runtime.specName, runtime.specVersion).pipe(
@@ -100,7 +98,8 @@ export class RuntimeStorageDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchStorageStatus.next('error');
         return of(null);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
   }
 

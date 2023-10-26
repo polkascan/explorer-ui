@@ -115,15 +115,12 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Wait for network to be set.
     const idObservable = this.id = this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       // Only continue if a network is set.
       filter(network => !!network),
       // We don't have to wait for further changes to network, so terminate after first.
       first(),
       // Switch to the route param, from which we get the block number.
-      switchMap(() => this.route.params.pipe(
-        takeUntil(this.destroyer)
-      )),
+      switchMap(() => this.route.params),
       map(params => params['id']),
       filter(id => !!id),
       distinctUntilChanged(),
@@ -165,7 +162,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       shareReplay({
         bufferSize: 1,
         refCount: true
-      })
+      }),
+      takeUntil(this.destroyer)
     ) as Observable<string | null>;
 
     // Remove all active subscriptions when id changes.
@@ -198,11 +196,11 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       switchMap((id) =>
         id
           ? this.pa.run({observableResults: false}).getAccount(id).pipe(
-            takeUntil(this.destroyer),
             startWith(null),
             map((account) => account ? account : null)
           )
-          : of(null))
+          : of(null)),
+      takeUntil(this.destroyer)
     );
 
     this.address = idObservable.pipe(
@@ -222,7 +220,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
             }
           }
 
-
           return id || '';
         }
       )
@@ -232,11 +229,11 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       switchMap((id) =>
         id
           ? this.pa.run({observableResults: false}).getIndexFromAccountId(id).pipe(
-            takeUntil(this.destroyer),
             startWith(null)
           )
           : of(null)
-      )
+      ),
+      takeUntil(this.destroyer)
     )
 
     this.accountNonce = this.account.pipe(
@@ -251,20 +248,20 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.subsOf = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountChildrenIds(id).pipe(
-          takeUntil(this.destroyer),
           startWith([])
         )
-        : of([]))
+        : of([])),
+      takeUntil(this.destroyer)
     );
 
     this.accountInfo = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountInformation(id).pipe(
-          takeUntil(this.destroyer),
           startWith(null)
         )
-        : of(null))
-    ) as Observable<pst.AccountInformation>;
+        : of(null)),
+      takeUntil(this.destroyer)
+    );
 
     this.identity = this.accountInfo.pipe(
       map((info) => info ? info.identity : null)
@@ -273,28 +270,29 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
     this.accountFlags = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountFlags(id).pipe(
-          takeUntil(this.destroyer),
           startWith(null)
         )
-        : of(null))
+        : of(null)),
+      takeUntil(this.destroyer)
     );
 
     this.AccountBalances = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountBalances(id).pipe(
-          takeUntil(this.destroyer),
           startWith(null)
         )
-        : of(null))
+        : of(null)),
+      takeUntil(this.destroyer)
+
     );
 
     this.stakingInfo = idObservable.pipe(
       switchMap((id) => id
         ? this.pa.run({observableResults: false}).getAccountStaking(id).pipe(
-          takeUntil(this.destroyer),
           startWith(null)
         )
-        : of(null))
+        : of(null)),
+      takeUntil(this.destroyer)
     );
 
     this.accountBalances = combineLatest(
@@ -307,7 +305,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           return of(undefined);
         }))
     ).pipe(
-      takeUntil(this.destroyer),
       map(([accountBalances, stakingInfo]) => {
         const balances: any = {};
         if (accountBalances) {
@@ -323,7 +320,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           balances.unbonding = stakingInfo.unbonding;
         }
         return balances;
-      })
+      }),
+      takeUntil(this.destroyer)
     );
 
     this.parentId = idObservable.pipe(
@@ -349,7 +347,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       this.subsOf,
       this.parentSubsOf
     ).pipe(
-      takeUntil(this.destroyer),
       switchMap(([subsOfIds, parentSubsOfIds]) => {
         const subs = subsOfIds && subsOfIds.length ? subsOfIds : parentSubsOfIds && parentSubsOfIds.length ? parentSubsOfIds : [];
         const observables: Observable<any>[] = subs.map((subId: any) =>
@@ -357,7 +354,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         )
 
         return observables.length ? combineLatest(observables) : of([]);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
 
     this.subs = combineLatest(
@@ -369,7 +367,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       ),
       this.subsNames
     ).pipe(
-      takeUntil(this.destroyer),
       map(([subsOf, parentSubsOf, subsNames]) => {
         const subs = subsOf.length ? subsOf : parentSubsOf.length ? parentSubsOf : [];
         const map = new Map();
@@ -377,7 +374,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           map.set(sub, subsNames[i]);
         })
         return map;
-      })
+      }),
+      takeUntil(this.destroyer)
     )
 
     this.accountJudgement = this.accountInfo.pipe(
@@ -395,7 +393,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         return '';
       }),
       catchError((e) => of(''))
-    )
+    ),
+    takeUntil(this.destroyer)
   }
 
 
@@ -407,7 +406,6 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
       signed: 1,
       multiAddressAccountId: idHex
     }, listSize).pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => {
           this.signedExtrinsicsLoading.next(true);
@@ -416,7 +414,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
           this.signedExtrinsicsLoading.next(false);
         }
       }),
-      switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+      switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: (items) => {
         extrinsics = [
@@ -439,8 +438,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
         signed: 1,
         multiAddressAccountId: idHex
       }).pipe(
-      takeUntil(this.destroyer),
-      switchMap((obs) => obs)
+      switchMap((obs) => obs),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: (extrinsic: pst.Extrinsic) => {
         const extrinsics = this.signedExtrinsics.value;
@@ -458,8 +457,8 @@ export class AccountDetailComponent implements OnInit, OnDestroy {
 
   fetchTaggedAccounts(accountIdHex: string): void {
     this.pa.run().getTaggedAccount(accountIdHex).pipe(
-      takeUntil(this.destroyer),
       switchMap((obs) => obs ? obs : EMPTY),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: (account: pst.TaggedAccount) => this.polkascanAccountInfo.next(account)
     });

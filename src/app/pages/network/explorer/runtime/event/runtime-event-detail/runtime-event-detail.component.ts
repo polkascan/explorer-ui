@@ -54,12 +54,10 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Get the network.
     const runtimeObservable = this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       filter(network => !!network),
       first(),
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
-        takeUntil(this.destroyer),
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
@@ -76,18 +74,17 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
       )),
       switchMap(([specName, specVersion, pallet, eventName]) =>
         this.rs.getRuntime(specName, specVersion).pipe(
-          takeUntil(this.destroyer),
           map(runtime => [runtime as pst.Runtime, pallet, eventName])
         )
       ),
       shareReplay({
         bufferSize: 1,
         refCount: true
-      })
+      }),
+      takeUntil(this.destroyer)
     );
 
     this.event = runtimeObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchEventStatus.next('loading')
       }),
@@ -108,11 +105,11 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchEventStatus.next('error');
         return of(null);
-      })
+      }),
+      takeUntil(this.destroyer),
     )
 
     this.eventAttributes = runtimeObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchEventAttributesStatus.next('loading')
       }),
@@ -140,7 +137,8 @@ export class RuntimeEventDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchEventAttributesStatus.next('error');
         return of([]);
-      })
+      }),
+      takeUntil(this.destroyer)
     )
   }
 
