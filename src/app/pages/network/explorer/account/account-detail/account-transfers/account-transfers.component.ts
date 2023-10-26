@@ -364,7 +364,6 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
 
     const observable = cachedEvent.pipe(
       map((event) => {
-        console.log(event)
         if (event.attributeName) {
           return event.attributeName;
         }

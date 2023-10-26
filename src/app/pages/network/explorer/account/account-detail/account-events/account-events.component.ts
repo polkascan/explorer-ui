@@ -284,7 +284,6 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
         if (event.attributes && Array.isArray(event.attributes)) {
           if (event.meta && event.meta.fields) {
             event.meta.fields.forEach((field: any, attrIndex: any) => {
-              console.log(field, event.attributes![attrIndex])
               if (attrNames.indexOf(field.name) > -1 && event.attributes![attrIndex]) {
                 foundAmounts.push([field.name, new BN(event.attributes![attrIndex])])
               }
