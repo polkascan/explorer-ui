@@ -275,6 +275,16 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 
+  fetchAndCacheRpcEvent(eventOrTransfer: pst.Event | pst.AccountEvent | pst.Transfer) {
+    return this.pa.run({adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
+      takeUntil(this.destroyer),
+      switchMap((obs => obs)),
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      })
+    );
+  }
 
   getAmountsFromEvent(eventOrTransfer: pst.Event | pst.AccountEvent | pst.Transfer): Observable<eventAmounts> {
     const key = `${eventOrTransfer.blockNumber}_${eventOrTransfer.eventIdx}`;
@@ -322,14 +332,7 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
 
     // Lastly fetch from the RPC.
     if (!cachedEvent) {
-      cachedEvent = this.pa.run({adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
-        takeUntil(this.destroyer),
-        switchMap((obs => obs)),
-        shareReplay({
-          bufferSize: 1,
-          refCount: true
-        })
-      )
+      cachedEvent = this.fetchAndCacheRpcEvent(eventOrTransfer);
       this.rpcEventsCache.set(key, cachedEvent)
     }
 
@@ -384,14 +387,7 @@ export class TransferListComponent extends PaginatedListComponentBase<pst.Event 
 
     // Lastly fetch from the RPC.
     if (!cachedEvent) {
-      cachedEvent = this.pa.run({adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
-        takeUntil(this.destroyer),
-        switchMap((obs => obs)),
-        shareReplay({
-          bufferSize: 1,
-          refCount: true
-        })
-      );
+      cachedEvent = this.fetchAndCacheRpcEvent(eventOrTransfer);
       this.rpcEventsCache.set(key, cachedEvent);
     }
 

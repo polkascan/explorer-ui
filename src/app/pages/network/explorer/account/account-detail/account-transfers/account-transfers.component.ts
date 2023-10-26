@@ -42,9 +42,10 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
   @Input() address: string;
   @Input() listSize: number;
 
-  rpcEventsCache = new Map<string, Observable<pst.Event>>
+  rpcEventsCache = new Map<string, Observable<pst.Event & { attributeName?: string }>>
   amountsCache = new Map<string, Observable<eventAmounts>>
   addressesCache = new Map<string, Observable<eventAddresses>>
+  directionCache = new Map<string, Observable<string | null>>
 
   eventTypes: { [pallet: string]: string[] } = {'Balances': ['Transfer']}
   events = new BehaviorSubject<(pst.AccountEvent | pst.Transfer)[]>([]);
@@ -137,7 +138,6 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
           const isDuplicate = events.some((item) =>
             event.blockNumber === item.blockNumber
             && event.eventIdx === item.eventIdx
-            && event.attributeName === item.attributeName
           );
           return !isDuplicate;
         })];
@@ -164,7 +164,7 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
         if (events && !events.some((e) =>
           e.blockNumber === event.blockNumber
           && e.eventIdx === event.eventIdx
-          && e.attributeName === event.attributeName)) {
+        )) {
           const merged = [event, ...events];
           merged.sort((a, b) => (b.blockNumber - a.blockNumber || b.eventIdx - a.eventIdx));
 
@@ -182,8 +182,28 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 
+  fetchAndCacheRpcEvent(eventOrTransfer: pst.Event | pst.AccountEvent | pst.Transfer) {
+    return this.pa.run({adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
+      takeUntil(this.destroyer),
+      switchMap((obs => obs)),
+      map((event) => {
+        if (event.attributes && event.attributes[0] && event.attributes[1]) {
+          const direction = event.attributes[0] === this.address ? 'from' : event.attributes[1] === this.address ? 'to' : null;
+          if (direction) {
+            event = Object.assign({attributeName: direction}, event);
+          }
+        }
+        return event as pst.Event & { attributeName?: string };
+      }),
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      })
+    );
+  }
+
   getAmountsFromEvent(eventOrTransfer: pst.AccountEvent | pst.Transfer): Observable<eventAmounts> {
-   const key = `${eventOrTransfer.blockNumber}_${eventOrTransfer.eventIdx}`;
+    const key = `${eventOrTransfer.blockNumber}_${eventOrTransfer.eventIdx}`;
     let cachedAmount = this.amountsCache.get(key);
     let cachedEvent = this.rpcEventsCache.get(key);
 
@@ -228,14 +248,7 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
 
     // Lastly fetch from the RPC.
     if (!cachedEvent) {
-      cachedEvent = this.pa.run({adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
-        takeUntil(this.destroyer),
-        switchMap((obs => obs)),
-        shareReplay({
-          bufferSize: 1,
-          refCount: true
-        })
-      )
+      cachedEvent = this.fetchAndCacheRpcEvent(eventOrTransfer);
       this.rpcEventsCache.set(key, cachedEvent)
     }
 
@@ -267,7 +280,7 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
     }
 
     // First check if there is a Transfer available.
-    if ((eventOrTransfer as pst.Transfer).hasOwnProperty('from') && (eventOrTransfer as pst.Transfer).hasOwnProperty('to')) {
+    if ((eventOrTransfer as pst.Transfer).from && (eventOrTransfer as pst.Transfer).to) {
       const addresses: eventAddresses = [(eventOrTransfer as pst.Transfer).from, (eventOrTransfer as pst.Transfer).to];
       const observable = of(addresses);
       this.addressesCache.set(key, observable);
@@ -287,17 +300,9 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
       }
     }
 
-
     // Lastly fetch from the RPC.
     if (!cachedEvent) {
-      cachedEvent = this.pa.run({adapters: ['substrate-rpc']}).getEvent(eventOrTransfer.blockNumber, eventOrTransfer.eventIdx).pipe(
-        takeUntil(this.destroyer),
-        switchMap((obs => obs)),
-        shareReplay({
-          bufferSize: 1,
-          refCount: true
-        })
-      );
+      cachedEvent = this.fetchAndCacheRpcEvent(eventOrTransfer);
       this.rpcEventsCache.set(key, cachedEvent);
     }
 
@@ -315,6 +320,65 @@ export class AccountTransfersComponent implements OnChanges, OnDestroy {
     );
 
     this.addressesCache.set(key, observable);
+    return observable;
+  }
+
+  getDirectionFromEvent(eventOrTransfer: pst.AccountEvent | pst.Event | pst.Transfer): Observable<string | null> {
+    const key = `${eventOrTransfer.blockNumber}_${eventOrTransfer.eventIdx}`;
+    let cachedDirection = this.directionCache.get(key);
+    let cachedEvent = this.rpcEventsCache.get(key);
+
+    if (cachedDirection) {
+      return cachedDirection;
+    }
+
+    // First check if there is a Transfer available.
+    if ((eventOrTransfer as pst.Transfer | pst.AccountEvent).attributeName) {
+      const observable = of((eventOrTransfer as pst.Transfer).attributeName as string);
+      this.directionCache.set(key, observable);
+      return observable;
+    }
+
+    // Second check if there is an AccountEvent or Event with attributes available.
+    const attributes = (eventOrTransfer as pst.Event | pst.AccountEvent).attributes
+    if (attributes) {
+      const data: any = typeof attributes === 'string'
+        ? JSON.parse(attributes)
+        : attributes;
+      if (data.from && data.to) {
+        let observable: Observable<string> | undefined;
+        if (data.from === this.address) {
+          observable = of('from');
+        } else if (data.to === this.address) {
+          observable = of('to');
+        }
+        if (observable) {
+          this.directionCache.set(key, observable);
+          return observable;
+        }
+      }
+    }
+
+    // Lastly fetch from the RPC.
+    if (!cachedEvent) {
+      cachedEvent = this.fetchAndCacheRpcEvent(eventOrTransfer);
+    }
+
+    const observable = cachedEvent.pipe(
+      map((event) => {
+        console.log(event)
+        if (event.attributeName) {
+          return event.attributeName;
+        }
+        return null;
+      }),
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      })
+    );
+
+    this.directionCache.set(key, observable);
     return observable;
   }
 
