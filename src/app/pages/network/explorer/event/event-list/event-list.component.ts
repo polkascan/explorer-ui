@@ -25,7 +25,7 @@ import { RuntimeService } from '../../../../../services/runtime/runtime.service'
 import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, Subscription, take } from 'rxjs';
 import { BN, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 
@@ -63,8 +63,10 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
     address: this.addressControl,
   });
 
-  visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'amount', 'details'];
-  visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'amount', 'details'];
+  visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'details'];
+  visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'details'];
+  // visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'amount', 'details'];
+  // visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'amount', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
@@ -205,6 +207,14 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
           this.eventNameControl.reset('', {emitEvent: false});
         }
       });
+
+    // TEMPORARILY CHANGE THE TABLE BECAUSE SUBSQUID DOES NOT HAVE CORRECT ATTRIBUTES AT THE MOMENT.
+    this.pa.explorerRegistered.pipe(takeUntil(this.destroyer), take(1)).subscribe((registered) => {
+      if (registered === true) {
+        this.visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'amount', 'details'];
+        this.visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'amount', 'details'];
+      }
+    })
 
     super.ngOnInit();
   }
