@@ -108,10 +108,10 @@ export class NetworkService {
 
       this.pa.run({observableResults: false}).getChainProperties()
         .pipe(
-          filter((properties) => Boolean((properties.name || properties.systemName) && properties.specName))
+          filter((properties) => Boolean((properties.systemName) && properties.specName))
         ).subscribe({
         next: (properties: types.ChainProperties) => {
-          const name: string = (properties.name ? properties.name : properties.systemName) as string;
+          const name: string = properties.systemName as string;
           const ss58Format: number = properties.chainSS58 ?? this.defaultSS58;
           const tokenSymbol: string = (properties.chainTokens && properties.chainTokens[0]) ?? this.defaultSymbol;
           const tokenDecimals: number = (properties.chainDecimals && properties.chainDecimals[0]) ?? this.defaultDecimals;

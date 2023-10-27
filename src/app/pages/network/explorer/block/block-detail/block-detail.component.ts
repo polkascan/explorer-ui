@@ -49,15 +49,12 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Wait for network to be set.
     this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       // Only continue if a network is set.
       filter(network => !!network),
       // We don't have to wait for further changes to network, so terminate after first.
       first(),
       // Switch to the route param, from which we get the block number.
-      switchMap(() => this.route.params.pipe(
-        takeUntil(this.destroyer),
-      )),
+      switchMap(() => this.route.params),
       tap(() => {
         this.invalidHash.next(false);
       }),
@@ -88,10 +85,10 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
           })
         )
       ]).pipe(
-        takeUntil(this.destroyer),
         // Stop watching when this block is finalized.
         takeWhile(result => !result[0].finalized),
-      ))
+      )),
+      takeUntil(this.destroyer)
     ).subscribe();
 
 
@@ -108,14 +105,14 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
               blockRangeBegin: block.number,
               blockRangeEnd: block.number
             }, 300)),
-            takeUntil(this.destroyer),
             takeWhile((extrinsics) => block.countExtrinsics! > extrinsics.length, true),
             switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
             startWith([])
           )
         }
         return of([]);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
 
     this.events = this.block.pipe(
@@ -131,14 +128,14 @@ export class BlockDetailComponent implements OnInit, OnDestroy {
               blockRangeBegin: block.number,
               blockRangeEnd: block.number
             }, 300)),
-            takeUntil(this.destroyer),
             takeWhile((events) => block.countEvents! > events.length, true),
             switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
             startWith([])
           )
         }
         return of([]);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
   }
 

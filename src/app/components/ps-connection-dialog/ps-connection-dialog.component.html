@@ -94,26 +94,6 @@
 
   <form *ngIf="(subsquidUrls | async) as urls">
     <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
-      <mat-label>Subsquid Archive URL</mat-label>
-      <input disabled
-             type="text"
-             placeholder="Not set"
-             aria-label="URL"
-             matInput
-             [value]="urls.archiveUrl">
-    </mat-form-field>
-
-    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
-      <mat-label>Subsquid Explorer URL</mat-label>
-      <input disabled
-             type="text"
-             placeholder="Not set"
-             aria-label="URL"
-             matInput
-             [value]="urls.explorerUrl">
-    </mat-form-field>
-
-    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
       <mat-label>Subsquid Giant Squid Explorer URL</mat-label>
       <input disabled
              type="text"
@@ -131,6 +111,16 @@
              aria-label="URL"
              matInput
              [value]="urls.giantSquidMainUrl">
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" style="width: 300px; margin-right: 10px;">
+      <mat-label>Subsquid Giant Squid Stats URL</mat-label>
+      <input disabled
+             type="text"
+             placeholder="Not set"
+             aria-label="URL"
+             matInput
+             [value]="urls.giantSquidStatsUrl">
     </mat-form-field>
   </form>
 

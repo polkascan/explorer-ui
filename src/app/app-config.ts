@@ -20,11 +20,10 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 export type SubsquidConfig = {
-  archiveUrl: string,
-  explorerUrl: string;
   giantSquidExplorerUrl: string;
   giantSquidMainUrl: string;
   giantSquidStatsUrl: string;
+  metaDataUrl: string;
 }
 
 export type NetworkSpecs = {

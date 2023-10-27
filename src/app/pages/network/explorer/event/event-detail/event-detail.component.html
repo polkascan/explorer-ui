@@ -49,21 +49,21 @@
       <tr>
         <td class="detail-table--label-cell">Pallet</td>
         <td><a
-          [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion + '/pallet/' + event.eventModule">{{event.eventModule}}</a>
+          [routerLink]="'../../runtime/' + (event.specName || props.specName) + '-' + event.specVersion + '/pallet/' + event.eventModule">{{event.eventModule}}</a>
         </td>
       </tr>
 
       <tr>
         <td class="detail-table--label-cell">Event name</td>
         <td><a
-          [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion + '/pallet/' + event.eventModule + '/event/' + event.eventName">{{event.eventName}}</a>
+          [routerLink]="'../../runtime/' + (event.specName || props.specName) + '-' + event.specVersion + '/pallet/' + event.eventModule + '/event/' + event.eventName">{{event.eventName}}</a>
         </td>
       </tr>
 
       <tr>
         <td class="detail-table--label-cell">Runtime</td>
         <td><a
-          [routerLink]="'../../runtime/' + event.specName + '-' + event.specVersion">{{event.specName + '-' + event.specVersion}}</a>
+          [routerLink]="'../../runtime/' + (event.specName || props.specName) + '-' + event.specVersion">{{(event.specName || props.specName) + '-' + event.specVersion}}</a>
         </td>
       </tr>
 

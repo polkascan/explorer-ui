@@ -72,8 +72,8 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
     this.networkConfig = this.config.networks;
     this.vars.network
       .pipe(
-        takeUntil(this.destroyer),
-        distinctUntilChanged()
+        distinctUntilChanged(),
+        takeUntil(this.destroyer)
       )
       .subscribe({
         next: (network) => {
@@ -87,7 +87,6 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
       });
 
     this.searchForm.controls.search.valueChanges.pipe(
-      takeUntil(this.destroyer),
       map(value => value ? value.trim() : value),
       distinctUntilChanged(),
       tap(value => {
@@ -187,7 +186,8 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
           }
         }
         return of([value]);
-      })
+      }),
+      takeUntil(this.destroyer)
     ).subscribe((values) => {
       if (this.searching.value) {
         let items: {type: string, value: string, display?: string}[] = [];

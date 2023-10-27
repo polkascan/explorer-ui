@@ -78,17 +78,17 @@
     </ng-container>
 
     <ng-container matColumnDef="referencedTransaction">
-      <th mat-header-cell *matHeaderCellDef>Extrinsic</th>
+      <th mat-header-cell *matHeaderCellDef>Event</th>
       <td mat-cell *matCellDef="let event">
-        <a *ngIf="event.extrinsicIdx !== null && event.extrinsicIdx !== undefined" [routerLink]="'../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber + '-' + event.extrinsicIdx}}</a>
+        <a *ngIf="event.eventIdx !== null && event.eventIdx !== undefined" [routerLink]="'../event/' + event.blockNumber + '-' + event.eventIdx">{{event.blockNumber + '-' + event.eventIdx}}</a>
       </td>
     </ng-container>
 
     <ng-container matColumnDef="fromAddress">
       <th mat-header-cell *matHeaderCellDef>From</th>
       <td mat-cell *matCellDef="let event">
-        <ng-container *ngIf="getAddressFromEvent(event, 'from') as address">
-          <account-id [address]="address" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+        <ng-container *ngIf="getAddressFromEvent(event) | async as addresses">
+          <account-id [address]="addresses[0]" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
         </ng-container>
       </td>
     </ng-container>
@@ -101,8 +101,8 @@
     <ng-container matColumnDef="toAddress">
       <th mat-header-cell *matHeaderCellDef>To</th>
       <td mat-cell *matCellDef="let event">
-        <ng-container *ngIf="getAddressFromEvent(event, 'to') as address">
-          <account-id [address]="address" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+        <ng-container *ngIf="getAddressFromEvent(event) | async as addresses">
+          <account-id [address]="addresses[1]" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
         </ng-container>
       </td>
     </ng-container>
@@ -110,7 +110,7 @@
     <ng-container matColumnDef="amount">
       <th mat-header-cell *matHeaderCellDef>Amount</th>
       <td mat-cell *matCellDef="let event">
-        <ng-container *ngFor="let nameAndAmount of getAmountsFromAttributes(event.attributes)">
+        <ng-container *ngFor="let nameAndAmount of getAmountsFromEvent(event) | async">
           <balance [value]="nameAndAmount[1]" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
         </ng-container>
       </td>
@@ -119,7 +119,7 @@
     <ng-container matColumnDef="details">
       <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
       <td mat-cell *matCellDef="let event">
-        <a [routerLink]="'../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx"><span class="material-icons">chevron_right</span></a>
+        <a [routerLink]="'../event/' + event.blockNumber + '-' + event.eventIdx"><span class="material-icons">chevron_right</span></a>
       </td>
     </ng-container>
 

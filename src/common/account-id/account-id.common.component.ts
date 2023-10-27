@@ -182,11 +182,9 @@ export class AccountIdCommonComponent implements OnInit, OnChanges, OnDestroy {
         }
         const apiPromise = this.pa.availableAdapters[network as string].substrateRpc!.apiPromise;
         return from(apiPromise).pipe(
-          takeUntil(this.destroyer),
-          switchMap((api) => api.derive.accounts.info(address).pipe(
-              takeUntil(this.destroyer)
-            ) as Observable<DeriveAccountInfo>
-          ));
+          switchMap((api) => api.derive.accounts.info(address) as Observable<DeriveAccountInfo>),
+          takeUntil(this.destroyer)
+        );
       })
     );
 

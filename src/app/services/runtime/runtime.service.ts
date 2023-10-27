@@ -166,7 +166,10 @@ export class RuntimeService {
             combineLatest(items.map(
               runtime => this.pa.run().getRuntime(runtime.specName, runtime.specVersion)
             )).pipe(
-              switchMap(runtimes => merge(...runtimes.map(r => r.pipe(last())))),
+              switchMap(runtimes => merge(...runtimes.map(r => r.pipe(
+                  filter((runtime) => runtime.countPallets !== undefined),
+                  take(1)
+              )))),
             ).subscribe((runtime: types.Runtime) => {
               bs.getValue().forEach(r => {
                 if (r.specName === runtime.specName && r.specVersion === runtime.specVersion) {

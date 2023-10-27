@@ -25,6 +25,7 @@ import { AccountRoutingModule } from './account-routing.module';
 import { AccountDetailComponent } from './account-detail/account-detail.component';
 import { HistoricalBalanceComponent } from './historical-balance/historical-balance.component';
 import { AccountEventsComponent } from './account-detail/account-events/account-events.component';
+import { AccountTransfersComponent } from './account-detail/account-transfers/account-transfers.component';
 
 import { HighchartsChartModule } from 'highcharts-angular';
 
@@ -38,12 +39,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 
-
-
 @NgModule({
   declarations: [
     AccountDetailComponent,
     AccountEventsComponent,
+    AccountTransfersComponent,
     HistoricalBalanceComponent
   ],
   imports: [

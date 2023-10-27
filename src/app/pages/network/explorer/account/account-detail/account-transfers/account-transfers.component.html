@@ -48,32 +48,32 @@
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="extrinsic">
-      <th mat-header-cell *matHeaderCellDef>Extrinsic</th>
+    <ng-container matColumnDef="direction">
+      <th mat-header-cell *matHeaderCellDef>Direction</th>
       <td mat-cell *matCellDef="let event">
-        <a *ngIf="event.extrinsicIdx !== null && event.extrinsicIdx !== undefined" [routerLink]="'../../extrinsic/' + event.blockNumber + '-' + event.extrinsicIdx">{{event.blockNumber + '-' + event.extrinsicIdx}}</a>
+        <ng-container *ngIf="getDirectionFromEvent(event) | async as direction">
+          <ng-container *ngIf="direction === 'from'">
+            Send To
+          </ng-container>
+          <ng-container *ngIf="direction === 'to'">
+            Receive From
+          </ng-container>
+        </ng-container>
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="pallet">
-      <th mat-header-cell *matHeaderCellDef>Pallet</th>
+    <ng-container matColumnDef="address">
+      <th mat-header-cell *matHeaderCellDef>Address</th>
       <td mat-cell *matCellDef="let event">
-        {{event.pallet}}
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="event">
-      <th mat-header-cell *matHeaderCellDef>Event Name</th>
-      <td mat-cell *matCellDef="let event">
-        {{event.eventName}}
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="attribute">
-      <th mat-header-cell *matHeaderCellDef>Attribute With Account</th>
-      <td mat-cell *matCellDef="let event">
-        <ng-container *ngIf="getAccountAttributeName(event) | async as name">
-          {{name}}
+        <ng-container *ngIf="getAddressFromEvent(event) | async as addresses">
+          <ng-container *ngIf="getDirectionFromEvent(event) | async as direction">
+            <ng-container *ngIf="direction === 'from'">
+              <account-id [address]="addresses[1]" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+            </ng-container>
+            <ng-container *ngIf="direction === 'to'">
+              <account-id [address]="addresses[0]" [iconSize]="32" [iconTheme]="props.iconTheme" [ss58Prefix]="props.ss58Format"></account-id>
+            </ng-container>
+          </ng-container>
         </ng-container>
       </td>
     </ng-container>
@@ -81,19 +81,16 @@
     <ng-container matColumnDef="amount">
       <th mat-header-cell *matHeaderCellDef>Amount</th>
       <td mat-cell *matCellDef="let event">
-        <ng-container *ngIf="getAccountAttributeName(event) | async as name">
-          <ng-container *ngIf="name === 'from'">-</ng-container>
+        <ng-container *ngIf="getDirectionFromEvent(event) | async as direction">
+          <ng-container *ngIf="direction === 'from'">-</ng-container>
         </ng-container>
-        <ng-container *ngIf="(getAmountsFromEvent(event) | async) as amounts">
-          <ng-container *ngFor="let nameAndAmount of amounts">
-            <ng-container *ngIf="nameAndAmount[0] !== 'amount'">{{nameAndAmount[0]}}: </ng-container>
-            <balance [value]="nameAndAmount[1]" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
-          </ng-container>
+        <ng-container *ngFor="let nameAndAmount of (getAmountsFromEvent(event) | async)">
+          <balance [value]="nameAndAmount[1]" [tokenSymbol]="props.tokenSymbol" [tokenDecimals]="props.tokenDecimals"></balance><br>
         </ng-container>
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="details">
+    <ng-container matColumnDef="detailsEvent">
       <th mat-header-cell *matHeaderCellDef class="mat-cell--details-link-cell"></th>
       <td mat-cell *matCellDef="let event">
         <a [routerLink]="'../../event/' + event.blockNumber + '-' + event.eventIdx"><span class="material-icons">chevron_right</span></a>

@@ -106,12 +106,12 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Watch for changes to network, the latest block number and last block data.
     const networkObservable = this.ns.currentNetwork.pipe(
-      // Keep it running until this component is destroyed.
-      takeUntil(this.destroyer),
       // Only continue if a network is set.
       filter(network => !!network),
       // Only continue if the network value has changed.
-      distinctUntilChanged()
+      distinctUntilChanged(),
+      // Keep it running until this component is destroyed.
+      takeUntil(this.destroyer)
     );
 
     // When network has changed, reset the block Array for this component.
@@ -122,7 +122,6 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       // Wait for the first most recent finalized block to arrive from Polkascan.
       switchMap(() => this.ns.blockHarvester.finalizedNumber.pipe(
         timeout(2000),
-        takeUntil(this.destroyer),
         filter(nr => nr > 0),
         first(),
         // Start preloading the latest blocks.
@@ -135,14 +134,12 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       )),
       // Watch for new loaded block numbers from the Substrate node.
       switchMap(() => this.ns.blockHarvester.loadedNumber.pipe(
-        takeUntil(this.destroyer),
         // Only continue if new block number is larger than 0.
         filter(nr => nr > 0)
       )),
       // Watch for changes in new block data.
-      switchMap(nr => this.ns.blockHarvester.blocks[nr].pipe(
-        takeUntil(this.destroyer))
-      )
+      switchMap(nr => this.ns.blockHarvester.blocks[nr]),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: (block) => {
         const newBlockCount: number = block.number - this.latestBlockNumber.value;
@@ -157,9 +154,9 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     // Watch the network variable that changes as soon as another network is *selected* by the user,
     // whereas the currentNetwork variable is only changed after initialization.
     this.vars.network.pipe(
-      takeUntil(this.destroyer),
       filter(network => !!network),
-      distinctUntilChanged()
+      distinctUntilChanged(),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: () => {
         this.latestBlockNumber.next(0);

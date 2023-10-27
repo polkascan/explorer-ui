@@ -67,19 +67,18 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Get the network.
     const paramsObservable = this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       filter(network => network !== ''),
       first(),
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
-        takeUntil(this.destroyer),
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
           const specVersion = params['runtime'].substring(lastIndex + 1);
           return [specName, parseInt(specVersion, 10), params['pallet']];
         })
-      ))
+      )),
+      takeUntil(this.destroyer)
     )
 
     this.runtime = paramsObservable.pipe(
@@ -87,15 +86,12 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     )
 
     const runtimeObservable = paramsObservable.pipe(
-      switchMap(([specName, specVersion]) => {
-        return this.rs.getRuntime(specName as string, specVersion as number).pipe(
-          takeUntil(this.destroyer)
-        )
-      }),
+      switchMap(([specName, specVersion]) => this.rs.getRuntime(specName as string, specVersion as number)),
       catchError((e) => {
         this.fetchRuntimeStatus.next(e);
         return of(null);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
 
     const paramsAndRuntimeObservable = combineLatest(
@@ -104,7 +100,6 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
     );
 
     this.pallet = paramsAndRuntimeObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchPalletStatus.next('loading')
       }),
@@ -113,7 +108,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimePallets(runtime.specName as string, runtime.specVersion as number).pipe(
             map((pallets) => {
-              const matchedPallet: pst.RuntimePallet = pallets.filter(p => p.pallet === pallet)[0];
+              const matchedPallet: pst.RuntimePallet = pallets.filter(p => p.pallet.toLowerCase() === pallet.toLowerCase())[0];
               if (matchedPallet) {
                 this.fetchPalletStatus.next(null);
                 return matchedPallet
@@ -126,11 +121,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchPalletStatus.next('error');
         return of(null);
-      })
+      }),
+      takeUntil(this.destroyer)
     )
 
     this.calls = paramsAndRuntimeObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchCallsStatus.next('loading')
       }),
@@ -139,7 +134,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeCalls(runtime.specName as string, runtime.specVersion as number).pipe(
             map((calls) => {
-              const palletCalls: pst.RuntimeCall[] = calls.filter(c => c.pallet === pallet);
+              const palletCalls: pst.RuntimeCall[] = calls.filter(c => c.pallet.toLowerCase() === pallet.toLowerCase());
               this.fetchCallsStatus.next(null);
               return palletCalls
             })
@@ -149,11 +144,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchCallsStatus.next('error');
         return of([]);
-      })
+      }),
+      takeUntil(this.destroyer)
     )
 
     this.events = paramsAndRuntimeObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchEventsStatus.next('loading')
       }),
@@ -162,7 +157,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeEvents(runtime.specName as string, runtime.specVersion as number).pipe(
             map((events) => {
-              const palletEvents: pst.RuntimeEvent[] = events.filter(e => e.pallet === pallet);
+              const palletEvents: pst.RuntimeEvent[] = events.filter(e => e.pallet.toLowerCase() === pallet.toLowerCase());
               this.fetchEventsStatus.next(null);
               return palletEvents;
             })
@@ -172,11 +167,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchEventsStatus.next('error');
         return of([]);
-      })
+      }),
+      takeUntil(this.destroyer)
     )
 
     this.storages = paramsAndRuntimeObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchStoragesStatus.next('loading')
       }),
@@ -185,7 +180,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeStorages(runtime.specName as string, runtime.specVersion as number).pipe(
             map((storages) => {
-              const palletStorages: pst.RuntimeStorage[] = storages.filter(s => s.pallet === pallet);
+              const palletStorages: pst.RuntimeStorage[] = storages.filter(s => s.pallet.toLowerCase() === pallet.toLowerCase());
               this.fetchStoragesStatus.next(null);
               return palletStorages;
             })
@@ -195,11 +190,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchStoragesStatus.next('error');
         return of([]);
-      })
+      }),
+      takeUntil(this.destroyer)
     )
 
     this.constants = paramsAndRuntimeObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchConstantsStatus.next('loading')
       }),
@@ -208,7 +203,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeConstants(runtime.specName as string, runtime.specVersion as number).pipe(
             map((constants) => {
-              const palletConstants: pst.RuntimeConstant[] = constants.filter(c => c.pallet === pallet);
+              const palletConstants: pst.RuntimeConstant[] = constants.filter(c => c.pallet.toLowerCase() === pallet.toLowerCase());
               this.fetchConstantsStatus.next(null);
               return palletConstants;
             })
@@ -218,11 +213,11 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchConstantsStatus.next('error');
         return of([]);
-      })
+      }),
+      takeUntil(this.destroyer)
     )
 
     this.errorsMessages = paramsAndRuntimeObservable.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchErrorMessagesStatus.next('loading')
       }),
@@ -231,7 +226,7 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
         runtime
           ? this.rs.getRuntimeErrorMessages(runtime.specName as string, runtime.specVersion as number).pipe(
             map((errors) => {
-              const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet === pallet);
+              const palletErrors: pst.RuntimeErrorMessage[] = errors.filter(e => e.pallet.toLowerCase() === pallet.toLowerCase());
               this.fetchErrorMessagesStatus.next(null);
               return palletErrors;
             })
@@ -241,7 +236,8 @@ export class RuntimePalletDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchErrorMessagesStatus.next('error');
         return of([]);
-      })
+      }),
+      takeUntil(this.destroyer)
     )
   }
 
