@@ -58,7 +58,6 @@ export class RuntimeCallDetailComponent implements OnInit, OnDestroy {
       first(),
       // Get the route parameters.
       switchMap(network => this.route.params.pipe(
-
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);

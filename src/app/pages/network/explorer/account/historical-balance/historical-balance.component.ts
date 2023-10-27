@@ -650,7 +650,8 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   async loadMoreItems(): Promise<void> {
     // Keep the item list in live mode. We don't expect items coming in on every block.
     this.lowestBlockNumber.pipe(
-      take(1)
+      take(1),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: (blockNumber) => {
         if (blockNumber !== null) {

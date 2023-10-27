@@ -27,17 +27,7 @@ import { PaginatedListComponentBase } from '../../../../../../common/list-base/p
 import { ActivatedRoute, Params, Router } from '@angular/router';
 import { BN, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
-import {
-  catchError,
-  combineAll,
-  combineLatest,
-  combineLatestAll,
-  combineLatestWith,
-  Observable,
-  of,
-  switchMap,
-  take, tap
-} from 'rxjs';
+import { catchError, Observable, of, switchMap } from 'rxjs';
 
 
 type eventAmounts = [string, BN][];
