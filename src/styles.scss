@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-:root {
+body {
   --ps-top-bar-bg-color: #350659;
   --ps-top-bar-text-color: #FFF;
   --ps-top-bar-logo-text-color: #FFF;
@@ -34,11 +34,16 @@ button, html, input, select, textarea {
 }
 
 body, html {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.5;
   padding: 0;
   margin: 0;
   height: 100%;
+}
+
+body {
+  display: flex;
+  flex-flow: column nowrap;
 }
 
 a {
@@ -203,9 +208,10 @@ mat-divider.mat-divider {
 }
 
 .width-container {
+  display: block;
   margin: 0 auto;
   width: 100%;
   max-width: 1260px;
   box-sizing: border-box;
-  padding: 0 20px;
+  padding: 0 16px;
 }

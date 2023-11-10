@@ -21,7 +21,7 @@ import { RuntimeService } from '../../../../../services/runtime/runtime.service'
 import { BehaviorSubject, Subject } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { NetworkService } from '../../../../../services/network.service';
-import { filter, first, map, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators';
+import { filter, first, map, switchMap, takeUntil, takeWhile } from 'rxjs/operators';
 
 
 @Component({
@@ -44,12 +44,10 @@ export class RuntimeListComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       filter(network => !!network),
       first(),
-      switchMap(network => this.rs.getRuntimes(network).pipe(
-        takeUntil(this.destroyer)
-      ))
+      switchMap(network => this.rs.getRuntimes(network)),
+      takeUntil(this.destroyer),
     ).subscribe({
       next: (runtimes) => {
         for (let runtime of runtimes) {

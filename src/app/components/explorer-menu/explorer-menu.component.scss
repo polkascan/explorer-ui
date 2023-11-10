@@ -17,14 +17,18 @@
  */
 
 
-.explorer-menu__container {
+body .explorer-menu__container {
   height: 50px;
   display: flex;
+  margin: 0 -16px;
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  border-bottom: solid 1px #aaaaaa;
-  background: #fff;
+  background: transparent;
+
+  .mat-mdc-button {
+    --mdc-text-button-label-text-color: #fff;
+  }
 }
 
 .explorer-menu__network-name {

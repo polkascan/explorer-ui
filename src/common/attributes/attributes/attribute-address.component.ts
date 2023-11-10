@@ -45,7 +45,7 @@ import { TooltipsService } from '../../../app/services/tooltips.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AttributeAddressComponent implements OnChanges {
-  @Input() attribute: { type: string, value: HexString | Uint8Array | string };
+  @Input() attribute: { type: string, composition: string, value: HexString | Uint8Array | string };
   @Input() iconTheme: IconTheme;
   @Input() iconSize: number;
   @Input() tokenDecimals: number;
@@ -59,8 +59,16 @@ export class AttributeAddressComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['attribute']) {
-      const value = changes['attribute'].currentValue && changes['attribute'].currentValue.value;
+      let value = changes['attribute'].currentValue && changes['attribute'].currentValue.value;
       let address = '';
+
+      if (this.attribute.composition === 'MultiAddress') {
+        if (Array.isArray(value) && value.length) {
+          if (value[0]?.value) {
+            value = value[0].value;
+          }
+        }
+      }
 
       if (value) {
         try {

@@ -29,9 +29,10 @@ ps-top-bar {
 
 .ps-topbar-container {
   display: flex;
-  height: 50px;
+  height: 56px;
   align-items: center;
   justify-content: flex-end;
+  padding: 0;
 }
 
 .ps-top-bar-brand {
@@ -74,6 +75,17 @@ ps-top-bar {
   animation: breathe 1s infinite;
 }
 
+.ps-topbar-container .ps-top-bar-network-selector.mat-mdc-button {
+  border: solid 1px rgba(255,255,255,.5);
+  color: #fff;
+  height: 40px;
+
+  &:hover {
+    background: white;
+    color: #000;
+  }
+}
+
 .ps-top-bar-network-icon {
   background-size: contain;
   background-repeat: no-repeat;
@@ -93,5 +105,95 @@ ps-top-bar {
 
   path {
     fill: white;
+  }
+}
+
+ps-top-bar .ps-topbar-container {
+  .ps-top-bar-search-form {
+    position: relative;
+    margin: 0 20px;
+    flex: 0 1 50%;
+    color: #000;
+
+    .mat-mdc-form-field {
+      width: 100%;
+
+      .mat-mdc-form-field-infix {
+        padding: 0;
+        min-height: 40px;
+      }
+
+      .mat-mdc-input-element {
+        min-height: 40px;
+      }
+
+      .mat-mdc-text-field-wrapper {
+        border-radius: 4px;
+      }
+
+      .mat-mdc-progress-spinner {
+        --mdc-circular-progress-active-indicator-color: #f354a1;
+      }
+
+      &:not(.mat-focused, .ng-dirty) {
+        .mdc-text-field {
+          background: #f354a1;
+          color: #fff;
+
+          ::placeholder {
+            color: #fff;
+          }
+        }
+
+        .mat-mdc-progress-spinner {
+          --mdc-circular-progress-active-indicator-color: white;
+        }
+      }
+    }
+
+    .mdc-line-ripple:after {
+      border-color: #f354a1;
+    }
+
+    .mat-mdc-form-field-icon-suffix {
+      margin: -4px 0;
+    }
+
+    .mat-mdc-form-field-subscript-wrapper {
+      position: absolute;
+      z-index: 1;
+      top: 100%;
+    }
+
+    .ps-top-bar-search-clear .mat-icon {
+      font-size: 18px;
+      line-height: 24px;
+    }
+  }
+}
+
+.ps-top-bar-search-preview {
+  position: absolute;
+  z-index: 10000;
+  background: #eee;
+  color: #222;
+  right: 0;
+  left: 0;
+  border-radius: 4px;
+}
+
+.ps-top-bar-search-preview-item {
+  display: block;
+  padding: 4px 0;
+}
+
+.ps-top-bar-search-preview-label {
+  margin-right: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+
+  img {
+    vertical-align: bottom;
+    margin-right: 3px;
   }
 }

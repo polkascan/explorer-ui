@@ -121,12 +121,12 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
     // Fetch the block hash for block 1.
     this.blockOne = this.pa.run().getBlockHash(1).pipe(
-      takeUntil(this.destroyer),
-      switchMap((obs) => obs.pipe(takeUntil(this.destroyer))),
+      switchMap((obs) => obs.pipe(takeUntil(this.destroyer))), // Keep takeUntil because child refCount is false
       shareReplay({
         bufferSize: 1,
         refCount: false
-      })
+      }),
+      takeUntil(this.destroyer)
     )
 
     // Start observables for data retrieval and conversion for table and charts.
@@ -217,12 +217,10 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   createItemAtBlockOneObservable(): void {
     // Check if an account has balances at block 1.
     this.itemAtBlockOne = this.listAtEnd.pipe(
-      takeUntil(this.destroyer),
       distinctUntilChanged(),
       switchMap((listAtEnd) =>
         listAtEnd
           ? this.blockOne.pipe(
-            takeUntil(this.destroyer),
             switchMap((hash) => {
               let observable = this.balancesPerBlock.get(1);
               if (observable) {
@@ -234,7 +232,6 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
                 const timestampObservable = this.pa.run({observableResults: false}).getTimestamp(hash);
 
                 return this.pa.run({observableResults: false}).getAccount(this.accountId, hash ? hash : undefined).pipe(
-                  takeUntil(this.destroyer),
                   combineLatestWith(timestampObservable),
                   map(([accountInfo, timestamp]) => {  // Check if the account exists.
 
@@ -259,17 +256,21 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
               return of(null);
             }),
-            shareReplay(1)
+            takeUntil(this.destroyer), // refCount will keep it open, so destroy manually.
+            shareReplay({
+              bufferSize: 1,
+              refCount: false
+            })
           )
           : of(null)
-      )
+      ),
+      takeUntil(this.destroyer)
     )
   }
 
 
   createBalancesObservable(): void {
     this.balancesObservable = this.itemsObservable.pipe(
-      takeUntil(this.destroyer),
       tap<pst.AccountEvent[]>(() => {
         this.loading++;
       }),
@@ -299,7 +300,8 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
       shareReplay({
         bufferSize: 1,
         refCount: true
-      })
+      }),
+      takeUntil(this.destroyer)
     );
   }
 
@@ -307,21 +309,17 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   createChartDataObservable(): void {
 
     const latestItemObservable = this.pa.run({observableResults: false}).getFinalizedHead().pipe(
-      takeUntil(this.destroyer),
       take(1),
       switchMap((hash) =>
         combineLatest([
           this.pa.run({observableResults: false}).getAccount(this.accountId, hash as string).pipe(
-            takeUntil(this.destroyer),
             take(1)
           ),
           this.pa.run({observableResults: false}).getHeader(hash as string).pipe(
-            takeUntil(this.destroyer),
             take(1),
             map((header: pst.Header) => header.number as number)
           ),
           this.pa.run({observableResults: false}).getTimestamp(hash as string).pipe(
-            takeUntil(this.destroyer),
             take(1)
           )
         ])
@@ -348,11 +346,11 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
           }
         }
         return null;
-      })
+      }),
+      takeUntil(this.destroyer)
     )
 
     this.chartDataObservable = this.balancesObservable.pipe(
-      takeUntil(this.destroyer),
       tap<BalancesItem[]>((items) => {
         this.chartLoadingObservable.next(true);
         this.updateFlag = false;
@@ -580,11 +578,12 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
 
         return options;
       }),
-      tap<Highcharts.Options | null>(() => {
+      tap(() => {
         this.chartLoadingObservable.next(false);
         this.updateFlag = true;
         this.cd.markForCheck();
-      })
+      }),
+      takeUntil<Highcharts.Options | null>(this.destroyer)
     ) as Observable<Highcharts.Options>
   }
 
@@ -594,7 +593,6 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
     if (observable) {
       // Fetch the blockHash for the given block number. And the accountInfo at the time of this blockHash.
       this.pa.run({observableResults: false}).getBlockHash(blockNumber).pipe(
-        takeUntil(this.destroyer),
         take(1),
         tap({
           subscribe: () => {
@@ -606,7 +604,6 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
         }),
         switchMap((hash) =>
           this.pa.run({observableResults: false}).getAccount(this.accountId, hash).pipe(
-            takeUntil(this.destroyer),
             take(1) // TODO add filter for when all data is available that is needed.
           )
         ),
@@ -619,7 +616,8 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
             && account.data.free.sub((account?.data?.frozen || account?.data?.feeFrozen) as BN)
             || null,
           locked: account?.data?.frozen || account?.data?.feeFrozen || null
-        }) as HistoricalBalance)
+        }) as HistoricalBalance),
+        takeUntil(this.destroyer)
       ).subscribe({
         next: (val) => observable.next(val)
       });
@@ -652,7 +650,8 @@ export class HistoricalBalanceComponent extends PaginatedListComponentBase<pst.A
   async loadMoreItems(): Promise<void> {
     // Keep the item list in live mode. We don't expect items coming in on every block.
     this.lowestBlockNumber.pipe(
-      take(1)
+      take(1),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: (blockNumber) => {
         if (blockNumber !== null) {

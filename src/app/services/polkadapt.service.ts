@@ -109,10 +109,10 @@ export class PolkadaptService {
       if (config.subsquid && Object.keys(config.subsquid).length) {
         aa.subsquid = new subsquid.Adapter({
           chain: network,
-          archiveUrl: this.config.networks[network].subsquid?.archiveUrl,
-          explorerUrl: this.config.networks[network].subsquid?.explorerUrl,
           giantSquidExplorerUrl: this.config.networks[network].subsquid?.giantSquidExplorerUrl,
-          giantSquidMainUrl: this.config.networks[network].subsquid?.giantSquidMainUrl
+          giantSquidMainUrl: this.config.networks[network].subsquid?.giantSquidMainUrl,
+          giantSquidStatsUrl: this.config.networks[network].subsquid?.giantSquidStatsUrl,
+          metaDataUrl: this.config.networks[network].subsquid?.metaDataUrl
         });
       }
       if (config.coingecko && config.coingecko.coinId) {

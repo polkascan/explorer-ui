@@ -17,7 +17,7 @@
  */
 
 import { ChangeDetectionStrategy, Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
-import { BehaviorSubject, combineLatest, of, Subject, takeUntil } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, of, Subject, takeUntil } from 'rxjs';
 import { types as pst } from '@polkadapt/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { PolkadaptService } from '../../../../../../services/polkadapt.service';
@@ -25,7 +25,7 @@ import { BN, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { NetworkService } from "../../../../../../services/network.service";
 import { TooltipsService } from "../../../../../../services/tooltips.service";
-import { switchMap, tap } from 'rxjs/operators';
+import { map, shareReplay, switchMap, tap } from 'rxjs/operators';
 
 
 @Component({
@@ -38,7 +38,11 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
   @Input() address: string;
   @Input() listSize: number;
   @Input() eventTypes: { [pallet: string]: string[] }
-  @Input() columns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'amount', 'details'];
+  @Input() columns = ['icon', 'eventID', 'age', 'extrinsic', 'pallet', 'event', 'attribute', 'amount', 'details'];
+
+  rpcEventsCache = new Map<string, Observable<pst.Event>>
+  amountsFromAttributesCache = new Map<string, Observable<[string, BN][]>>
+  nameFromAttributeCache = new Map<string, Observable<string>>
 
   events = new BehaviorSubject<pst.AccountEvent[]>([]);
 
@@ -112,8 +116,6 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     const listSize = this.listSize || 50;
 
     const subscription = this.pa.run().getEventsByAccount(idHex, filterParams, listSize).pipe(
-      takeUntil(this.reset),
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => {
           this.loading.next(true);
@@ -122,7 +124,9 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
           this.loading.next(false);
         }
       }),
-      switchMap((obs) => obs.length ? combineLatest(obs) : of([]))
+      switchMap((obs) => obs.length ? combineLatest(obs) : of([])),
+      takeUntil(this.reset),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: (items) => {
         const merged = [...events, ...items.filter((event) => {
@@ -173,8 +177,75 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
     return `${event.blockNumber}-${event.eventIdx}`;
   }
 
-  getAmountsFromAttributes(data: string): [string, BN][] {
+
+  fetchAndCacheRpcEvent(event: pst.Event | pst.AccountEvent) {
+    return this.pa.run({adapters: ['substrate-rpc']}).getEvent(event.blockNumber, event.eventIdx).pipe(
+      switchMap((obs => obs)),
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      }),
+      takeUntil(this.destroyer)
+    );
+  }
+
+
+  getAccountAttributeName(event: pst.Event | pst.AccountEvent): Observable<string> {
+    const key = `${event.blockNumber}_${event.eventIdx}`;
+
+    const cachedName = this.nameFromAttributeCache.get(key);
+    if (cachedName) {
+      return cachedName;
+    }
+
+    const name = (event as pst.AccountEvent).attributeName;
+
+    if (name) {
+      const observable = of(name);
+      this.nameFromAttributeCache.set(key, observable);
+      return observable;
+    }
+
+    let cachedEvent = this.rpcEventsCache.get(key);
+    if (!cachedEvent) {
+      cachedEvent = this.fetchAndCacheRpcEvent(event);
+      this.rpcEventsCache.set(key, cachedEvent);
+    }
+
+    const observable = cachedEvent.pipe(
+      map((event) => {
+        let name: string | undefined;
+
+        if (event.attributes && Array.isArray(event.attributes)) {
+          if (event.meta && event.meta.fields) {
+            event.attributes.forEach((attr, idx) => {
+              if (attr === this.address) {
+                name = event.meta!.fields[idx].name;
+              }
+            })
+          }
+        }
+        return name;
+      }),
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      })
+    );
+
+    this.nameFromAttributeCache.set(key, observable as any);
+    return observable as any;  }
+
+  getAmountsFromEvent(event: pst.Event | pst.AccountEvent): Observable<[string, BN][]> {
+    const key = `${event.blockNumber}_${event.eventIdx}`;
     const attrNames = ['amount', 'actual_fee', 'actualFee', 'tip'];
+
+    const cachedAmounts = this.amountsFromAttributesCache.get(key);
+    if (cachedAmounts) {
+      return cachedAmounts;
+    }
+
+    const data = event.attributes;
     const amounts: [string, BN][] = [];
 
     if (typeof data === 'string') {
@@ -184,33 +255,51 @@ export class AccountEventsComponent implements OnChanges, OnDestroy {
           amounts.push([name, new BN(match[1])]);
         }
       }
-    } else if (Object.prototype.toString.call(data) == '[object Object]') {
+      const observable = of(amounts);
+      this.amountsFromAttributesCache.set(key, observable);
+      return observable;
+    }
+
+    if (Object.prototype.toString.call(data) == '[object Object]') {
       attrNames.forEach((name) => {
         if ((data as any).hasOwnProperty(name)) {
-          amounts.push([name, new BN(data[name])])
+          amounts.push([name, new BN(data![name])])
         }
       })
+      const observable = of(amounts);
+      this.amountsFromAttributesCache.set(key, observable);
+      return observable;
     }
 
-    return amounts;
-  }
+    let cachedEvent = this.rpcEventsCache.get(key);
+    if (!cachedEvent) {
+      cachedEvent = this.fetchAndCacheRpcEvent(event);
+      this.rpcEventsCache.set(key, cachedEvent);
+    }
 
-  getAddressFromEvent(event: pst.AccountEvent): string {
-    if (event.attributes) {
-      const data: any = typeof event.attributes === 'string'
-        ? JSON.parse(event.attributes)
-        : event.attributes;
-      let address: string = '';
-      if (event.eventName === 'Transfer') {
-        if (event.attributeName === 'from') {
-          address = data.to;
-        } else {
-          address = data.from;
+    const observable = cachedEvent.pipe(
+      map((event) => {
+        const foundAmounts: [string, BN][] = [];
+
+        if (event.attributes && Array.isArray(event.attributes)) {
+          if (event.meta && event.meta.fields) {
+            event.meta.fields.forEach((field: any, attrIndex: any) => {
+              if (attrNames.indexOf(field.name) > -1 && event.attributes![attrIndex]) {
+                foundAmounts.push([field.name, new BN(event.attributes![attrIndex])])
+              }
+            })
+          }
         }
-        return address;
-      }
-    }
-    return '';
+        return foundAmounts;
+      }),
+      shareReplay({
+        bufferSize: 1,
+        refCount: true
+      })
+    );
+
+    this.amountsFromAttributesCache.set(key, observable as any);
+    return observable as any;
   }
 
   copied(address: string) {

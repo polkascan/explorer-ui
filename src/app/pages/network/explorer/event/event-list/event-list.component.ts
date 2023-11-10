@@ -25,7 +25,7 @@ import { RuntimeService } from '../../../../../services/runtime/runtime.service'
 import { types as pst } from '@polkadapt/core';
 import { PaginatedListComponentBase } from '../../../../../../common/list-base/paginated-list-component-base.directive';
 import { ActivatedRoute, Params, Router } from '@angular/router';
-import { BehaviorSubject, combineLatest, Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, Subscription, take } from 'rxjs';
 import { BN, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 
@@ -63,8 +63,10 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
     address: this.addressControl,
   });
 
-  visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'amount', 'details'];
-  visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'amount', 'details'];
+  visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'details'];
+  visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'details'];
+  // visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'amount', 'details'];
+  // visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'amount', 'details'];
 
   constructor(private ns: NetworkService,
               private pa: PolkadaptService,
@@ -77,7 +79,6 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
 
   ngOnInit(): void {
     this.route.queryParamMap.pipe(
-      takeUntil(this.destroyer),
       distinctUntilChanged(),
       map(params => [
         parseInt(params.get('runtime') as string, 10) || '',
@@ -88,7 +89,8 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
         parseInt(params.get('blockRangeBegin') as string, 10) || '',
         parseInt(params.get('blockRangeEnd') as string, 10) || '',
         params.get('address') as string || ''
-      ] as [number | '', string, string, Date | '', Date | '', number | '', number | '', string])
+      ] as [number | '', string, string, Date | '', Date | '', number | '', number | '', string]),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: ([specVersion, pallet, eventName, dateRangeBegin, dateRangeEnd,
                blockRangeBegin, blockRangeEnd, address]) => {
@@ -206,6 +208,17 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
         }
       });
 
+    // TEMPORARILY CHANGE THE TABLE BECAUSE SUBSQUID DOES NOT HAVE CORRECT ATTRIBUTES AT THE MOMENT.
+    this.pa.explorerRegistered.pipe(
+      take(1),
+      takeUntil(this.destroyer)
+    ).subscribe((registered) => {
+      if (registered === true) {
+        this.visibleColumns = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'amount', 'details'];
+        this.visibleColumnsForAccount = ['icon', 'eventID', 'age', 'referencedTransaction', 'pallet', 'event', 'attribute', 'amount', 'details'];
+      }
+    })
+
     super.ngOnInit();
   }
 
@@ -260,8 +273,8 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
           if (specVersion) {
             // If a runtime was set in the route, update the control.
             this.rs.getRuntime(network, specVersion).pipe(
-              takeUntil(this.destroyer),
-              first()
+              first(),
+              takeUntil(this.destroyer)
             ).subscribe({
               next: (runtime: pst.Runtime | null) => {
                 if (runtime && runtime.specVersion !== this.specVersionControl.value) {
@@ -278,14 +291,14 @@ export class EventListComponent extends PaginatedListComponentBase<pst.Event | p
 
   loadEventFilters(network: string, specVersion?: number): void {
     this.rs.getRuntime(network, specVersion).pipe(
-      takeUntil(this.destroyer),
       filter((r) => r !== null),
       switchMap((runtime) =>
         combineLatest([
-          this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion).pipe(takeUntil(this.destroyer)),
-          this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion).pipe(takeUntil(this.destroyer))
+          this.rs.getRuntimePallets(network, (runtime as pst.Runtime).specVersion),
+          this.rs.getRuntimeEvents(network, (runtime as pst.Runtime).specVersion)
         ])
-      )
+      ),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: ([pallets, events]): void => {
         if (pallets) {

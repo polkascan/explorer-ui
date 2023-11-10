@@ -18,22 +18,6 @@
 
 <ng-container *ngIf="ns.currentNetwork | async">
 
-  <form [formGroup]="searchForm" (ngSubmit)="submitSearch()">
-    <mat-form-field class="search" appearance="outline">
-      <mat-label>Search for account, block, extrinsic</mat-label>
-      <input matInput formControlName="search" placeholder="Account address, block number or hash, extrinsic id or hash">
-      <button mat-icon-button matSuffix type="submit" [attr.aria-label]="'Search'">
-        <mat-icon>search</mat-icon>
-      </button>
-      <mat-error *ngIf="searchForm.controls['search'].hasError('wrongNetwork')">
-        This address does not belong to the {{ns.currentNetwork | async}} network. Do you need to switch to another network?
-      </mat-error>
-      <mat-error *ngIf="searchForm.controls['search'].hasError('wrongFormat')">
-        Please enter a valid account address or block number.
-      </mat-error>
-    </mat-form-field>
-  </form>
-
   <ng-container *ngIf="(blocks | async)?.length === 0">
     <p>Waiting for blocks...</p>
     <mat-progress-bar mode="buffer"></mat-progress-bar>
@@ -46,7 +30,8 @@
   <div class="blocks" [@blocksAnimation]="(latestBlockNumber | async)">
     <div class="block-outer" *ngFor="let block$ of (blocks | async)">
       <ng-container *ngIf="block$ | async as block">
-        <a class="block-inner" [class.finalized]="block.finalized" [routerLink]="'block/' + block.number" [@blockContentAnimation]="block.extrinsics.length">
+        <a class="block-inner" [class.finalized]="block.finalized" [routerLink]="'block/' + block.number"
+           [@blockContentAnimation]="block.extrinsics.length">
           <span class="number">
             {{block.number.toString().slice(0, -2)}}<strong>{{block.number.toString().slice(-2)}}</strong>
           </span>
@@ -59,9 +44,119 @@
 
 </ng-container>
 
+
+<div class="chain-statistics" *ngIf="(statistics | async) as stats">
+  <div class="chain-statistic">
+    <img src="/assets/polkadot-icons/blockchain.svg" title="Finalized Blocks">
+    <div class="chain-statistic-values">
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Finalized Blocks</div>
+        {{stats.chainFinalizedBlocks}}
+      </div>
+    </div>
+  </div>
+
+
+  <div class="chain-statistic">
+    <img src="/assets/polkadot-icons/verified-signed.svg" title="Signed Extrinsics">
+    <div class="chain-statistic-values">
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Signed Extrinsics</div>
+        {{stats.chainSignedExtrinsics}}
+      </div>
+    </div>
+  </div>
+  <div class="chain-statistic">
+    <img src="/assets/polkadot-icons/batch-transaction.svg" title="Transfers Count">
+    <div class="chain-statistic-values">
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title"> Transfers Count</div>
+        {{stats.balancesTransfersAmount}}
+      </div>
+    </div>
+  </div>
+  <div class="chain-statistic" *ngIf="inflationRatio | async as ir">
+    <img src="/assets/polkadot-icons/investors.svg" title="Inflation Rate">
+    <div class="chain-statistic-values">
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Inflation rate</div>
+        {{ir}}%
+      </div>
+    </div>
+  </div>
+  <div class="chain-statistic" *ngIf="stakedRatio | async as sr">
+    <img src="/assets/polkadot-icons/proof-of-stake.svg" title="Staked Ratio">
+    <div class="chain-statistic-values">
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Staked</div>
+        {{sr}}%
+      </div>
+    </div>
+  </div>
+  <div class="chain-statistic" *ngIf="rewardsRatio | async as rr">
+    <img src="/assets/polkadot-icons/gift.svg" title="Rewards Ratio">
+    <div class="chain-statistic-values">
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Reward rate</div>
+        {{rr}}%
+      </div>
+    </div>
+  </div>
+  <div class="chain-statistic">
+    <img src="/assets/polkadot-icons/wallets.svg" title="Accounts">
+    <div class="chain-statistic-values">
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Accounts</div>
+        {{stats.accountsTotal}}
+      </div>
+    </div>
+  </div>
+  <div class="chain-statistic">
+    <img src="/assets/polkadot-icons/validators.svg" title="Validators">
+    <div class="chain-statistic-title">Validators</div>
+    <div class="chain-statistic-values">
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Active</div>
+        {{stats.stakingActiveValidatorsAmount}}
+      </div>
+
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Inactive</div>
+        {{stats.stakingValidatorsAmount - stats.stakingActiveValidatorsAmount}}
+      </div>
+    </div>
+  </div>
+  <div class="chain-statistic">
+    <img src="/assets/polkadot-icons/nominators.svg" title="Nominator Pools">
+      <div class="chain-statistic-title">Nominators</div>
+    <div class="chain-statistic-values">
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Pools</div>
+        {{stats.nominationPoolsPoolsActiveAmount}}
+      </div>
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Members</div>
+        {{stats.nominationPoolsMembersAmount}}
+      </div>
+    </div>
+  </div>
+  <div class="chain-statistic">
+    <img src="/assets/polkadot-icons/starting-period.svg" title="Current Era">
+    <div class="chain-statistic-values">
+      <div class="chain-statistic-value">
+        <div class="chain-statistic-title">Era</div>
+        {{stats.stakingCurrentEra}}
+      </div>
+    </div>
+  </div>
+</div>
+
 <p *ngIf="(ns.currentNetwork | async) === '' &&
           ((pa.substrateRpcRegistered | async) && (pa.substrateRpcConnected | async) === false || (pa.substrateRpcRegistered | async) === false)">
   Initializing...
 </p>
 
-<p *ngIf="(pa.substrateRpcRegistered | async) === false && (pa.explorerRegistered | async) === false && (pa.subsquidRegistered | async) === false" style="color: red">Connection error! Please try again later or try a different endpoint.</p>
+<p *ngIf="(pa.substrateRpcRegistered | async) === false
+   && (pa.explorerRegistered | async) === false
+    && (pa.subsquidRegistered | async) === false"
+   style="color: red">Connection error! Please try again later or try a different endpoint.</p>

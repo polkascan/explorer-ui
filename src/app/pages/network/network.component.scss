@@ -16,8 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+.network-page {
+  min-height: 100%;
+  background: var(--ps-top-bar-bg-color);
+  color: #fff;
+}
+
 .network-explorer-container {
+  padding-top: 1px;
   padding-bottom: 120px;
+  background: var(--ps-explorer-container, #fff);
+  border-radius: 4px;
+  color: #222;
 }
 
 .network-explorer-bottom-bar {
@@ -30,7 +40,7 @@
   justify-content: space-between;
   align-items: center;
   column-gap: 16px;
-  background: var(--ps-top-bar-bg-color);
-  color: var(--ps-top-bar-text-color);
+  background: var(--ps-bottom-bar-bg-color, #333);
+  color: var(--ps-bottom-bar-text-color, #fff);
   padding: 0 8px;
 }

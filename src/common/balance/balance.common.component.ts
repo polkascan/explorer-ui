@@ -46,7 +46,7 @@ import { BN } from '@polkadot/util';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BalanceCommonComponent implements OnChanges {
-  @Input() value: number | BN;
+  @Input() value: number | string | BN;
   @Input() tokenDecimals: number;
   @Input() tokenSymbol: string;
   @Input() maxDecimals: number;
@@ -69,7 +69,7 @@ export class BalanceCommonComponent implements OnChanges {
       let val: BN | undefined;
       if (BN.isBN(this.value)) {
         val = this.value;
-      } else if (Number.isInteger(this.value)) {
+      } else {
         try {
           val = new BN(this.value as number);
         } catch (e) {

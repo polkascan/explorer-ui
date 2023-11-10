@@ -26,7 +26,6 @@ import { PolkadaptService } from '../../services/polkadapt.service';
 import { AppConfig } from '../../app-config';
 
 @Component({
-  selector: 'app-network',
   templateUrl: './network.component.html',
   styleUrls: ['./network.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -51,9 +50,9 @@ export class NetworkComponent implements OnInit, OnDestroy {
     // Change network when param changes in route.
     this.route.params
       .pipe(
-        takeUntil(this.destroyer),
         map((p) => p['network']),
-        distinctUntilChanged()
+        distinctUntilChanged(),
+        takeUntil(this.destroyer)
       )
       .subscribe({
         next: (network: string) => {
@@ -69,18 +68,17 @@ export class NetworkComponent implements OnInit, OnDestroy {
 
     // Pass the last loaded number to the variables service, so other parts of the application can pick it up.
     this.ns.currentNetwork.pipe(
-      // Keep it running until this component is destroyed.
-      takeUntil(this.destroyer),
       // Only continue if a network is set.
       filter(network => !!network),
       // Only continue if the network value has changed.
       distinctUntilChanged(),
       // Watch for new loaded block numbers from the Substrate node.
       switchMap(() => this.ns.blockHarvester.loadedNumber.pipe(
-        takeUntil(this.destroyer),
         // Only continue if new block number is larger than 0.
         filter(nr => nr > 0)
-      ))
+      )),
+      // Keep it running until this component is destroyed.
+      takeUntil(this.destroyer)
     ).subscribe({
       next: (nr) => {
         this.vars.blockNumber.next(nr);

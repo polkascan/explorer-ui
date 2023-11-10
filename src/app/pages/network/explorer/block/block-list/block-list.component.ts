@@ -61,21 +61,24 @@ export class BlockListComponent implements OnInit, OnDestroy {
     private pa: PolkadaptService,
     private ns: NetworkService
   ) {
-    this.loadingObservable = this.loadingCounterObservable.pipe(takeUntil(this.destroyer), map((c) => !!c));
+    this.loadingObservable = this.loadingCounterObservable.pipe(
+      map((c) => !!c),
+      takeUntil(this.destroyer)
+    );
+
     this.hasNextPageObservable = combineLatest(
       this.pageLiveObservable,
       this.latestBlockNumber,
       this.customUntilObservable
     ).pipe(
-      map<any, boolean>(([p, l, c]) => (p && l > this.listSize || c && c > this.listSize)
-      ));
+      map<any, boolean>(([p, l, c]) => (p && l > this.listSize || c && c > this.listSize)),
+      takeUntil(this.destroyer)
+  );
   }
 
   ngOnInit(): void {
     // Watch for changes to network, the latest block number and last block data.
     this.ns.currentNetwork.pipe(
-      // Keep it running until this component is destroyed.
-      takeUntil(this.destroyer),
       // Only continue if a network is set.
       filter(network => !!network),
       // Only continue if the network value has changed.
@@ -88,7 +91,6 @@ export class BlockListComponent implements OnInit, OnDestroy {
       // Wait for the first most recent finalized block to arrive from Polkascan.
       switchMap(() => this.ns.blockHarvester.finalizedNumber.pipe(
         timeout(2000),
-        takeUntil(this.destroyer),
         filter(nr => nr > 0),
         first(),
         // Start preloading the latest 100 blocks.
@@ -102,14 +104,13 @@ export class BlockListComponent implements OnInit, OnDestroy {
       )),
       // Watch for new loaded block numbers from the Substrate node.
       switchMap(() => this.ns.blockHarvester.loadedNumber.pipe(
-        takeUntil(this.destroyer),
         // Only continue if new block number is larger than 0.
         filter(nr => nr > 0)
       )),
       // Watch for changes in new block data.
-      switchMap(nr => this.ns.blockHarvester.blocks[nr].pipe(
-        takeUntil(this.destroyer)
-      ))
+      switchMap(nr => this.ns.blockHarvester.blocks[nr]),
+      // Keep it running until this component is destroyed.
+      takeUntil(this.destroyer),
     ).subscribe({
       next: (block) => {
         const newBlockCount: number = block.number - this.latestBlockNumber.value;

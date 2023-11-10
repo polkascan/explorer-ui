@@ -21,7 +21,8 @@
 
   <ng-container [ngSwitch]="attributesConfig[attribute.type]">
 
-    <label *ngIf="attributesConfig[attribute.type] && (attribute.name || attribute.key)" [title]="attribute.type">{{ attribute.name || attribute.key }}</label>
+    <div *ngIf="attributesConfig[attribute.type] && (attribute.name || attribute.key)"><label [title]="attribute.type">{{ attribute.name || attribute.key }}</label></div>
+    <div *ngIf="attribute.type"><small>{{attribute.type}} <ng-container *ngIf="attribute.composition">({{attribute.composition}})</ng-container></small></div>
 
     <attribute-address *ngSwitchCase="'address'" [attribute]="attribute" [iconTheme]="iconTheme" [iconSize]="iconSize"
                        [ss58Prefix]="ss58Prefix"></attribute-address>
@@ -42,7 +43,6 @@
 
     <attribute-balance *ngSwitchCase="'balance'" [attribute]="attribute" [tokenDecimals]="tokenDecimals"
                        [tokenSymbol]="tokenSymbol"></attribute-balance>
-
 
     <attribute-date *ngSwitchCase="'date'" [attribute]="attribute"></attribute-date>
 

@@ -51,22 +51,20 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const observable = this.ns.currentNetwork.pipe(
-      takeUntil(this.destroyer),
       filter(network => network !== ''),
       first(),
       switchMap(() => this.route.params.pipe(
-        takeUntil(this.destroyer),
         map(params => {
           const lastIndex = params['runtime'].lastIndexOf('-');
           const specName = params['runtime'].substring(0, lastIndex);
           const specVersion = params['runtime'].substring(lastIndex + 1);
           return [specName, parseInt(specVersion, 10)];
         })
-      ))
+      )),
+      takeUntil(this.destroyer)
     )
 
     this.runtime = observable.pipe(
-      takeUntil(this.destroyer),
       tap((runtime) => this.fetchRuntimeStatus.next('loading')),
       switchMap(([specName, specVersion]) => {
           return this.rs.getRuntime(specName as string, specVersion as number).pipe(
@@ -77,11 +75,11 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchRuntimeStatus.next('error');
         return of(null);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
 
     this.pallets = this.runtime.pipe(
-      takeUntil(this.destroyer),
       tap({
         subscribe: () => this.fetchPalletsStatus.next('loading')
       }),
@@ -98,7 +96,8 @@ export class RuntimeDetailComponent implements OnInit, OnDestroy {
       catchError((e) => {
         this.fetchPalletsStatus.next('error');
         return of([]);
-      })
+      }),
+      takeUntil(this.destroyer)
     );
   }
 

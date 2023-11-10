@@ -20,14 +20,25 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/
 import { animate, group, query, stagger, style, transition, trigger } from '@angular/animations';
 import { PolkadaptService } from '../../../services/polkadapt.service';
 import { NetworkService } from '../../../services/network.service';
-import { BehaviorSubject, of, Subject } from 'rxjs';
-import { catchError, distinctUntilChanged, filter, first, switchMap, takeUntil, tap, timeout } from 'rxjs/operators';
+import { BehaviorSubject, map, Observable, of, startWith, Subject } from 'rxjs';
+import {
+  catchError,
+  distinctUntilChanged,
+  filter,
+  first,
+  shareReplay,
+  switchMap,
+  takeUntil,
+  tap,
+  timeout
+} from 'rxjs/operators';
 import { Block } from '../../../services/block/block.harvester';
-import { AppConfig } from '../../../app-config';
 import { AbstractControl, FormControl, FormGroup, ValidationErrors } from '@angular/forms';
 import { validateAddress } from '@polkadot/util-crypto'
 import { ActivatedRoute, Router } from '@angular/router';
 import { VariablesService } from '../../../services/variables.service';
+import { types as pst } from '@polkadapt/core';
+import { BN } from "@polkadot/util";
 
 
 const blocksAnimation = trigger('blocksAnimation', [
@@ -79,39 +90,38 @@ export class ExplorerComponent implements OnInit, OnDestroy {
   blockListSize = 10;
   latestBlockNumber = new BehaviorSubject<number>(0);
   blocks = new BehaviorSubject<BehaviorSubject<Block>[]>([]);
-  searchForm = new FormGroup({
-    search: new FormControl('', [this.searchValidator()])
-  })
+
+  statistics: Observable<pst.ChainStatistics | null>
+  stakedRatio: Observable<string | null>;
+  inflationRatio: Observable<string | null>;
+  rewardsRatio: Observable<string | null>
 
   constructor(
     public pa: PolkadaptService,
     public ns: NetworkService,
-    private vars: VariablesService,
-    private config: AppConfig,
-    private router: Router,
-    private route: ActivatedRoute
+    private vars: VariablesService
   ) {
   }
 
   ngOnInit(): void {
     // Watch for changes to network, the latest block number and last block data.
-    this.ns.currentNetwork.pipe(
-      // Keep it running until this component is destroyed.
-      takeUntil(this.destroyer),
+    const networkObservable = this.ns.currentNetwork.pipe(
       // Only continue if a network is set.
       filter(network => !!network),
       // Only continue if the network value has changed.
       distinctUntilChanged(),
-      // When network has changed, reset the block Array for this component.
-      tap(() => {
+      // Keep it running until this component is destroyed.
+      takeUntil(this.destroyer)
+    );
+
+    // When network has changed, reset the block Array for this component.
+    networkObservable.pipe(tap(() => {
         this.latestBlockNumber.next(0);
         this.blocks.next([]);
-        this.searchForm.controls['search'].setValue('');
       }),
       // Wait for the first most recent finalized block to arrive from Polkascan.
       switchMap(() => this.ns.blockHarvester.finalizedNumber.pipe(
         timeout(2000),
-        takeUntil(this.destroyer),
         filter(nr => nr > 0),
         first(),
         // Start preloading the latest blocks.
@@ -124,14 +134,12 @@ export class ExplorerComponent implements OnInit, OnDestroy {
       )),
       // Watch for new loaded block numbers from the Substrate node.
       switchMap(() => this.ns.blockHarvester.loadedNumber.pipe(
-        takeUntil(this.destroyer),
         // Only continue if new block number is larger than 0.
         filter(nr => nr > 0)
       )),
       // Watch for changes in new block data.
-      switchMap(nr => this.ns.blockHarvester.blocks[nr].pipe(
-        takeUntil(this.destroyer))
-      )
+      switchMap(nr => this.ns.blockHarvester.blocks[nr]),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: (block) => {
         const newBlockCount: number = block.number - this.latestBlockNumber.value;
@@ -146,16 +154,47 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     // Watch the network variable that changes as soon as another network is *selected* by the user,
     // whereas the currentNetwork variable is only changed after initialization.
     this.vars.network.pipe(
-      takeUntil(this.destroyer),
       filter(network => !!network),
-      distinctUntilChanged()
+      distinctUntilChanged(),
+      takeUntil(this.destroyer)
     ).subscribe({
       next: () => {
         this.latestBlockNumber.next(0);
         this.blocks.next([]);
-        this.searchForm.controls['search'].setValue('');
       }
     });
+
+    this.statistics = networkObservable.pipe(
+      switchMap(() => this.pa.run().getLatestStatistics().pipe(
+        startWith(null),
+        catchError(() => of(null)),
+        switchMap((o) => o || of(null)))),
+      shareReplay({
+        refCount: true,
+        bufferSize: 1
+      })
+    );
+
+    this.stakedRatio = this.statistics.pipe(
+      // TODO Change this code when BN is implemented in the adapter.
+      map((stats) => {
+        if (stats && stats.balancesTotalIssuance && stats.stakingTotalStake) {
+          const calc = new BN(stats.stakingTotalStake).mul(new BN(10000)).div(
+            new BN(stats.balancesTotalIssuance)
+          ).toNumber();
+          return (calc / 100).toFixed(2);
+        }
+        return null;
+      })
+    );
+
+    this.inflationRatio = this.statistics.pipe(
+      map((stats) => stats?.stakingInflationRatio?.toFixed(2) || null)
+    );
+
+    this.rewardsRatio = this.statistics.pipe(
+      map((stats) => stats?.stakingRewardsRatio?.toFixed(2) || null)
+    );
   }
 
   ngOnDestroy(): void {
@@ -176,61 +215,4 @@ export class ExplorerComponent implements OnInit, OnDestroy {
     this.blocks.next(blocks);
   }
 
-  searchValidator() {
-    const ns = this.ns;
-    return (control: AbstractControl): ValidationErrors | null => {
-      const value = control.value.trim();
-      if (value === ''  // Nothing
-        || value.startsWith('0x') && value.length === 66  // Extrinsic or block hash
-        || /^\d+-\d+$/.test(value)  // Extrinsic ID, block-index format
-        || /^\d+$/.test(value)) {  // Block number
-        return null;
-      } else {
-        let validAddress: boolean;
-        try {
-          validAddress = validateAddress(value);
-        } catch (e) {
-          validAddress = false;
-        }
-        if (validAddress) {
-          // Check if address belongs to this network/chain.
-          try {
-            validateAddress(value, false, ns.currentNetworkProperties.value?.ss58Format);
-            return null;
-          } catch (e) {
-            return {wrongNetwork: {value}};
-          }
-        }
-      }
-      return {wrongFormat: {value}};
-    }
-  }
-
-  submitSearch() {
-    if (this.searchForm.valid) {
-      const value = (this.searchForm.value.search)!.trim();
-      if (value) {
-        if (/^\d+-\d+$/.test(value)) {
-          this.router.navigate(['extrinsic', value], {relativeTo: this.route});
-        } else if (/^\d+$/.test(value) || value.startsWith('0x') && value.length === 66) {
-          this.pa.run({observableResults: false}).getBlock(value).subscribe({
-            next: block =>
-              this.router.navigate(['block', value], {relativeTo: this.route}),
-            error: () => this.router.navigate(['extrinsic', value], {relativeTo: this.route})
-          });
-        } else {
-          let validAddress: boolean;
-          try {
-            validAddress = validateAddress(value, false,
-              this.ns.currentNetworkProperties.value?.ss58Format);
-          } catch (e) {
-            validAddress = false;
-          }
-          if (validAddress) {
-            this.router.navigate(['account', value], {relativeTo: this.route});
-          }
-        }
-      }
-    }
-  }
 }
