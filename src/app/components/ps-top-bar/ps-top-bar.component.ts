@@ -68,7 +68,9 @@ export class PsTopBarComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.networks = Object.keys(this.config.networks);
+    this.networks = Object.keys(this.config.networks).filter(key =>
+      this.config.networks[key].substrateRpcUrlArray !== undefined
+    );
     this.networkConfig = this.config.networks;
     this.vars.network
       .pipe(

@@ -192,3 +192,33 @@
 .home-groups {
   margin: 0 auto;
 }
+
+
+a.btn,blockquote p,span.btn {
+    line-height: 1em;
+    position: relative;
+}
+
+.home-buttons.message p {
+  font-weight: normal;
+}
+
+a.btn {
+  color: #fff;
+  text-decoration: none;
+  background-size: 2em;
+  background: #cf25ff url(https://polkascan.org/wp-content/themes/twee/assets/images/icon-github.svg) no-repeat right 0.8em center;
+
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: .85em;
+  max-width: 100%;
+  min-width: 12.291588vw;
+  vertical-align: text-bottom;
+  white-space: nowrap;
+  justify-content: center;
+  padding: 1.25em 4em 1.25em 1.5em;
+  z-index: 1;
+  transition: color .2s ease-in-out;
+}
