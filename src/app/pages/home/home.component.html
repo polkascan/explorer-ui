@@ -40,15 +40,15 @@
              matRipple
              class="home-button home-button--relay-chain">
             <mat-card-content class="home-button-content">
-              <p>As of December 31st 2023, the hosted instance of our open source block-explorer for the Polkadot and Kusama ecosystem is retired.</p>
-              <p>This instance relied heavily on a publicly available datasource, which has been announced to sunset in the near future.</p>
+              <p>As of March 3rd 2024, the hosted instance of our open source block-explorer for the Polkadot and Kusama ecosystem is retired.</p>
+              <p>This instance relied heavily on a publicly available datasource, which recently was discontinued.</p>
               <p>Since our last treasury proposal was downvoted, we see no immediate way forward to fund further development of the Polkascan explorer. The latest version of the source code will, of course, still be available at GitHub.</p>
 
               <p><a class="btn btn--spectrum6 btn--github" href="https://github.com/polkascan/explorer" target="_blank" rel="noopener">View on GitHub</a></p>
 
               <p>We want to thank all the people we were involved with in this project over the past five years.</p>
 
-              <p>That said, we will continue our efforts to maintain the <a href="https://github.com/polkascan/py-substrate-interface">Python Substrate Interface</a> and give support to the Python devs building their apps.</p>
+              <p>That said, we will continue other activities, like maintaining the <a href="https://github.com/polkascan/py-substrate-interface">Python Substrate Interface</a> and give support to the Python devs building their apps.</p>
 
               <p>The Polkascan Team</p>
             </mat-card-content>
@@ -57,24 +57,24 @@
         </div>
       </div>
 
-      <div class="home-group" *ngFor="let group of groups|keyvalue:returnZero">
-        <h2>{{ group.value.relayChain.name || group.key }}</h2>
-        <div class="home-buttons">
+<!--      <div class="home-group" *ngFor="let group of groups|keyvalue:returnZero">-->
+<!--        <h2>{{ group.value.relayChain.name || group.key }}</h2>-->
+<!--        <div class="home-buttons">-->
 
-          <mat-card *ngIf="group.value.relayChain.substrateRpcUrlArray" appearance="outlined" [routerLink]="'/' + group.key" tabindex="0"
-             matRipple
-             class="home-button home-button--relay-chain" [style]="group.value.relayChain.image ? 'background-image: url(\'../../../assets/chains/' + group.value.relayChain.image + '\')' : ''">
-            <mat-card-content class="home-button-content">{{ group.value.relayChain.name || group.key }}</mat-card-content>
-          </mat-card>
+<!--          <mat-card *ngIf="group.value.relayChain.substrateRpcUrlArray" appearance="outlined" [routerLink]="'/' + group.key" tabindex="0"-->
+<!--             matRipple-->
+<!--             class="home-button home-button&#45;&#45;relay-chain" [style]="group.value.relayChain.image ? 'background-image: url(\'../../../assets/chains/' + group.value.relayChain.image + '\')' : ''">-->
+<!--            <mat-card-content class="home-button-content">{{ group.value.relayChain.name || group.key }}</mat-card-content>-->
+<!--          </mat-card>-->
 
-          <mat-card appearance="outlined" *ngFor="let network of group.value.parachains|keyvalue:returnZero" [routerLink]="'/' + network.key" tabindex="0"
-             matRipple
-             class="home-button home-button--parachain" [style]="network.value.image ? 'background-image: url(\'../../../assets/chains/' + network.value.image + '\')' : ''">
-            <mat-card-content class="home-button-content">{{ network.value.name || network.key }}</mat-card-content>
-          </mat-card>
+<!--          <mat-card appearance="outlined" *ngFor="let network of group.value.parachains|keyvalue:returnZero" [routerLink]="'/' + network.key" tabindex="0"-->
+<!--             matRipple-->
+<!--             class="home-button home-button&#45;&#45;parachain" [style]="network.value.image ? 'background-image: url(\'../../../assets/chains/' + network.value.image + '\')' : ''">-->
+<!--            <mat-card-content class="home-button-content">{{ network.value.name || network.key }}</mat-card-content>-->
+<!--          </mat-card>-->
 
-        </div>
-      </div>
+<!--        </div>-->
+<!--      </div>-->
 
       <div class="home-group" *ngIf="others">
         <h2 *ngIf="groups">Others</h2>
